@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\User;
-use App\Enum\AppRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -35,8 +34,8 @@ class AdminApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        if (!($currentUser instanceof User) || $currentUser->getAppRole() !== AppRole::AppAdmin) {
-            return new JsonResponse(['success' => false, 'error' => 'app_admin role required.'], 403);
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            return new JsonResponse(['success' => false, 'error' => 'ROLE_ADMIN requis.'], 403);
         }
 
         $data   = json_decode($request->getContent(), true) ?? [];

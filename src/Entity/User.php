@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\AppRole;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -26,8 +25,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string')]
     private string $passwordHash;
 
-    #[ORM\Column(type: 'string', enumType: AppRole::class, options: ['default' => 'app_default'])]
-    private AppRole $appRole = AppRole::AppDefault;
+    #[ORM\Column(type: 'json')]
+    private array $roles = [];
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $emailVerified = false;
@@ -82,20 +81,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        $roles = ['ROLE_USER'];
-
-        $extra = match ($this->appRole) {
-            AppRole::AppModerator => 'ROLE_MODERATOR',
-            AppRole::AppSchool    => 'ROLE_SCHOOL',
-            AppRole::AppAdmin     => 'ROLE_ADMIN',
-            default               => null,
-        };
-
-        if ($extra !== null) {
-            $roles[] = $extra;
-        }
+        $roles   = $this->roles;
+        $roles[] = 'ROLE_USER';
 
         return array_values(array_unique($roles));
+    }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+
+        return $this;
     }
 
     public function getPassword(): string
@@ -117,18 +113,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
-    }
-
-    public function getAppRole(): AppRole
-    {
-        return $this->appRole;
-    }
-
-    public function setAppRole(AppRole $appRole): static
-    {
-        $this->appRole = $appRole;
-
-        return $this;
     }
 
     public function isEmailVerified(): bool

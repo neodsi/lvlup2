@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Security\Voter;
 
 use App\Entity\User;
-use App\Enum\AppRole;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
  * Permissions:
- *   admin:access      – app_moderator+
- *   admin:impersonate – app_admin only
+ *   admin:access      – ROLE_MODERATOR or higher
+ *   admin:impersonate – ROLE_ADMIN only
  *
  * Subject: null (no specific resource needed — these are app-level permissions).
  */
@@ -26,42 +25,24 @@ final class AdminVoter extends Voter
         self::IMPERSONATE,
     ];
 
-    private static function appRoleWeights(): array
-    {
-        return [
-            AppRole::AppDefault->value   => 1,
-            AppRole::AppModerator->value => 2,
-            AppRole::AppSchool->value    => 3,
-            AppRole::AppAdmin->value     => 4,
-        ];
-    }
-
     protected function supports(string $attribute, mixed $subject): bool
     {
-        // subject is unused for app-level permissions (pass null from callers).
         return in_array($attribute, self::SUPPORTED_ATTRIBUTES, true);
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
-        $user = $token->getUser();
-
-        if (!$user instanceof User) {
+        if (!$token->getUser() instanceof User) {
             return false;
         }
 
-        $appRole = $user->getAppRole();
+        // $token->getRoleNames() returns the fully hierarchy-expanded role list.
+        $roles = $token->getRoleNames();
 
         return match ($attribute) {
-            self::ACCESS      => $this->isAppRoleGranted($appRole, AppRole::AppModerator),
-            self::IMPERSONATE => $appRole === AppRole::AppAdmin,
+            self::ACCESS      => in_array('ROLE_MODERATOR', $roles, true),
+            self::IMPERSONATE => in_array('ROLE_ADMIN', $roles, true),
             default           => false,
         };
-    }
-
-    private function isAppRoleGranted(AppRole $userRole, AppRole $requiredRole): bool
-    {
-        $weights = self::appRoleWeights();
-        return ($weights[$userRole->value] ?? 0) >= ($weights[$requiredRole->value] ?? 0);
     }
 }

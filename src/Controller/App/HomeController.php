@@ -7,7 +7,6 @@ namespace App\Controller\App;
 use App\Entity\Profile;
 use App\Entity\Team;
 use App\Entity\TeamProfile;
-use App\Enum\AppRole;
 use App\Enum\Gender;
 use App\Enum\TeamRole;
 use App\Enum\TeamStatus;
