@@ -1,0 +1,63 @@
+{% extends 'layout/school.html.twig' %}
+
+{% set typeLabel = type == 'students' ? 'élève' : (type == 'teachers' ? 'professeur' : 'administrateur') %}
+{% block title %}Ajouter un {{ typeLabel }} — {{ team.name }}{% endblock %}
+
+{% block school_content %}
+<div class="max-w-2xl mx-auto">
+
+    <div class="mb-6 flex items-center gap-4">
+        <a href="{{ path('school_members_list', {type: type}) }}" class="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Retour
+        </a>
+        <h1 class="text-xl font-bold text-gray-900">Ajouter un {{ typeLabel }}</h1>
+    </div>
+
+    {% include 'components/_flash.html.twig' %}
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <form method="post" action="{{ path('school_members_create', {type: type}) }}" class="divide-y divide-gray-100">
+
+            <div class="px-6 py-5 space-y-4">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">Prénom <span class="text-red-500">*</span></label>
+                        <input type="text" id="first_name" name="first_name" required
+                            class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                    <div>
+                        <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Nom <span class="text-red-500">*</span></label>
+                        <input type="text" id="last_name" name="last_name" required
+                            class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" name="email"
+                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <p class="mt-1 text-xs text-gray-400">Un email d'invitation sera envoyé si renseigné.</p>
+                </div>
+
+                <div>
+                    <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
+                    <input type="date" id="dob" name="dob"
+                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-between items-center">
+                <a href="{{ path('school_members_list', {type: type}) }}" class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
+                <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+                    Ajouter
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
