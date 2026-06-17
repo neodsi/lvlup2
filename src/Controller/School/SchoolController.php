@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\School;
 
+use App\Entity\Event;
 use App\Entity\Season;
 use App\Entity\TeamHomeKpiDaily;
+use App\Entity\TeamProfile;
 use App\Entity\TeamProfilePackage;
 use App\Entity\TeamProfileSeason;
 use App\Entity\Order;
@@ -13,6 +15,7 @@ use App\Entity\PaymentSchedule;
 use App\Entity\TeamProfileGalaParticipation;
 use App\Entity\User;
 use App\Enum\EventType;
+use App\Enum\TeamRole;
 use App\Security\Voter\TeamVoter;
 use App\Service\Event\EventService;
 use App\Service\TeamContextService;
@@ -58,9 +61,41 @@ final class SchoolController extends AbstractController
             30,
         );
 
+        $countMembers = fn(TeamRole $role) => (int) $this->em->createQueryBuilder()
+            ->select('COUNT(tp.id)')
+            ->from(TeamProfile::class, 'tp')
+            ->where('tp.team = :team')
+            ->andWhere('tp.role = :role')
+            ->andWhere('tp.deletedAt IS NULL')
+            ->setParameter('team', $team)
+            ->setParameter('role', $role)
+            ->getQuery()->getSingleScalarResult();
+
+        $countOrders = (int) $this->em->createQueryBuilder()
+            ->select('COUNT(o.id)')
+            ->from(Order::class, 'o')
+            ->where('o.teamId = :teamId')
+            ->setParameter('teamId', $team->getId())
+            ->getQuery()->getSingleScalarResult();
+
+        $currentSeasonId = $team->getCurrentSeasonId();
+        $countCours = $currentSeasonId ? (int) $this->em->createQueryBuilder()
+            ->select('COUNT(e.id)')
+            ->from(Event::class, 'e')
+            ->where('e.teamId = :teamId')
+            ->andWhere('e.seasonId = :seasonId')
+            ->setParameter('teamId', $team->getId())
+            ->setParameter('seasonId', $currentSeasonId)
+            ->getQuery()->getSingleScalarResult() : 0;
+
         return $this->render('school/home.html.twig', [
-            'team' => $team,
-            'kpis' => $kpis,
+            'team'         => $team,
+            'kpis'         => $kpis,
+            'countStudents' => $countMembers(TeamRole::TeamStudent),
+            'countTeachers' => $countMembers(TeamRole::TeamTeacher),
+            'countAdmins'   => $countMembers(TeamRole::TeamAdmin),
+            'countOrders'   => $countOrders,
+            'countCours'    => $countCours,
         ]);
     }
 

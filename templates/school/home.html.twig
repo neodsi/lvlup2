@@ -3,107 +3,85 @@
 {% block title %}Tableau de bord — {{ team.name }}{% endblock %}
 
 {% block school_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="py-8">
 
-    {# Header #}
     <div class="flex items-center justify-between mb-8">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ team.name }}</h1>
             <p class="text-sm text-gray-500 mt-0.5">Tableau de bord</p>
         </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ path('school_members_list', {type: 'students'}) }}" class="inline-flex items-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-                Membres
-            </a>
-            <a href="{{ path('school_events') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-                Cours &amp; événements
-            </a>
-        </div>
     </div>
 
-    {# KPI Cards #}
-    {% if kpis is defined and kpis|length > 0 %}
-        {% set latest = kpis|first %}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    {# Membres #}
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Membres</h2>
+    <div class="grid grid-cols-3 gap-4 mb-8">
 
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Membres actifs</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900">{{ latest.membersCount ?? '—' }}</p>
-            </div>
-
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Revenus ce mois</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900">
-                    {% if latest.revenueMonth is defined %}
-                        {{ (latest.revenueMonth / 100)|number_format(2, ',', ' ') }} €
-                    {% else %}—{% endif %}
-                </p>
-            </div>
-
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Commandes</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900">{{ latest.ordersCount ?? '—' }}</p>
-            </div>
-
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Paiements en attente</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900">
-                    {% if latest.pendingAmount is defined %}
-                        {{ (latest.pendingAmount / 100)|number_format(2, ',', ' ') }} €
-                    {% else %}—{% endif %}
-                </p>
-            </div>
-
-        </div>
-    {% else %}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {% for label in ['Membres actifs', 'Revenus ce mois', 'Commandes', 'Paiements en attente'] %}
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 animate-pulse">
-                    <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">{{ label }}</p>
-                    <div class="mt-2 h-8 w-20 bg-gray-100 rounded"></div>
+        <a href="{{ path('school_members_list', {type: 'students'}) }}"
+           class="group bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition">
+                    <svg class="h-4 w-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    {# Quick links #}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
-        <a href="{{ path('school_members_list', {type: 'students'}) }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
-            <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-                <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <p class="text-sm font-medium text-gray-500">Élèves</p>
             </div>
-            <div class="flex-1 min-w-0">
-                <p class="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition">Élèves</p>
-                <p class="text-xs text-gray-400">Gérer les membres</p>
-            </div>
-            <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <p class="text-3xl font-bold text-gray-900">{{ countStudents }}</p>
         </a>
 
-        <a href="{{ path('school_orders_list') }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
-            <div class="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+        <a href="{{ path('school_members_list', {type: 'teachers'}) }}"
+           class="group bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="h-8 w-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0 group-hover:bg-violet-100 transition">
+                    <svg class="h-4 w-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <p class="text-sm font-medium text-gray-500">Professeurs</p>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ countTeachers }}</p>
+        </a>
+
+        <a href="{{ path('school_members_list', {type: 'admins'}) }}"
+           class="group bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-gray-200 transition">
+                    <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <p class="text-sm font-medium text-gray-500">Admins</p>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ countAdmins }}</p>
+        </a>
+
+    </div>
+
+    {# Raccourcis #}
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Accès rapides</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <a href="{{ path('school_orders_list') }}"
+           class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0 group-hover:bg-green-100 transition">
                 <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition">Commandes</p>
-                <p class="text-xs text-gray-400">Voir les inscriptions</p>
+                <p class="text-xs text-gray-400">{{ countOrders }} au total</p>
             </div>
             <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </a>
 
-        <a href="{{ path('school_events') }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
-            <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+        <a href="{{ path('school_events') }}"
+           class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition">
                 <svg class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition">Cours &amp; événements</p>
-                <p class="text-xs text-gray-400">Planning de la saison</p>
+                <p class="text-xs text-gray-400">{{ countCours }} cette saison</p>
             </div>
             <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </a>
 
-        <a href="{{ path('school_fast_count') }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
-            <div class="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+        <a href="{{ path('school_fast_count') }}"
+           class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center shrink-0 group-hover:bg-purple-100 transition">
                 <svg class="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             </div>
             <div class="flex-1 min-w-0">
