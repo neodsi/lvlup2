@@ -28,6 +28,10 @@ class HomeController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function home(Request $request): Response
     {
+        if ($this->isGranted('ROLE_SCHOOL')) {
+            return $this->redirectToRoute('app_admin');
+        }
+
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 

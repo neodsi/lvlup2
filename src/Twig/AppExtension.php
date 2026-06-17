@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use App\Entity\Profile;
 use App\Entity\TeamProfile;
 use App\Enum\TeamRole;
 use App\Service\TeamContextService;
@@ -32,6 +33,7 @@ class AppExtension extends AbstractExtension
         return [
             new TwigFunction('is_team_admin', $this->isTeamAdmin(...)),
             new TwigFunction('current_team_profile', $this->currentTeamProfile(...)),
+            new TwigFunction('primary_profile', $this->primaryProfile(...)),
         ];
     }
 
@@ -59,6 +61,30 @@ class AppExtension extends AbstractExtension
     public function isTeamAdmin(TeamProfile $teamProfile): bool
     {
         return in_array($teamProfile->getRole(), [TeamRole::TeamAdmin, TeamRole::TeamOwner], true);
+    }
+
+    /**
+     * Returns the primary Profile of the current authenticated user.
+     */
+    public function primaryProfile(): ?Profile
+    {
+        $token = $this->tokenStorage->getToken();
+        if ($token === null) {
+            return null;
+        }
+
+        $user = $token->getUser();
+        if (!$user instanceof \App\Entity\User) {
+            return null;
+        }
+
+        foreach ($user->getProfiles() as $profile) {
+            if ($profile->isPrimary() && $profile->getDeletedAt() === null) {
+                return $profile;
+            }
+        }
+
+        return null;
     }
 
     /**

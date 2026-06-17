@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>lvlup — Gestion d'écoles de danse</title>
+    <title>LVL UP — Gestion d'écoles de danse</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -22,7 +22,10 @@
 {# ── Navbar ── #}
 <header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <span class="text-2xl font-bold text-indigo-600 tracking-tight">lvlup</span>
+        <a href="/" class="flex items-center gap-2">
+            <img src="/assets/logo_lvl_up.png" alt="LVL UP" class="h-9 w-auto">
+            <span class="text-2xl font-bold text-indigo-600 tracking-tight">LVL UP</span>
+        </a>
         <nav class="flex items-center gap-4">
             <a href="{{ path('app_login') }}"
                class="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
@@ -196,8 +199,11 @@
 {# ── Footer ── #}
 <footer class="py-8 px-6 border-t border-gray-100">
     <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span class="font-bold text-indigo-600">lvlup</span>
-        <p class="text-sm text-gray-400">&copy; {{ "now"|date("Y") }} lvlup — Gestion d'écoles de danse</p>
+        <a href="/" class="flex items-center gap-2">
+            <img src="/assets/logo_lvl_up.png" alt="LVL UP" class="h-7 w-auto">
+            <span class="font-bold text-indigo-600">LVL UP</span>
+        </a>
+        <p class="text-sm text-gray-400">&copy; {{ "now"|date("Y") }} LVL UP — Gestion d'écoles de danse</p>
         <div class="flex gap-6 text-sm text-gray-400">
             <a href="{{ path('app_login') }}" class="hover:text-indigo-600 transition-colors">Connexion</a>
             <a href="{{ path('app_signup') }}" class="hover:text-indigo-600 transition-colors">Inscription</a>

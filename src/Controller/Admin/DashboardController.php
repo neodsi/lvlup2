@@ -144,13 +144,21 @@ class DashboardController extends AbstractController
         $user = $this->em->getRepository(User::class)->find($userId);
 
         if ($user === null) {
-            throw $this->createNotFoundException('User not found.');
+            throw $this->createNotFoundException('Utilisateur introuvable.');
+        }
+
+        if ($user->getId() === $this->getUser()?->getUserIdentifier()) {
+            throw $this->createAccessDeniedException('Impossible de s\'impersoner soi-même.');
+        }
+
+        if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            throw $this->createAccessDeniedException('Impossible d\'impersoner un administrateur.');
         }
 
         return $this->redirect('/?_switch_user=' . urlencode($user->getEmail()));
     }
 
-    #[Route('/admin/switch-back', name: 'app_admin_switch_back')]
+    #[Route('/switch-back', name: 'app_admin_switch_back')]
     public function switchBack(): Response
     {
         return $this->redirect('/?_switch_user=_exit');

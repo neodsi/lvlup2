@@ -40,9 +40,8 @@ class SignupController extends AbstractController
             ]);
         }
 
-        $email           = trim((string) $request->request->get('email', ''));
-        $password        = (string) $request->request->get('password', '');
-        $passwordConfirm = (string) $request->request->get('password_confirm', '');
+        $email    = trim((string) $request->request->get('email', ''));
+        $password = (string) $request->request->get('password', '');
 
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->addFlash('error', 'Veuillez saisir une adresse e-mail valide.');
@@ -52,12 +51,6 @@ class SignupController extends AbstractController
 
         if (strlen($password) < 8) {
             $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères.');
-
-            return $this->render('auth/signup.html.twig', ['email' => $email]);
-        }
-
-        if ($password !== $passwordConfirm) {
-            $this->addFlash('error', 'Les mots de passe ne correspondent pas.');
 
             return $this->render('auth/signup.html.twig', ['email' => $email]);
         }

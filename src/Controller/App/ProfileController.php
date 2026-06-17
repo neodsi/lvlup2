@@ -159,14 +159,14 @@ class ProfileController extends AbstractController
         // Delete old avatar file if it exists
         $oldPath = $profile->getAvatarPath();
         if ($oldPath !== null) {
-            $oldFile = $this->projectDir . '/public/' . ltrim($oldPath, '/');
+            $oldFile = $this->projectDir . '/public/' . $oldPath;
             if (is_file($oldFile)) {
                 @unlink($oldFile);
             }
         }
 
         $file->move($destDir, $filename);
-        $profile->setAvatarPath('/uploads/profiles/' . $profile->getId() . '/' . $filename);
+        $profile->setAvatarPath('uploads/profiles/' . $profile->getId() . '/' . $filename);
 
         return null;
     }

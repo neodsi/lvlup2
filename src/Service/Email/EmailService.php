@@ -13,22 +13,19 @@ use App\Entity\Team;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Sentry\SentryBundle\SentryBundle;
-use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Twig\Environment;
 
 class EmailService
 {
-    private const FROM    = 'noreply@lvlup.com';
-    private const API_URL = 'https://api.resend.com/emails';
+    private const FROM = 'noreply@lvlup.com';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly Environment $twig,
         private readonly LoggerInterface $logger,
-        private readonly HttpClientInterface $httpClient,
-        private readonly string $resendApiKey,
+        private readonly MailerInterface $mailer,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -36,17 +33,10 @@ class EmailService
     // -------------------------------------------------------------------------
 
     /**
-     * Send a raw HTML e-mail via the Resend HTTP API.
-     *
-     * Before sending, the address is checked against the email_bounces table.
-     * On failure the error is logged and captured to Sentry – an exception is
-     * then re-thrown so callers are aware of the failure (never silent drop).
-     *
-     * @throws \RuntimeException on API or HTTP error
+     * @throws \RuntimeException on send failure
      */
     public function send(string $to, string $subject, string $htmlBody): void
     {
-        // Bounce check
         $bounce = $this->entityManager->getRepository(EmailBounce::class)->findOneBy(['email' => $to]);
 
         if ($bounce !== null) {
@@ -61,29 +51,13 @@ class EmailService
         }
 
         try {
-            $response = $this->httpClient->request('POST', self::API_URL, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->resendApiKey,
-                    'Content-Type'  => 'application/json',
-                ],
-                'json' => [
-                    'from'    => self::FROM,
-                    'to'      => [$to],
-                    'subject' => $subject,
-                    'html'    => $htmlBody,
-                ],
-            ]);
+            $email = (new Email())
+                ->from(self::FROM)
+                ->to($to)
+                ->subject($subject)
+                ->html($htmlBody);
 
-            $statusCode = $response->getStatusCode();
-
-            if ($statusCode < 200 || $statusCode >= 300) {
-                $body = $response->getContent(false);
-                throw new \RuntimeException(sprintf(
-                    'Resend API returned HTTP %d: %s',
-                    $statusCode,
-                    $body,
-                ));
-            }
+            $this->mailer->send($email);
         } catch (\Throwable $e) {
             $this->logger->error('EmailService: failed to send e-mail', [
                 'to'        => $to,
@@ -122,7 +96,7 @@ class EmailService
     {
         $this->sendTemplated(
             $user->getEmail(),
-            'Confirmez votre adresse e-mail – LvlUp',
+            'Confirmez votre adresse e-mail – LVL UP',
             'confirm',
             [
                 'user'               => $user,
@@ -135,7 +109,7 @@ class EmailService
     {
         $this->sendTemplated(
             $user->getEmail(),
-            'Réinitialisation de votre mot de passe – LvlUp',
+            'Réinitialisation de votre mot de passe – LVL UP',
             'reset_password',
             [
                 'user'        => $user,
@@ -149,7 +123,7 @@ class EmailService
     {
         $this->sendTemplated(
             $to,
-            sprintf('Vous avez été invité(e) à rejoindre %s – LvlUp', $team->getName()),
+            sprintf('Vous avez été invité(e) à rejoindre %s – LVL UP', $team->getName()),
             'invitation',
             [
                 'team'         => $team,
@@ -174,7 +148,7 @@ class EmailService
 
         $this->sendTemplated(
             $email,
-            'Confirmation de votre commande – LvlUp',
+            'Confirmation de votre commande – LVL UP',
             'order_confirmation',
             [
                 'order'   => $order,
@@ -197,9 +171,9 @@ class EmailService
         }
 
         $subject = match (true) {
-            $dayOffset < 0  => sprintf('Rappel : votre paiement est dû dans %d jour(s) – LvlUp', abs($dayOffset)),
-            $dayOffset === 0 => 'Votre paiement est dû aujourd\'hui – LvlUp',
-            default          => sprintf('Votre paiement est en retard de %d jour(s) – LvlUp', $dayOffset),
+            $dayOffset < 0  => sprintf('Rappel : votre paiement est dû dans %d jour(s) – LVL UP', abs($dayOffset)),
+            $dayOffset === 0 => 'Votre paiement est dû aujourd\'hui – LVL UP',
+            default          => sprintf('Votre paiement est en retard de %d jour(s) – LVL UP', $dayOffset),
         };
 
         $this->sendTemplated(
@@ -229,7 +203,7 @@ class EmailService
 
         $this->sendTemplated(
             $email,
-            'Votre paiement automatique a été effectué – LvlUp',
+            'Votre paiement automatique a été effectué – LVL UP',
             'autopay_confirmation',
             [
                 'payment' => $payment,

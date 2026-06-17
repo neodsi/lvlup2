@@ -1,8 +1,8 @@
-{% extends 'layout/app.html.twig' %}
+{% extends (is_granted('ROLE_SCHOOL') or is_granted('ROLE_PREVIOUS_ADMIN')) ? 'layout/admin.html.twig' : 'layout/app.html.twig' %}
 
-{% block title %}Modifier le profil — LvlUp{% endblock %}
+{% block title %}Modifier le profil — LVL UP{% endblock %}
 
-{% block app_content %}
+{% block admin_content %}
 <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <div class="flex items-center gap-3 mb-6">
