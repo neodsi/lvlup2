@@ -22,7 +22,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin', name: 'app_admin')]
-    #[IsGranted('ROLE_MODERATOR')]
+    #[IsGranted('ROLE_SCHOOL')]
     public function dashboard(): Response
     {
         $totalTeams = $this->em->createQueryBuilder()
@@ -53,7 +53,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/schools', name: 'app_admin_schools')]
-    #[IsGranted('ROLE_MODERATOR')]
+    #[IsGranted('ROLE_SCHOOL')]
     public function schools(Request $request): Response
     {
         $statusFilter = $request->query->get('status');
@@ -81,7 +81,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/schools/{id}', name: 'app_admin_school_detail')]
-    #[IsGranted('ROLE_MODERATOR')]
+    #[IsGranted('ROLE_SCHOOL')]
     public function schoolDetail(string $id, Request $request): Response
     {
         $team = $this->em->getRepository(Team::class)->find($id);
@@ -113,7 +113,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/users', name: 'app_admin_users')]
-    #[IsGranted('ROLE_MODERATOR')]
+    #[IsGranted('ROLE_SCHOOL')]
     public function users(Request $request): Response
     {
         $search = $request->query->get('q', '');

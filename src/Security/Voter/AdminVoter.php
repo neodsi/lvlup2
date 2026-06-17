@@ -10,7 +10,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
  * Permissions:
- *   admin:access      – ROLE_MODERATOR or higher
+ *   admin:access      – ROLE_SCHOOL or higher
  *   admin:impersonate – ROLE_ADMIN only
  *
  * Subject: null (no specific resource needed — these are app-level permissions).
@@ -40,7 +40,7 @@ final class AdminVoter extends Voter
         $roles = $token->getRoleNames();
 
         return match ($attribute) {
-            self::ACCESS      => in_array('ROLE_MODERATOR', $roles, true),
+            self::ACCESS      => in_array('ROLE_SCHOOL', $roles, true),
             self::IMPERSONATE => in_array('ROLE_ADMIN', $roles, true),
             default           => false,
         };

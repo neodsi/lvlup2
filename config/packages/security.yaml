@@ -34,8 +34,8 @@ security:
                 parameter: _switch_user
     role_hierarchy:
         ROLE_STUDENT: [ROLE_USER]
-        ROLE_MODERATOR: [ROLE_USER]
-        ROLE_SCHOOL: [ROLE_MODERATOR]
+        ROLE_TEACHER: [ROLE_USER]
+        ROLE_SCHOOL: [ROLE_TEACHER]
         ROLE_ADMIN: [ROLE_SCHOOL]
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
@@ -46,7 +46,7 @@ security:
         - { path: ^/invitations, roles: PUBLIC_ACCESS }
         - { path: ^/shop, roles: PUBLIC_ACCESS }
         - { path: ^/iframes, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_MODERATOR }
+        - { path: ^/admin, roles: ROLE_SCHOOL }
         - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }
 
