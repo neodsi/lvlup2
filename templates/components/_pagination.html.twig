@@ -33,7 +33,7 @@
     {# Left: item count summary #}
     <p class="hidden md:block text-sm text-gray-500">
         {% set from = ((current - 1) * pagination.itemsPerPage) + 1 %}
-        {% set to   = [current * pagination.itemsPerPage, pagination.totalItems]|min %}
+        {% set to   = min(current * pagination.itemsPerPage, pagination.totalItems) %}
         {{ from }}–{{ to }} sur {{ pagination.totalItems }} résultats
     </p>
 

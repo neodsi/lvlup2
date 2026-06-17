@@ -18,11 +18,8 @@ class Profile
     #[ORM\Column(type: 'string', length: 36)]
     private string $id;
 
-    #[ORM\Column(type: 'string', length: 36, nullable: true)]
-    private ?string $userId = null;
-
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'profiles')]
-    #[ORM\JoinColumn(name: 'userId', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?User $user = null;
 
     #[ORM\Column(type: 'string', length: 100)]
@@ -76,7 +73,7 @@ class Profile
 
     public function getUserId(): ?string
     {
-        return $this->userId;
+        return $this->user?->getId();
     }
 
     public function getUser(): ?User
@@ -86,8 +83,7 @@ class Profile
 
     public function setUser(?User $user): static
     {
-        $this->user   = $user;
-        $this->userId = $user?->getId();
+        $this->user = $user;
 
         return $this;
     }

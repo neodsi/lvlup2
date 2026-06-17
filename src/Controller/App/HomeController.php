@@ -60,7 +60,7 @@ class HomeController extends AbstractController
             $team = $teams[0];
             $request->getSession()->set('currentTeamId', $team->getId());
 
-            return $this->redirectToRoute('app_school_home', ['slug' => $team->getCurrentSlug()]);
+            return $this->redirectToRoute('school_home');
         }
 
         return $this->render('app/home.html.twig', [

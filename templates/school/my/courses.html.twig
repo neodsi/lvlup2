@@ -1,0 +1,64 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}Mes cours — {{ team.name }}{% endblock %}
+
+{% block school_content %}
+<div class="max-w-4xl mx-auto">
+
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-gray-900">Mes cours</h1>
+        <p class="text-sm text-gray-500 mt-0.5">Vos prochains cours et présences.</p>
+    </div>
+
+    {% include 'components/_flash.html.twig' %}
+
+    {% if occurrences is empty %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-16 text-center">
+            <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="mt-4 text-sm font-medium text-gray-700">Aucun cours</p>
+            <p class="mt-1 text-sm text-gray-400">Vous n'êtes inscrit(e) à aucun cours pour le moment.</p>
+        </div>
+    {% else %}
+        <div class="space-y-3">
+            {% for eop in occurrences %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-4 flex items-center gap-4">
+                    <div class="w-12 h-12 flex-shrink-0 rounded-lg bg-indigo-50 text-indigo-600 flex flex-col items-center justify-center text-xs font-semibold leading-tight">
+                        {% if eop.occurence is defined and eop.occurence.occurenceAt is defined %}
+                            <span>{{ eop.occurence.occurenceAt|date('d') }}</span>
+                            <span>{{ eop.occurence.occurenceAt|date('M') }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900 truncate">
+                            {% if eop.occurence is defined and eop.occurence.event is defined %}
+                                {{ eop.occurence.event.name ?? 'Cours' }}
+                            {% else %}
+                                Cours
+                            {% endif %}
+                        </p>
+                        {% if eop.occurence is defined and eop.occurence.occurenceAt is defined %}
+                            <p class="text-xs text-gray-500 mt-0.5">{{ eop.occurence.occurenceAt|date('l d F Y à H:i') }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex-shrink-0">
+                        {% set status = eop.status.value ?? 'unknown' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if status == 'present' %}bg-green-50 text-green-700
+                            {% elseif status == 'absent' %}bg-red-50 text-red-600
+                            {% elseif status == 'excused' %}bg-amber-50 text-amber-700
+                            {% else %}bg-gray-100 text-gray-500{% endif %}">
+                            {% if status == 'present' %}Présent
+                            {% elseif status == 'absent' %}Absent
+                            {% elseif status == 'excused' %}Excusé
+                            {% else %}—{% endif %}
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

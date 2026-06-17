@@ -93,7 +93,7 @@
                                     </div>
                                     <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                                         <div class="{% if usedPct >= 100 %}bg-red-400{% elseif usedPct >= 75 %}bg-amber-400{% else %}bg-indigo-500{% endif %} h-2 rounded-full"
-                                             style="width: {{ [usedPct, 100]|min }}%"></div>
+                                             style="width: {{ min(usedPct, 100) }}%"></div>
                                     </div>
                                     <p class="text-xs text-gray-400 mt-1 text-right">{{ pkg.classesDone }} / {{ pkg.classesQty }}</p>
                                 </div>

@@ -1,0 +1,91 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}Paramètres de l'école — {{ team.name }}{% endblock %}
+
+{% block school_content %}
+<div class="max-w-2xl mx-auto">
+
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-gray-900">Paramètres de l'école</h1>
+        <p class="text-sm text-gray-500 mt-0.5">Informations générales et facturation.</p>
+    </div>
+
+    {% include 'components/_flash.html.twig' %}
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <form method="post" action="{{ path('school_edit') }}" class="divide-y divide-gray-100">
+
+            <div class="px-6 py-5 space-y-4">
+
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom de l'école <span class="text-red-500">*</span></label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value="{{ team.name }}"
+                        required
+                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                    >
+                </div>
+
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <input
+                        type="text"
+                        id="type"
+                        name="type"
+                        value="{{ team.type ?? '' }}"
+                        placeholder="Danse, Musique, Sport…"
+                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                    >
+                </div>
+
+                <div>
+                    <label for="invoicePrefix" class="block text-sm font-medium text-gray-700 mb-1">Préfixe facture</label>
+                    <input
+                        type="text"
+                        id="invoicePrefix"
+                        name="invoicePrefix"
+                        value="{{ team.invoicePrefix ?? '' }}"
+                        maxlength="20"
+                        placeholder="FAC-"
+                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                    >
+                </div>
+
+                <div>
+                    <label for="invoiceNumberingStart" class="block text-sm font-medium text-gray-700 mb-1">Numérotation départ</label>
+                    <input
+                        type="number"
+                        id="invoiceNumberingStart"
+                        name="invoiceNumberingStart"
+                        value="{{ team.invoiceNumberingStart }}"
+                        min="1"
+                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                    >
+                </div>
+
+                <div>
+                    <label for="invoiceAddress" class="block text-sm font-medium text-gray-700 mb-1">Adresse de facturation</label>
+                    <textarea
+                        id="invoiceAddress"
+                        name="invoiceAddress"
+                        rows="3"
+                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                    >{{ team.invoiceAddress ?? '' }}</textarea>
+                </div>
+
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end">
+                <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+                    Enregistrer
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
