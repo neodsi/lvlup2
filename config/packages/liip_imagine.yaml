@@ -30,3 +30,19 @@ liip_imagine:
       filters:
         thumbnail: { size: [150, 150], mode: outbound }
         strip: ~
+    team_photo_main:
+      quality: 85
+      filters:
+        thumbnail: { size: [1200, 675], mode: outbound }
+        strip: ~
+    team_photo_main_sm:
+      quality: 80
+      filters:
+        thumbnail: { size: [600, 338], mode: outbound }
+        strip: ~
+    team_logo:
+      quality: 90
+      filters:
+        thumbnail: { size: [300, 300], mode: inset }
+        background: { size: [300, 300], position: center, color: '#ffffff' }
+        strip: ~

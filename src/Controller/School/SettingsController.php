@@ -6,18 +6,22 @@ namespace App\Controller\School;
 
 use App\Entity\Room;
 use App\Entity\Season;
+use App\Entity\Team;
 use App\Entity\TeamProfileSeason;
 use App\Entity\User;
+use App\Enum\FeePaidBy;
 use App\Security\Voter\SeasonVoter;
 use App\Security\Voter\TeamVoter;
 use App\Service\Season\SeasonService;
 use App\Service\TeamContextService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 #[Route('/school/settings')]
 #[IsGranted('ROLE_USER')]
@@ -30,8 +34,8 @@ final class SettingsController extends AbstractController
     ) {
     }
 
-    #[Route('', name: 'school_settings', methods: ['GET'])]
-    public function index(): Response
+    #[Route('', name: 'school_settings', methods: ['GET', 'POST'])]
+    public function index(Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -43,11 +47,82 @@ final class SettingsController extends AbstractController
 
         $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
 
-        return $this->render('school/settings/index.html.twig', ['team' => $team]);
+        $slugger       = new AsciiSlugger();
+        $suggestedSlug = strtolower($slugger->slug($team->getName())->toString());
+
+        if ($request->isMethod('POST')) {
+            $team->setName((string) $request->request->get('name', $team->getName()));
+            $team->setWebsiteUrl($request->request->get('websiteUrl') ?: null);
+            $team->setContactEmail($request->request->get('contactEmail') ?: null);
+            $team->setPhone($request->request->get('phone') ?: null);
+            $team->setDescription($request->request->get('description') ?: null);
+            $team->setSchedule($request->request->get('schedule') ?: null);
+            $team->setPricing($request->request->get('pricing') ?: null);
+            $team->setReadAndCheck($request->request->get('readAndCheck') ?: null);
+
+            $slugRaw = $request->request->get('slug') ?: null;
+            if ($slugRaw) {
+                $slug = strtolower($slugger->slug($slugRaw)->toString());
+                if ($slug !== $team->getCurrentSlug()) {
+                    $conflict = $this->em->createQueryBuilder()
+                        ->select('COUNT(t.id)')
+                        ->from(Team::class, 't')
+                        ->where('t.currentSlug = :slug')
+                        ->andWhere('t.id != :id')
+                        ->setParameter('slug', $slug)
+                        ->setParameter('id', $team->getId())
+                        ->getQuery()->getSingleScalarResult();
+
+                    if ($conflict > 0) {
+                        $this->addFlash('error', 'Cet identifiant public est déjà utilisé par une autre école.');
+                        return $this->redirectToRoute('school_settings');
+                    }
+
+                    $prev = $team->getPreviousSlugs() ?? [];
+                    if ($team->getCurrentSlug()) {
+                        $prev[] = $team->getCurrentSlug();
+                    }
+                    $team->setPreviousSlugs(array_values(array_unique($prev)));
+                    $team->setCurrentSlug($slug);
+                }
+            }
+
+            $uploadDir = $this->getParameter('kernel.project_dir') . '/public/media/teams/' . $team->getId();
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0775, true);
+            }
+
+            /** @var UploadedFile|null $photo */
+            $photo = $request->files->get('photo');
+            if ($photo instanceof UploadedFile) {
+                $filename = 'photo.' . $photo->guessExtension();
+                $photo->move($uploadDir, $filename);
+                $team->setAvatarPath('media/teams/' . $team->getId() . '/' . $filename);
+            }
+
+            /** @var UploadedFile|null $logo */
+            $logo = $request->files->get('logo');
+            if ($logo instanceof UploadedFile) {
+                $filename = 'logo.' . $logo->guessExtension();
+                $logo->move($uploadDir, $filename);
+                $team->setLogoPath('media/teams/' . $team->getId() . '/' . $filename);
+            }
+
+            $team->setUpdatedAt(new \DateTimeImmutable());
+            $this->em->flush();
+            $this->addFlash('success', 'Paramètres généraux mis à jour.');
+
+            return $this->redirectToRoute('school_settings');
+        }
+
+        return $this->render('school/settings/index.html.twig', [
+            'team'          => $team,
+            'suggestedSlug' => $suggestedSlug,
+        ]);
     }
 
-    #[Route('/legal', name: 'school_settings_legal', methods: ['GET'])]
-    public function legal(): Response
+    #[Route('/legal', name: 'school_settings_legal', methods: ['GET', 'POST'])]
+    public function legal(Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -58,6 +133,42 @@ final class SettingsController extends AbstractController
         }
 
         $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+
+        if ($request->isMethod('POST')) {
+            $team->setCurrency($request->request->get('currency', 'EUR'));
+            $team->setCompanyName($request->request->get('companyName') ?: null);
+            $team->setSiret($request->request->get('siret') ?: null);
+            $team->setIban($request->request->get('iban') ?: null);
+            $team->setApeNaf($request->request->get('apeNaf') ?: null);
+            $team->setIsCollectingVat((bool) $request->request->get('isCollectingVat'));
+            $team->setVatNumber($request->request->get('vatNumber') ?: null);
+            $team->setInvoiceAddress($request->request->get('invoiceAddress') ?: null);
+            $team->setAddressText($request->request->get('addressText') ?: null);
+            $team->setAddressLat($request->request->get('addressLat') ?: null);
+            $team->setAddressLng($request->request->get('addressLng') ?: null);
+
+            $feePaidBy = FeePaidBy::tryFrom($request->request->get('feePaidBy', 'student'));
+            if ($feePaidBy) {
+                $team->setFeePaidBy($feePaidBy);
+            }
+
+            $rawMethods = $request->request->all('methods') ?: [];
+            $paymentMethods = [];
+            foreach ($rawMethods as $key => $dims) {
+                $paymentMethods[] = [
+                    'id'                          => $key,
+                    'allowed_for_one_shot'        => !empty($dims['one_shot']),
+                    'allowed_for_multiple_payments' => !empty($dims['multiple']),
+                ];
+            }
+            $team->setPaymentMethods($paymentMethods);
+
+            $team->setUpdatedAt(new \DateTimeImmutable());
+            $this->em->flush();
+            $this->addFlash('success', 'Informations légales mises à jour.');
+
+            return $this->redirectToRoute('school_settings_legal');
+        }
 
         return $this->render('school/settings/legal.html.twig', ['team' => $team]);
     }

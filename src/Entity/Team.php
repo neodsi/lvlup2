@@ -66,6 +66,60 @@ class Team
     #[ORM\Column(type: 'string', enumType: FeePaidBy::class, options: ['default' => 'student'])]
     private FeePaidBy $feePaidBy = FeePaidBy::Student;
 
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $logoPath = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $websiteUrl = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $contactEmail = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $phone = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $schedule = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $pricing = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $readAndCheck = null;
+
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $addressText = null;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    private ?string $addressLat = null;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    private ?string $addressLng = null;
+
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $siret = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $iban = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $companyName = null;
+
+    #[ORM\Column(type: 'string', length: 10, nullable: true)]
+    private ?string $apeNaf = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isCollectingVat = false;
+
+    #[ORM\Column(type: 'string', length: 30, nullable: true)]
+    private ?string $vatNumber = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $paymentMethods = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -314,5 +368,59 @@ class Team
 
         return $this;
     }
+
+    public function getLogoPath(): ?string { return $this->logoPath; }
+    public function setLogoPath(?string $v): static { $this->logoPath = $v; return $this; }
+
+    public function getWebsiteUrl(): ?string { return $this->websiteUrl; }
+    public function setWebsiteUrl(?string $v): static { $this->websiteUrl = $v; return $this; }
+
+    public function getContactEmail(): ?string { return $this->contactEmail; }
+    public function setContactEmail(?string $v): static { $this->contactEmail = $v; return $this; }
+
+    public function getPhone(): ?string { return $this->phone; }
+    public function setPhone(?string $v): static { $this->phone = $v; return $this; }
+
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $v): static { $this->description = $v; return $this; }
+
+    public function getSchedule(): ?string { return $this->schedule; }
+    public function setSchedule(?string $v): static { $this->schedule = $v; return $this; }
+
+    public function getPricing(): ?string { return $this->pricing; }
+    public function setPricing(?string $v): static { $this->pricing = $v; return $this; }
+
+    public function getReadAndCheck(): ?string { return $this->readAndCheck; }
+    public function setReadAndCheck(?string $v): static { $this->readAndCheck = $v; return $this; }
+
+    public function getAddressText(): ?string { return $this->addressText; }
+    public function setAddressText(?string $v): static { $this->addressText = $v; return $this; }
+
+    public function getAddressLat(): ?string { return $this->addressLat; }
+    public function setAddressLat(?string $v): static { $this->addressLat = $v; return $this; }
+
+    public function getAddressLng(): ?string { return $this->addressLng; }
+    public function setAddressLng(?string $v): static { $this->addressLng = $v; return $this; }
+
+    public function getSiret(): ?string { return $this->siret; }
+    public function setSiret(?string $v): static { $this->siret = $v; return $this; }
+
+    public function getIban(): ?string { return $this->iban; }
+    public function setIban(?string $v): static { $this->iban = $v; return $this; }
+
+    public function getCompanyName(): ?string { return $this->companyName; }
+    public function setCompanyName(?string $v): static { $this->companyName = $v; return $this; }
+
+    public function getApeNaf(): ?string { return $this->apeNaf; }
+    public function setApeNaf(?string $v): static { $this->apeNaf = $v; return $this; }
+
+    public function isCollectingVat(): bool { return $this->isCollectingVat; }
+    public function setIsCollectingVat(bool $v): static { $this->isCollectingVat = $v; return $this; }
+
+    public function getVatNumber(): ?string { return $this->vatNumber; }
+    public function setVatNumber(?string $v): static { $this->vatNumber = $v; return $this; }
+
+    public function getPaymentMethods(): ?array { return $this->paymentMethods; }
+    public function setPaymentMethods(?array $v): static { $this->paymentMethods = $v; return $this; }
 
 }

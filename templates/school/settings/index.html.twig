@@ -11,33 +11,279 @@
 {% block school_content %}
 <div class="py-8">
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Paramètres</h1>
-    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Paramètres</h1>
 
     {% include 'school/settings/_tabs.html.twig' %}
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
-        <div class="px-6 py-5">
-            <h2 class="text-base font-semibold text-gray-900">Informations générales</h2>
-            <p class="text-sm text-gray-500 mt-1">Nom de la structure, coordonnées et autres informations.</p>
-        </div>
-        <div class="px-6 py-5">
-            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                <div>
-                    <dt class="font-medium text-gray-700">Nom</dt>
-                    <dd class="mt-1 text-gray-900">{{ team.name }}</dd>
+    <form method="POST" action="{{ path('school_settings') }}" enctype="multipart/form-data" class="space-y-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('settings_general') }}">
+
+        {# Photo & Logo #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Visuels</h2>
+            </div>
+            <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                {# Photo 16:9 #}
+                <div class="flex flex-col">
+                    <p class="text-sm font-medium text-gray-700">Photo principale</p>
+                    <p class="text-xs text-gray-400 mb-2">Format idéal&nbsp;: 16:9 (ex&nbsp;: 1920×1080 px)</p>
+                    <div id="photo-preview-wrap" class="relative w-full aspect-video rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center mb-3 flex-1">
+                        {% if team.avatarPath %}
+                            <img id="photo-preview" src="{{ team.avatarPath | imagine_filter('team_photo_main') }}" alt="Photo" class="absolute inset-0 w-full h-full object-cover">
+                        {% else %}
+                            <img id="photo-preview" src="" alt="" class="absolute inset-0 w-full h-full object-cover hidden">
+                        {% endif %}
+                        <div id="photo-placeholder" class="flex flex-col items-center gap-1 text-gray-400 {% if team.avatarPath %}hidden{% endif %}">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span class="text-xs">Aucune photo</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 px-3 py-2 text-sm text-gray-700 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Choisir un fichier
+                            <input type="file" name="photo" id="photo-input" accept="image/*" class="sr-only">
+                        </label>
+                        <button type="button" id="camera-btn"
+                                class="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 px-3 py-2 text-sm text-gray-700 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Caméra
+                        </button>
+                    </div>
+                    {# Camera capture modal #}
+                    <div id="camera-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-xl shadow-xl p-4 w-full max-w-lg">
+                            <p class="text-sm font-semibold text-gray-900 mb-3">Prendre une photo</p>
+                            <video id="camera-video" autoplay playsinline class="w-full rounded-lg bg-black aspect-video"></video>
+                            <canvas id="camera-canvas" class="hidden"></canvas>
+                            <div class="flex gap-2 mt-3">
+                                <button type="button" id="camera-capture" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">Capturer</button>
+                                <button type="button" id="camera-close" class="flex-1 border border-gray-300 text-sm text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition">Annuler</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <dt class="font-medium text-gray-700">Identifiant</dt>
-                    <dd class="mt-1 text-gray-500 font-mono text-xs">{{ team.id }}</dd>
+
+                {# Logo #}
+                <div class="flex flex-col">
+                    <p class="text-sm font-medium text-gray-700">Logo</p>
+                    <p class="text-xs text-gray-400 mb-2">Format idéal&nbsp;: 1:1 carré (ex&nbsp;: 256×256 px)</p>
+                    <div class="relative flex items-center justify-center w-full aspect-square rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden mb-3 flex-1">
+                        {% if team.logoPath %}
+                            <img id="logo-preview" src="{{ team.logoPath | imagine_filter('team_logo') }}" alt="Logo" class="max-h-28 max-w-full object-contain">
+                        {% else %}
+                            <img id="logo-preview" src="" alt="" class="max-h-28 max-w-full object-contain hidden">
+                        {% endif %}
+                        <span id="logo-placeholder" class="text-xs text-gray-400 {% if team.logoPath %}hidden{% endif %}">Aucun logo</span>
+                    </div>
+                    <label class="flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 px-3 py-2 text-sm text-gray-700 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        Choisir un fichier
+                        <input type="file" name="logo" id="logo-input" accept="image/*" class="sr-only">
+                    </label>
                 </div>
-            </dl>
+            </div>
         </div>
-        <div class="px-6 py-4 rounded-b-xl">
-            <p class="text-xs text-gray-400">Modification des informations générales disponible prochainement.</p>
+
+        {# Informations générales #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Informations générales</h2>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom de l'école <span class="text-red-500">*</span></label>
+                    <input type="text" id="name" name="name" required value="{{ team.name }}"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+                <div class="sm:w-1/2">
+                    <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">Identifiant public (slug)</label>
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm pointer-events-none">lvlup.fr/</span>
+                            <input type="text" id="slug" name="slug"
+                                   value="{{ team.currentSlug ?? suggestedSlug }}"
+                                   placeholder="{{ suggestedSlug }}"
+                                   style="padding-left:72px"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 pr-3 py-2.5 text-sm text-gray-900 font-mono focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <button type="button" id="slug-generate"
+                                title="Regénérer depuis le nom"
+                                class="shrink-0 px-3 py-2.5 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-500 text-xs transition">
+                            ↺ Générer
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-400">Modifiable — l'ancien identifiant sera conservé comme alias.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="websiteUrl" class="block text-sm font-medium text-gray-700 mb-1">Site web</label>
+                        <input type="url" id="websiteUrl" name="websiteUrl" value="{{ team.websiteUrl ?? '' }}"
+                               placeholder="https://..."
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                    <div>
+                        <label for="contactEmail" class="block text-sm font-medium text-gray-700 mb-1">Email de contact</label>
+                        <input type="email" id="contactEmail" name="contactEmail" value="{{ team.contactEmail ?? '' }}"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                </div>
+                <div class="sm:w-1/2">
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <input type="tel" id="phone" name="phone" value="{{ team.phone ?? '' }}"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
         </div>
-    </div>
+
+        {# WYSIWYG fields #}
+        {% set wysiwygFields = [
+            {id: 'description', label: 'Description',   name: 'description',   value: team.description,   hint: 'Présentation de votre école'},
+            {id: 'schedule',    label: 'Horaires',       name: 'schedule',      value: team.schedule,      hint: 'Jours et heures d\'ouverture'},
+            {id: 'pricing',     label: 'Tarifs',         name: 'pricing',       value: team.pricing,       hint: 'Grille tarifaire'},
+            {id: 'readAndCheck',label: 'CGU de l\'élève', name: 'readAndCheck', value: team.readAndCheck,  hint: 'Conditions générales à accepter lors de l\'inscription'},
+        ] %}
+
+        {% for field in wysiwygFields %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">{{ field.label }}</h2>
+                <p class="text-sm text-gray-500 mt-0.5">{{ field.hint }}</p>
+            </div>
+            <div class="px-6 py-5">
+                <div id="editor-{{ field.id }}" class="rounded-lg border border-gray-300 bg-gray-50" style="font-size:14px;min-height:220px"></div>
+                <textarea id="textarea-{{ field.id }}" name="{{ field.name }}" class="hidden">{{ field.value ?? '' }}</textarea>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="flex justify-end">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
+                Enregistrer
+            </button>
+        </div>
+    </form>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ parent() }}
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+(function () {
+    // WYSIWYG editors
+    const fields = ['description', 'schedule', 'pricing', 'readAndCheck'];
+    const editors = {};
+
+    fields.forEach(function (id) {
+        const container = document.getElementById('editor-' + id);
+        const textarea  = document.getElementById('textarea-' + id);
+        if (!container || !textarea) return;
+
+        const quill = new Quill(container, {
+            theme: 'snow',
+            modules: { toolbar: [
+                [{header: [2, 3, false]}],
+                ['bold', 'italic', 'underline'],
+                [{list: 'ordered'}, {list: 'bullet'}],
+                ['link'],
+                ['clean'],
+            ]},
+        });
+
+        if (textarea.value) {
+            quill.root.innerHTML = textarea.value;
+        }
+
+        editors[id] = quill;
+    });
+
+    document.querySelector('form').addEventListener('submit', function () {
+        fields.forEach(function (id) {
+            const ta = document.getElementById('textarea-' + id);
+            if (ta && editors[id]) {
+                ta.value = editors[id].root.innerHTML;
+            }
+        });
+    });
+
+    // Photo preview
+    document.getElementById('photo-input').addEventListener('change', function () {
+        if (!this.files[0]) return;
+        const url = URL.createObjectURL(this.files[0]);
+        const img = document.getElementById('photo-preview');
+        img.src = url;
+        img.classList.remove('hidden');
+        document.getElementById('photo-placeholder').classList.add('hidden');
+    });
+
+    // Logo preview
+    document.getElementById('logo-input').addEventListener('change', function () {
+        if (!this.files[0]) return;
+        const url = URL.createObjectURL(this.files[0]);
+        const img = document.getElementById('logo-preview');
+        img.src = url;
+        img.classList.remove('hidden');
+        document.getElementById('logo-placeholder').classList.add('hidden');
+    });
+
+    // Camera capture
+    let cameraStream = null;
+    document.getElementById('camera-btn').addEventListener('click', async function () {
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('camera-video').srcObject = cameraStream;
+            document.getElementById('camera-modal').classList.remove('hidden');
+        } catch (e) {
+            alert('Impossible d\'accéder à la caméra.');
+        }
+    });
+
+    document.getElementById('camera-capture').addEventListener('click', function () {
+        const video  = document.getElementById('camera-video');
+        const canvas = document.getElementById('camera-canvas');
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(function (blob) {
+            const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+            const dt   = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('photo-input').files = dt.files;
+
+            const url = URL.createObjectURL(blob);
+            const img = document.getElementById('photo-preview');
+            img.src = url;
+            img.classList.remove('hidden');
+            document.getElementById('photo-placeholder').classList.add('hidden');
+
+            stopCamera();
+        }, 'image/jpeg', 0.92);
+    });
+
+    function stopCamera() {
+        if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+        document.getElementById('camera-modal').classList.add('hidden');
+    }
+
+    document.getElementById('camera-close').addEventListener('click', stopCamera);
+
+    // Slug generator
+    const slugGenBtn = document.getElementById('slug-generate');
+    if (slugGenBtn) {
+        slugGenBtn.addEventListener('click', function () {
+            const name = (document.getElementById('name').value || '').trim();
+            const slug = name.toLowerCase()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            document.getElementById('slug').value = slug;
+        });
+    }
+})();
+</script>
 {% endblock %}

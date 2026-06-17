@@ -13,24 +13,337 @@
 {% block school_content %}
 <div class="py-8">
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Paramètres</h1>
-    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Paramètres</h1>
 
     {% include 'school/settings/_tabs.html.twig' %}
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
-        <div class="px-6 py-5">
-            <h2 class="text-base font-semibold text-gray-900">Informations légales</h2>
-            <p class="text-sm text-gray-500 mt-1">Raison sociale, SIRET, numéro de TVA et mentions légales.</p>
+    <form method="POST" action="{{ path('school_settings_legal') }}" class="space-y-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('settings_legal') }}">
+
+        {# Identité légale #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Identité légale</h2>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">Raison sociale</label>
+                    <input type="text" id="companyName" name="companyName" value="{{ team.companyName ?? '' }}"
+                           class="block w-full sm:w-1/2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label for="siret" class="block text-sm font-medium text-gray-700 mb-1">SIRET</label>
+                        <input type="text" id="siret" name="siret" value="{{ team.siret ?? '' }}"
+                               placeholder="14 chiffres" maxlength="14"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 font-mono focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                    <div>
+                        <label for="apeNaf" class="block text-sm font-medium text-gray-700 mb-1">Code APE / NAF</label>
+                        <input type="text" id="apeNaf" name="apeNaf" value="{{ team.apeNaf ?? '' }}"
+                               placeholder="ex : 8551Z" maxlength="6"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 font-mono focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                    <div>
+                        <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">Devise</label>
+                        <input type="text" id="currency" name="currency" value="EUR" readonly
+                               class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500 cursor-not-allowed">
+                        <input type="hidden" name="currency" value="EUR">
+                    </div>
+                </div>
+                <div>
+                    <label for="iban" class="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                    <input type="text" id="iban" name="iban" value="{{ team.iban ?? '' }}"
+                           placeholder="FR76 …"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 font-mono focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
         </div>
-        <div class="px-6 py-5">
-            <p class="text-sm text-gray-500">Configuration des informations légales disponible prochainement.</p>
+
+        {# TVA #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">TVA</h2>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Assujetti à la TVA</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Activez si votre structure collecte la TVA.</p>
+                    </div>
+                    {% set _vatOn = team.isCollectingVat() %}
+                    <input type="checkbox" id="isCollectingVat" name="isCollectingVat" value="1"
+                           {{ _vatOn ? 'checked' }} class="sr-only">
+                    <button type="button" id="vat-toggle" onclick="lvlToggleVat()"
+                            style="width:44px;height:24px;border-radius:12px;background:{{ _vatOn ? '#4f46e5' : '#d1d5db' }};position:relative;cursor:pointer;border:none;outline:none;transition:background .2s;flex-shrink:0"
+                            aria-checked="{{ _vatOn ? 'true' : 'false' }}" role="switch">
+                        <span id="vat-knob"
+                              style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:{{ _vatOn ? '22px' : '2px' }};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);pointer-events:none"></span>
+                    </button>
+                </div>
+                <div id="vat-number-field" class="{{ team.isCollectingVat() ? '' : 'hidden' }}">
+                    <label for="vatNumber" class="block text-sm font-medium text-gray-700 mb-1">Numéro de TVA intracommunautaire</label>
+                    <input type="text" id="vatNumber" name="vatNumber" value="{{ team.vatNumber ?? '' }}"
+                           placeholder="FR00 000000000"
+                           class="block w-full sm:w-1/2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 font-mono focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
         </div>
-        <div class="px-6 py-4 rounded-b-xl">
-            <p class="text-xs text-gray-400">Ces informations apparaîtront sur vos documents (factures, devis…).</p>
+
+        {# Frais & paiements #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Frais & paiements</h2>
+            </div>
+            <div class="px-6 py-5 space-y-5">
+                <div>
+                    <label for="feePaidBy" class="block text-sm font-medium text-gray-700 mb-1">Frais de traitement payés par</label>
+                    <select id="feePaidBy" name="feePaidBy"
+                            class="block w-full sm:w-1/2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        <option value="student" {{ team.feePaidBy.value == 'student' ? 'selected' }}>L'élève</option>
+                        <option value="team"    {{ team.feePaidBy.value == 'team'    ? 'selected' }}>L'école</option>
+                    </select>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-700 mb-3">Modes de paiement acceptés</p>
+
+                    {# Build lookup: id → {allowed_for_one_shot, allowed_for_multiple_payments} #}
+                    {% set _pm = {} %}
+                    {% for m in team.paymentMethods ?? [] %}
+                        {% set _pm = _pm|merge({(m.id): m}) %}
+                    {% endfor %}
+
+                    {# ── Sur place ── #}
+                    <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 pt-3 pb-4 mb-4">
+                        <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Sur place</p>
+                        <p class="text-xs text-gray-400 mb-3">Paiements encaissés directement à l'école</p>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left pb-2 text-xs font-medium text-gray-500 pr-4">Moyen de paiement</th>
+                                        <th class="text-center pb-2 text-xs font-medium text-gray-500 px-3 whitespace-nowrap">En une fois</th>
+                                        <th class="text-center pb-2 text-xs font-medium text-gray-500 px-3 whitespace-nowrap">En plusieurs fois</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    {% for key, label in {
+                                        'voucher_activity':           'Chèques activités',
+                                        'card_on_site':               'Carte bancaire',
+                                        'voucher_holiday_ancv_paper': 'Chèques vacances ANCV papier',
+                                        'sepa_direct_debit':          'Prélèvement SEPA',
+                                        'financement_pole_emploi':    'Financement Pôle emploi',
+                                        'voucher_holiday_ancv_online':'Chèques e-ANCV',
+                                        'coupon_sport':               'Coupon sport',
+                                        'bank_transfer':              'Virement bancaire',
+                                        'culture_pass':               'Pass culture',
+                                        'cash':                       'Espèces',
+                                        'check':                      'Chèques',
+                                        'other':                      'Autre',
+                                    } %}
+                                    <tr>
+                                        <td class="py-2 pr-4 text-gray-700">{{ label }}</td>
+                                        <td class="py-2 px-3 text-center">
+                                            <input type="checkbox" name="methods[{{ key }}][one_shot]" value="1"
+                                                   {{ (_pm[key] is defined and _pm[key].allowed_for_one_shot) ? 'checked' }}
+                                                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        </td>
+                                        <td class="py-2 px-3 text-center">
+                                            <input type="checkbox" name="methods[{{ key }}][multiple]" value="1"
+                                                   {{ (_pm[key] is defined and _pm[key].allowed_for_multiple_payments) ? 'checked' }}
+                                                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {# ── En ligne ── #}
+                    <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 pt-3 pb-4">
+                        <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">En ligne</p>
+                        <p class="text-xs text-gray-400 mb-3">Paiements via Stripe (nécessite un compte Stripe actif)</p>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left pb-2 text-xs font-medium text-gray-500 pr-4">Moyen de paiement</th>
+                                        <th class="text-center pb-2 text-xs font-medium text-gray-500 px-3 whitespace-nowrap">En une fois</th>
+                                        <th class="text-center pb-2 text-xs font-medium text-gray-500 px-3 whitespace-nowrap">En plusieurs fois</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    {% for key, label in {
+                                        'online_card':         'Carte bancaire',
+                                        'online_bank_transfer':'Virement bancaire unique',
+                                    } %}
+                                    <tr>
+                                        <td class="py-2 pr-4 text-gray-700">{{ label }}</td>
+                                        <td class="py-2 px-3 text-center">
+                                            <input type="checkbox" name="methods[{{ key }}][one_shot]" value="1"
+                                                   {{ (_pm[key] is defined and _pm[key].allowed_for_one_shot) ? 'checked' }}
+                                                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        </td>
+                                        <td class="py-2 px-3 text-center">
+                                            <input type="checkbox" name="methods[{{ key }}][multiple]" value="1"
+                                                   {{ (_pm[key] is defined and _pm[key].allowed_for_multiple_payments) ? 'checked' }}
+                                                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr>
+                                        <td class="py-2 pr-4 text-gray-400 italic">Prélèvement SEPA</td>
+                                        <td colspan="2" class="py-2 px-3 text-center text-xs text-gray-400">Bientôt disponible</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+
+        {# Adresse avec carte #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Adresse</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Positionnez le marqueur sur la carte ou saisissez l'adresse.</p>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div class="flex gap-2">
+                    <input type="text" id="address-search" placeholder="Rechercher une adresse…"
+                           value="{{ team.addressText ?? '' }}"
+                           class="flex-1 block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <button type="button" id="address-search-btn"
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+                        Rechercher
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                    <div>
+                        <div id="map" class="rounded-xl border border-gray-200 overflow-hidden" style="height:420px"></div>
+                        <input type="hidden" id="addressText" name="addressText" value="{{ team.addressText ?? '' }}">
+                        <input type="hidden" id="addressLat"  name="addressLat"  value="{{ team.addressLat ?? '' }}">
+                        <input type="hidden" id="addressLng"  name="addressLng"  value="{{ team.addressLng ?? '' }}">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <label for="invoiceAddress" class="block text-sm font-medium text-gray-700">Adresse de facturation <span class="text-gray-400 font-normal">(sur les factures)</span></label>
+                            <button type="button" id="copy-address-btn"
+                                    class="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition">
+                                ← Copier depuis la carte
+                            </button>
+                        </div>
+                        <textarea id="invoiceAddress" name="invoiceAddress" rows="8"
+                                  class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition" style="resize:vertical;height:100%">{{ team.invoiceAddress ?? '' }}</textarea>
+                        <p class="text-xs text-gray-400">Mise en forme libre pour l'affichage sur les factures. L'adresse de la carte est enregistrée séparément pour la géolocalisation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
+                Enregistrer
+            </button>
+        </div>
+    </form>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ parent() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    const lat0 = parseFloat(document.getElementById('addressLat').value) || 48.8566;
+    const lng0 = parseFloat(document.getElementById('addressLng').value) || 2.3522;
+    const hasPos = !!document.getElementById('addressLat').value;
+
+    const map    = L.map('map').setView([lat0, lng0], hasPos ? 15 : 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+    }).addTo(map);
+
+    const marker = L.marker([lat0, lng0], { draggable: true });
+    if (hasPos) marker.addTo(map);
+
+    function setPos(lat, lng, label) {
+        marker.setLatLng([lat, lng]);
+        if (!map.hasLayer(marker)) marker.addTo(map);
+        map.setView([lat, lng], 15);
+        document.getElementById('addressLat').value  = lat.toFixed(7);
+        document.getElementById('addressLng').value  = lng.toFixed(7);
+        if (label) {
+            document.getElementById('addressText').value  = label;
+            document.getElementById('address-search').value = label;
+            // Auto-fill billing address if empty
+            const billing = document.getElementById('invoiceAddress');
+            if (!billing.value.trim()) billing.value = label;
+        }
+    }
+
+    document.getElementById('copy-address-btn').addEventListener('click', function () {
+        const text = document.getElementById('addressText').value || document.getElementById('address-search').value;
+        if (text) document.getElementById('invoiceAddress').value = text;
+    });
+
+    marker.on('dragend', function () {
+        const p = marker.getLatLng();
+        document.getElementById('addressLat').value = p.lat.toFixed(7);
+        document.getElementById('addressLng').value = p.lng.toFixed(7);
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + p.lat + '&lon=' + p.lng)
+            .then(r => r.json())
+            .then(d => {
+                if (d.display_name) {
+                    document.getElementById('addressText').value = d.display_name;
+                    document.getElementById('address-search').value = d.display_name;
+                }
+            });
+    });
+
+    map.on('click', function (e) {
+        setPos(e.latlng.lat, e.latlng.lng, null);
+    });
+
+    document.getElementById('address-search-btn').addEventListener('click', function () {
+        const q = document.getElementById('address-search').value.trim();
+        if (!q) return;
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1')
+            .then(r => r.json())
+            .then(d => {
+                if (d.length) {
+                    setPos(parseFloat(d[0].lat), parseFloat(d[0].lon), d[0].display_name);
+                } else {
+                    alert('Adresse introuvable.');
+                }
+            });
+    });
+
+    document.getElementById('address-search').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('address-search-btn').click(); }
+    });
+
+    // TVA toggle
+    window.lvlToggleVat = function () {
+        const input  = document.getElementById('isCollectingVat');
+        const btn    = document.getElementById('vat-toggle');
+        const knob   = document.getElementById('vat-knob');
+        input.checked = !input.checked;
+        btn.style.background = input.checked ? '#4f46e5' : '#d1d5db';
+        btn.setAttribute('aria-checked', input.checked ? 'true' : 'false');
+        knob.style.left = input.checked ? '22px' : '2px';
+        document.getElementById('vat-number-field').classList.toggle('hidden', !input.checked);
+    };
+
+})();
+</script>
 {% endblock %}
