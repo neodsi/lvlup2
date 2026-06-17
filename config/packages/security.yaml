@@ -33,6 +33,7 @@ security:
                 role: ROLE_ADMIN
                 parameter: _switch_user
     role_hierarchy:
+        ROLE_STUDENT: [ROLE_USER]
         ROLE_MODERATOR: [ROLE_USER]
         ROLE_SCHOOL: [ROLE_MODERATOR]
         ROLE_ADMIN: [ROLE_SCHOOL]
