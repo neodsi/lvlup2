@@ -92,7 +92,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="py-4 pl-3 pr-6 text-right">
-                                    {% if is_granted('ROLE_APP_SUPER_ADMIN') %}
+                                    {% if is_granted('ROLE_ADMIN') %}
                                         <a
                                             href="{{ path('app_admin_impersonate', {userId: user.id}) }}"
                                             class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-800 border border-amber-200 hover:bg-amber-50 px-2.5 py-1.5 rounded-lg transition"

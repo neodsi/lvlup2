@@ -30,12 +30,12 @@ security:
                 secret: '%kernel.secret%'
                 lifetime: 604800
             switch_user:
-                role: ROLE_APP_SUPER_ADMIN
+                role: ROLE_ADMIN
                 parameter: _switch_user
     role_hierarchy:
-        ROLE_APP_MODERATOR: [ROLE_USER]
-        ROLE_APP_ADMIN: [ROLE_APP_MODERATOR]
-        ROLE_APP_SUPER_ADMIN: [ROLE_APP_ADMIN]
+        ROLE_MODERATOR: [ROLE_USER]
+        ROLE_SCHOOL: [ROLE_MODERATOR]
+        ROLE_ADMIN: [ROLE_SCHOOL]
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/signup, roles: PUBLIC_ACCESS }
@@ -45,7 +45,7 @@ security:
         - { path: ^/invitations, roles: PUBLIC_ACCESS }
         - { path: ^/shop, roles: PUBLIC_ACCESS }
         - { path: ^/iframes, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_APP_MODERATOR }
+        - { path: ^/admin, roles: ROLE_MODERATOR }
         - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }
 

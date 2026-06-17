@@ -70,7 +70,7 @@
                                 <option value="{{ gender.value }}" {{ formData.gender == gender.value ? 'selected' : '' }}>
                                     {% if gender.value == 'male' %}Homme
                                     {% elseif gender.value == 'female' %}Femme
-                                    {% else %}{{ gender.value }}{% endif %}
+                                    {% else %}Autre{% endif %}
                                 </option>
                             {% endfor %}
                         </select>

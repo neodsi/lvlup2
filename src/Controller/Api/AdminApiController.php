@@ -35,8 +35,8 @@ class AdminApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        if (!($currentUser instanceof User) || $currentUser->getAppRole() !== AppRole::AppSuperAdmin) {
-            return new JsonResponse(['success' => false, 'error' => 'app_super_admin role required.'], 403);
+        if (!($currentUser instanceof User) || $currentUser->getAppRole() !== AppRole::AppAdmin) {
+            return new JsonResponse(['success' => false, 'error' => 'app_admin role required.'], 403);
         }
 
         $data   = json_decode($request->getContent(), true) ?? [];

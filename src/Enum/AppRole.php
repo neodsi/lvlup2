@@ -6,8 +6,8 @@ namespace App\Enum;
 
 enum AppRole: string
 {
-    case AppDefault    = 'app_default';
-    case AppModerator  = 'app_moderator';
-    case AppAdmin      = 'app_admin';
-    case AppSuperAdmin = 'app_super_admin';
+    case AppDefault   = 'app_default';
+    case AppModerator = 'app_moderator';
+    case AppSchool    = 'app_school';
+    case AppAdmin     = 'app_admin';
 }

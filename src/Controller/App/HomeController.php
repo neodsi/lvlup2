@@ -144,10 +144,10 @@ class HomeController extends AbstractController
             $formData['phone']      = trim((string) $request->request->get('phone', ''));
 
             if ($formData['first_name'] === '') {
-                $errors['first_name'] = 'First name is required.';
+                $errors['first_name'] = 'Le prénom est obligatoire.';
             }
             if ($formData['last_name'] === '') {
-                $errors['last_name'] = 'Last name is required.';
+                $errors['last_name'] = 'Le nom est obligatoire.';
             }
 
             if (empty($errors)) {
@@ -190,7 +190,7 @@ class HomeController extends AbstractController
     }
 
     #[Route('/setup/create-school', name: 'app_create_school', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_APP_ADMIN')]
+    #[IsGranted('ROLE_ADMIN')]
     public function createSchool(Request $request): Response
     {
         /** @var \App\Entity\User $user */
@@ -207,7 +207,7 @@ class HomeController extends AbstractController
             $formData['type'] = trim((string) $request->request->get('type', ''));
 
             if ($formData['name'] === '') {
-                $errors['name'] = 'School name is required.';
+                $errors['name'] = 'Le nom de l\'école est obligatoire.';
             }
 
             if (empty($errors)) {

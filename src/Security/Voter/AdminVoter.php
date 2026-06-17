@@ -12,7 +12,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 /**
  * Permissions:
  *   admin:access      – app_moderator+
- *   admin:impersonate – app_super_admin only
+ *   admin:impersonate – app_admin only
  *
  * Subject: null (no specific resource needed — these are app-level permissions).
  */
@@ -29,10 +29,10 @@ final class AdminVoter extends Voter
     private static function appRoleWeights(): array
     {
         return [
-            AppRole::AppDefault->value    => 1,
-            AppRole::AppModerator->value  => 2,
-            AppRole::AppAdmin->value      => 3,
-            AppRole::AppSuperAdmin->value => 4,
+            AppRole::AppDefault->value   => 1,
+            AppRole::AppModerator->value => 2,
+            AppRole::AppSchool->value    => 3,
+            AppRole::AppAdmin->value     => 4,
         ];
     }
 
@@ -54,7 +54,7 @@ final class AdminVoter extends Voter
 
         return match ($attribute) {
             self::ACCESS      => $this->isAppRoleGranted($appRole, AppRole::AppModerator),
-            self::IMPERSONATE => $appRole === AppRole::AppSuperAdmin,
+            self::IMPERSONATE => $appRole === AppRole::AppAdmin,
             default           => false,
         };
     }

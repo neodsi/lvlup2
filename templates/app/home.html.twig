@@ -7,7 +7,7 @@
 
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Mes écoles</h1>
-        {% if is_granted('ROLE_APP_ADMIN') %}
+        {% if is_granted('ROLE_ADMIN') %}
             <a href="{{ path('app_create_school') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Créer une école
@@ -26,7 +26,7 @@
             <p class="text-sm text-gray-500 mb-6 max-w-sm">
                 Vous n'êtes membre d'aucune école pour le moment.
             </p>
-            {% if is_granted('ROLE_APP_ADMIN') %}
+            {% if is_granted('ROLE_ADMIN') %}
                 <a href="{{ path('app_create_school') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                     Créer une école
                 </a>

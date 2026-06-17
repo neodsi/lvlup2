@@ -14,6 +14,9 @@ Thumbs.db
 # Node (Tailwind CLI)
 node_modules/
 
+# User uploads (images, documents)
+/public/uploads/
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php

@@ -85,10 +85,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $roles = ['ROLE_USER'];
 
         $extra = match ($this->appRole) {
-            AppRole::AppModerator  => 'ROLE_APP_MODERATOR',
-            AppRole::AppAdmin      => 'ROLE_APP_ADMIN',
-            AppRole::AppSuperAdmin => 'ROLE_APP_SUPER_ADMIN',
-            default                => null,
+            AppRole::AppModerator => 'ROLE_MODERATOR',
+            AppRole::AppSchool    => 'ROLE_SCHOOL',
+            AppRole::AppAdmin     => 'ROLE_ADMIN',
+            default               => null,
         };
 
         if ($extra !== null) {

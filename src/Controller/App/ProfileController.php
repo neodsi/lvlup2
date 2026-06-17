@@ -8,15 +8,21 @@ use App\Entity\Profile;
 use App\Enum\Gender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\Uuid;
 
 class ProfileController extends AbstractController
 {
+    private const AVATAR_MAX_BYTES    = 2 * 1024 * 1024; // 2 MB
+    private const AVATAR_ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly string $projectDir,
     ) {
     }
 
@@ -68,10 +74,10 @@ class ProfileController extends AbstractController
             $formData['phone']      = trim((string) $request->request->get('phone', ''));
 
             if ($formData['first_name'] === '') {
-                $errors['first_name'] = 'First name is required.';
+                $errors['first_name'] = 'Le prénom est obligatoire.';
             }
             if ($formData['last_name'] === '') {
-                $errors['last_name'] = 'Last name is required.';
+                $errors['last_name'] = 'Le nom est obligatoire.';
             }
 
             if (empty($errors)) {
@@ -96,11 +102,22 @@ class ProfileController extends AbstractController
 
                 $primaryProfile->setPhone($formData['phone'] !== '' ? $formData['phone'] : null);
 
-                $this->em->flush();
+                // Avatar upload
+                /** @var UploadedFile|null $avatar */
+                $avatar = $request->files->get('avatar');
+                if ($avatar !== null && $avatar->isValid()) {
+                    $avatarError = $this->processAvatarUpload($avatar, $primaryProfile);
+                    if ($avatarError !== null) {
+                        $errors['avatar'] = $avatarError;
+                    }
+                }
 
-                $this->addFlash('success', 'Profile updated successfully.');
+                if (empty($errors)) {
+                    $this->em->flush();
+                    $this->addFlash('success', 'Profil mis à jour avec succès.');
 
-                return $this->redirectToRoute('app_profile');
+                    return $this->redirectToRoute('app_profile');
+                }
             }
         }
 
@@ -110,5 +127,47 @@ class ProfileController extends AbstractController
             'errors'   => $errors,
             'genders'  => Gender::cases(),
         ]);
+    }
+
+    private function processAvatarUpload(UploadedFile $file, Profile $profile): ?string
+    {
+        if ($file->getSize() > self::AVATAR_MAX_BYTES) {
+            return 'La photo ne doit pas dépasser 2 Mo.';
+        }
+
+        $finfo    = new \finfo(\FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file->getRealPath());
+
+        if (!\in_array($mimeType, self::AVATAR_ALLOWED_MIME, true)) {
+            return 'Format non supporté. Utilisez JPG, PNG, WebP ou GIF.';
+        }
+
+        $ext      = match ($mimeType) {
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+            default      => 'jpg',
+        };
+        $filename = Uuid::v4()->toRfc4122() . '.' . $ext;
+        $destDir  = $this->projectDir . '/public/uploads/profiles/' . $profile->getId();
+
+        if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+            return 'Impossible de créer le répertoire de destination.';
+        }
+
+        // Delete old avatar file if it exists
+        $oldPath = $profile->getAvatarPath();
+        if ($oldPath !== null) {
+            $oldFile = $this->projectDir . '/public/' . ltrim($oldPath, '/');
+            if (is_file($oldFile)) {
+                @unlink($oldFile);
+            }
+        }
+
+        $file->move($destDir, $filename);
+        $profile->setAvatarPath('/uploads/profiles/' . $profile->getId() . '/' . $filename);
+
+        return null;
     }
 }

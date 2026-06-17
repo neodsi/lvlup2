@@ -48,6 +48,10 @@ services:
             $projectDir: '%kernel.project_dir%'
             $imagineCacheManager: null
 
+    App\Controller\App\ProfileController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Controller\Cron\AutoPayCronController:
         arguments:
             $cronSecret: '%env(CRON_SECRET)%'

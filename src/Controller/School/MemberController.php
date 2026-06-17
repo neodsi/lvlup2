@@ -97,7 +97,7 @@ final class MemberController extends AbstractController
                 ['role' => $roleMap[$type]],
             ));
 
-            $this->addFlash('success', 'Member created successfully.');
+            $this->addFlash('success', 'Membre ajouté avec succès.');
 
             return $this->redirectToRoute('school_members_list', ['type' => $type]);
         }
