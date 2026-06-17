@@ -68,6 +68,37 @@ class HomeController extends AbstractController
         ]);
     }
 
+    #[Route('/select-school/{id}', name: 'app_select_school')]
+    #[IsGranted('ROLE_USER')]
+    public function selectSchool(string $id, Request $request): Response
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        $profiles = $user->getProfiles()->filter(fn (Profile $p) => $p->getDeletedAt() === null)->getValues();
+        $profileIds = array_map(fn (Profile $p) => $p->getId(), $profiles);
+
+        $tp = $this->em->createQueryBuilder()
+            ->select('tp')
+            ->from(TeamProfile::class, 'tp')
+            ->where('tp.team = :teamId')
+            ->andWhere('tp.profile IN (:profileIds)')
+            ->andWhere('tp.deletedAt IS NULL')
+            ->setParameter('teamId', $id)
+            ->setParameter('profileIds', $profileIds)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($tp === null) {
+            throw $this->createAccessDeniedException('Not a member of this school.');
+        }
+
+        $request->getSession()->set('currentTeamId', $id);
+
+        return $this->redirectToRoute('school_home');
+    }
+
     #[Route('/no-school', name: 'app_no_school')]
     public function noSchool(): Response
     {
