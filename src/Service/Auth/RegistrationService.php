@@ -7,6 +7,7 @@ namespace App\Service\Auth;
 use App\Entity\User;
 use App\Service\Email\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -16,6 +17,7 @@ class RegistrationService
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly EmailService $emailService,
+        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -46,7 +48,16 @@ class RegistrationService
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        $this->emailService->sendEmailConfirmation($user, $confirmationToken);
+        try {
+            $this->emailService->sendEmailConfirmation($user, $confirmationToken);
+        } catch (\Throwable $e) {
+            // L'échec d'envoi d'email ne doit jamais annuler l'inscription.
+            $this->logger->error('RegistrationService: impossible d\'envoyer l\'email de confirmation', [
+                'user_id' => $user->getId(),
+                'email'   => $user->getEmail(),
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         return $user;
     }

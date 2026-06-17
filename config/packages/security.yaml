@@ -22,13 +22,7 @@ security:
         main:
             lazy: true
             provider: app_user_provider
-            form_login:
-                login_path: app_login
-                check_path: app_login
-                username_parameter: email
-                password_parameter: password
-                default_target_path: /home
-                enable_csrf: true
+            custom_authenticator: App\Security\AppAuthenticator
             logout:
                 path: app_signout
                 target: app_login

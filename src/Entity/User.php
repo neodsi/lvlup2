@@ -84,14 +84,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $roles = ['ROLE_USER'];
 
-        $roles[] = match ($this->appRole) {
-            AppRole::AppModerator  => 'ROLE_MODERATOR',
-            AppRole::AppAdmin      => 'ROLE_ADMIN',
-            AppRole::AppSuperAdmin => 'ROLE_SUPER_ADMIN',
+        $extra = match ($this->appRole) {
+            AppRole::AppModerator  => 'ROLE_APP_MODERATOR',
+            AppRole::AppAdmin      => 'ROLE_APP_ADMIN',
+            AppRole::AppSuperAdmin => 'ROLE_APP_SUPER_ADMIN',
             default                => null,
         };
 
-        return array_values(array_unique(array_filter($roles)));
+        if ($extra !== null) {
+            $roles[] = $extra;
+        }
+
+        return array_values(array_unique($roles));
     }
 
     public function getPassword(): string
