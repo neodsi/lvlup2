@@ -1,4 +1,7 @@
 
+# Original v1 project (reference only, has its own git)
+.v1/
+
 # IDEs & editors
 .idea/
 .vscode/
