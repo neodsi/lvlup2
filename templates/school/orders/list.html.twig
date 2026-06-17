@@ -1,15 +1,18 @@
-{% extends 'layout/school.html.twig' %}
+﻿{% extends 'layout/school.html.twig' %}
 
 {% block title %}Commandes — {{ team.name }}{% endblock %}
 
-{% block school_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Commandes{% if season %} · {{ season.name }}{% endif %}</span>
+{% endblock %}
 
-    <div class="flex items-center gap-3 mb-6">
-        <a href="{{ path('school_home') }}" class="text-gray-400 hover:text-gray-600 transition">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        </a>
-        <h1 class="text-2xl font-bold text-gray-900">Commandes</h1>
+{% block school_content %}
+<div class="py-8">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Commandes{% if season %} · {{ season.name }}{% endif %}</h1>
     </div>
 
     {% if orders is empty %}

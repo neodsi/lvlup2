@@ -1,44 +1,20 @@
-{% extends 'base.html.twig' %}
+﻿{% extends 'layout/school.html.twig' %}
 
-{% block title %}Saison — {{ season.name }}{% endblock %}
+{% block title %}Config {{ season.name }}{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Config {{ season.name }}</span>
+{% endblock %}
 
-    {# Header #}
-    <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <nav class="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition-colors">Paramètres</a>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                <span class="text-gray-900 font-medium">{{ season.name }}</span>
-            </nav>
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{{ season.name }}</h1>
-                    <p class="text-sm text-gray-500 mt-0.5">
-                        {{ season.startAt|date('d/m/Y') }} — {{ season.endAt|date('d/m/Y') }}
-                    </p>
-                </div>
-            </div>
-        </div>
-    </header>
+{% block school_content %}
+<div class="py-8">
 
-    {# Flash messages #}
-    {% for label, messages in app.flashes %}
-        {% for message in messages %}
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                <div class="rounded-lg px-4 py-3 text-sm font-medium
-                    {% if label == 'success' %}bg-green-50 text-green-800 border border-green-200
-                    {% elseif label == 'error' %}bg-red-50 text-red-800 border border-red-200
-                    {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
-                    {{ message }}
-                </div>
-            </div>
-        {% endfor %}
-    {% endfor %}
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Config {{ season.name }}</h1>
+</div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {# Main form #}
         <div class="lg:col-span-2 space-y-6">
@@ -232,5 +208,6 @@
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}

@@ -1,40 +1,22 @@
-{% extends 'base.html.twig' %}
+﻿{% extends 'layout/school.html.twig' %}
 
 {% block title %}Adresses — {{ season.name }}{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Adresses</span>
+{% endblock %}
 
-    <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <nav class="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition-colors">Paramètres</a>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition-colors">{{ season.name }}</a>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                <span class="text-gray-900 font-medium">Adresses</span>
-            </nav>
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold text-gray-900">Lieux &amp; Adresses</h1>
-                <span class="text-sm text-gray-500">{{ addresses|length }} adresse{{ addresses|length > 1 ? 's' : '' }}</span>
-            </div>
-        </div>
-    </header>
+{% block school_content %}
 
-    {# Flash messages #}
-    {% for label, messages in app.flashes %}
-        {% for message in messages %}
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                <div class="rounded-lg px-4 py-3 text-sm font-medium
-                    {% if label == 'success' %}bg-green-50 text-green-800 border border-green-200
-                    {% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
-                    {{ message }}
-                </div>
-            </div>
-        {% endfor %}
-    {% endfor %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold text-gray-900">Adresses</h1>
+</div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="py-8">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
             {# Inline add form #}
@@ -101,5 +83,4 @@
             {% endif %}
         </div>
     </div>
-</div>
 {% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}Informations légales — Paramètres — {{ team.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition">Paramètres</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Informations légales</span>
+{% endblock %}
+
+{% block school_content %}
+<div class="py-8">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Paramètres</h1>
+    </div>
+
+    {% include 'school/settings/_tabs.html.twig' %}
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+        <div class="px-6 py-5">
+            <h2 class="text-base font-semibold text-gray-900">Informations légales</h2>
+            <p class="text-sm text-gray-500 mt-1">Raison sociale, SIRET, numéro de TVA et mentions légales.</p>
+        </div>
+        <div class="px-6 py-5">
+            <p class="text-sm text-gray-500">Configuration des informations légales disponible prochainement.</p>
+        </div>
+        <div class="px-6 py-4 rounded-b-xl">
+            <p class="text-xs text-gray-400">Ces informations apparaîtront sur vos documents (factures, devis…).</p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

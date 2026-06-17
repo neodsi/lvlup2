@@ -1,0 +1,77 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}Saisons — Paramètres — {{ team.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Saisons</span>
+{% endblock %}
+
+{% block school_content %}
+<div class="py-8">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Saisons</h1>
+    </div>
+
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-semibold text-gray-900">Gestion des saisons</h2>
+        <a href="{{ path('school_settings_season_create') }}"
+           class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nouvelle saison
+        </a>
+    </div>
+
+    {% if seasons is empty %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-12 text-center">
+            <svg class="mx-auto w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-sm text-gray-500">Aucune saison. Créez votre première saison.</p>
+            <a href="{{ path('school_settings_season_create') }}"
+               class="mt-4 inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+                Créer une saison
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    {% else %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <ul class="divide-y divide-gray-100">
+                {% for season in seasons %}
+                    <li class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="h-9 w-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900">
+                                    {{ season.name }}
+                                    {% if season.id == team.currentSeasonId %}
+                                        <span class="ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Courante</span>
+                                    {% endif %}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-0.5">
+                                    {{ season.startAt|date('d/m/Y') }} → {{ season.endAt|date('d/m/Y') }}
+                                </p>
+                            </div>
+                        </div>
+                        <a href="{{ path('school_settings_season', {id: season.id}) }}"
+                           class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
+                            Gérer
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

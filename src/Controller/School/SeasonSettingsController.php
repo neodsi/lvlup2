@@ -90,7 +90,7 @@ final class SeasonSettingsController extends AbstractController
         $event = $this->eventService->createEvent($team, $season, $request->request->all());
 
         $this->denyAccessUnlessGranted(EventVoter::CREATE, $event);
-        $this->addFlash('success', 'Lesson created.');
+        $this->addFlash('success', 'Cours créé.');
 
         return $this->redirectToRoute('school_season_lessons', ['id' => $id]);
     }
@@ -126,7 +126,7 @@ final class SeasonSettingsController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $this->eventService->updateEvent($lesson, $request->request->all());
-            $this->addFlash('success', 'Lesson updated.');
+            $this->addFlash('success', 'Cours mis à jour.');
 
             return $this->redirectToRoute('school_season_lesson_detail', ['id' => $id, 'lessonId' => $lessonId]);
         }
@@ -264,7 +264,7 @@ final class SeasonSettingsController extends AbstractController
             $room->setName((string) $request->request->get('name'));
             $this->em->persist($room);
             $this->em->flush();
-            $this->addFlash('success', 'Room created.');
+            $this->addFlash('success', 'Salle ajoutée.');
 
             return $this->redirectToRoute('school_season_rooms', ['id' => $id]);
         }
@@ -294,7 +294,7 @@ final class SeasonSettingsController extends AbstractController
             $level->setName((string) $request->request->get('name'));
             $this->em->persist($level);
             $this->em->flush();
-            $this->addFlash('success', 'Level created.');
+            $this->addFlash('success', 'Niveau ajouté.');
 
             return $this->redirectToRoute('school_season_levels', ['id' => $id]);
         }
@@ -326,7 +326,7 @@ final class SeasonSettingsController extends AbstractController
             $group->setMaxAge($request->request->get('maxAge') !== null ? (int) $request->request->get('maxAge') : null);
             $this->em->persist($group);
             $this->em->flush();
-            $this->addFlash('success', 'Age group created.');
+            $this->addFlash('success', 'Groupe d\'âge ajouté.');
 
             return $this->redirectToRoute('school_season_age_groups', ['id' => $id]);
         }
@@ -357,7 +357,7 @@ final class SeasonSettingsController extends AbstractController
             $address->setAddress((string) $request->request->get('address'));
             $this->em->persist($address);
             $this->em->flush();
-            $this->addFlash('success', 'Address created.');
+            $this->addFlash('success', 'Adresse ajoutée.');
 
             return $this->redirectToRoute('school_season_addresses', ['id' => $id]);
         }

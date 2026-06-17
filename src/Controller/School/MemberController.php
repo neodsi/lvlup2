@@ -6,6 +6,7 @@ namespace App\Controller\School;
 
 use App\Entity\Season;
 use App\Entity\TeamProfile;
+
 use App\Entity\User;
 use App\Enum\TeamRole;
 use App\Security\Voter\TeamVoter;
@@ -31,7 +32,7 @@ final class MemberController extends AbstractController
 
     #[Route('/{type}', name: 'school_members_list', methods: ['GET'],
         requirements: ['type' => 'all|students|teachers|admins'])]
-    public function list(string $type): Response
+    public function list(string $type, Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -42,6 +43,25 @@ final class MemberController extends AbstractController
         }
 
         $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+
+        $session  = $request->getSession();
+        $seasonId = $request->query->get('season');
+
+        if ($seasonId !== null) {
+            $season = $this->em->getRepository(Season::class)->find($seasonId);
+            if ($season !== null && $season->getTeamId() !== $team->getId()) {
+                $season = null;
+            }
+            if ($season !== null) {
+                $session->set('school.season_id', $season->getId());
+            }
+        } else {
+            $storedId = $session->get('school.season_id');
+            if ($storedId) {
+                return $this->redirectToRoute('school_members_list', ['type' => $type, 'season' => $storedId]);
+            }
+            $season = null;
+        }
 
         $roleMap = [
             'students' => TeamRole::TeamStudent,
@@ -60,6 +80,32 @@ final class MemberController extends AbstractController
             'team'    => $team,
             'type'    => $type,
             'members' => $members,
+            'season'  => $season,
+        ]);
+    }
+
+    #[Route('/detail/{id}', name: 'school_member_detail', methods: ['GET'])]
+    public function detail(string $id): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $team = $this->teamContext->getCurrentTeam();
+
+        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a team member.');
+        }
+
+        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+
+        $member = $this->em->getRepository(TeamProfile::class)->find($id);
+
+        if ($member === null || $member->getTeam()?->getId() !== $team->getId() || $member->getDeletedAt() !== null) {
+            throw $this->createNotFoundException('Member not found.');
+        }
+
+        return $this->render('school/members/detail.html.twig', [
+            'team'   => $team,
+            'member' => $member,
         ]);
     }
 

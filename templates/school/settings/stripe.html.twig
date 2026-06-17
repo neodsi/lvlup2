@@ -1,0 +1,49 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}Stripe — Paramètres — {{ team.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition">Paramètres</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Stripe</span>
+{% endblock %}
+
+{% block school_content %}
+<div class="py-8">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Paramètres</h1>
+    </div>
+
+    {% include 'school/settings/_tabs.html.twig' %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+            <div class="px-6 py-5">
+                <h2 class="text-base font-semibold text-gray-900">Configuration Stripe</h2>
+                <p class="text-sm text-gray-500 mt-1">Clés API et paramètres de paiement.</p>
+            </div>
+            <div class="px-6 py-5">
+                <p class="text-sm text-gray-500">Les clés Stripe sont configurées via les variables d'environnement du serveur.</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+            <div class="px-6 py-5">
+                <h2 class="text-base font-semibold text-gray-900">Accès rapides</h2>
+            </div>
+            <div class="px-6 py-4">
+                <a href="{{ path('school_settings_stripe_payments') }}"
+                   class="flex items-center gap-3 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    Sessions de paiement Stripe
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

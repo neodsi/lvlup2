@@ -1,0 +1,124 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}{{ member.profile.firstName }} {{ member.profile.lastName }} — {{ team.name }}{% endblock %}
+
+{% set _roleLabel %}
+    {% if member.role.value == 'team_student' %}Élève
+    {% elseif member.role.value == 'team_teacher' %}Professeur
+    {% elseif member.role.value == 'team_admin' %}Administrateur
+    {% elseif member.role.value == 'team_owner' %}Directeur
+    {% else %}{{ member.role.value }}{% endif %}
+{% endset %}
+
+{% set _listType = member.role.value == 'team_teacher' ? 'teachers' : (member.role.value == 'team_admin' ? 'admins' : 'students') %}
+
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_members_list', {type: 'students'}) }}" class="hover:text-gray-700 transition">Membres</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_members_list', {type: _listType}) }}" class="hover:text-gray-700 transition">
+    {{ member.role.value == 'team_teacher' ? 'Professeurs' : (member.role.value == 'team_admin' ? 'Admins' : 'Élèves') }}
+</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">{{ member.profile.firstName }} {{ member.profile.lastName }}</span>
+{% endblock %}
+
+{% block school_content %}
+<div class="py-8">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{{ member.profile.firstName }} {{ member.profile.lastName }}</h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {# Left: identity card #}
+        <div class="lg:col-span-1 space-y-4">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center text-center">
+                {% if member.profile.avatarPath %}
+                    <img src="{{ member.profile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-20 w-20 rounded-full object-cover border-2 border-gray-200 mb-3">
+                {% else %}
+                    <span class="h-20 w-20 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-2xl mb-3">
+                        {{ member.profile.firstName|first|upper }}
+                    </span>
+                {% endif %}
+
+                <p class="font-semibold text-gray-900 text-lg">{{ member.profile.firstName }} {{ member.profile.lastName }}</p>
+                {% if member.profile.user %}
+                    <p class="text-xs text-gray-400 mt-0.5">{{ member.profile.user.email }}</p>
+                {% endif %}
+
+                <span class="mt-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+                    {% if member.role.value == 'team_student' %}bg-blue-50 text-blue-700
+                    {% elseif member.role.value == 'team_teacher' %}bg-purple-50 text-purple-700
+                    {% elseif member.role.value == 'team_admin' %}bg-amber-50 text-amber-700
+                    {% else %}bg-indigo-50 text-indigo-700{% endif %}">
+                    {{ _roleLabel | trim }}
+                </span>
+
+                <span class="mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium
+                    {% if member.status.value == 'accepted' %}bg-green-50 text-green-700
+                    {% elseif member.status.value == 'waiting' %}bg-amber-50 text-amber-700
+                    {% elseif member.status.value == 'refused' %}bg-red-50 text-red-700
+                    {% elseif member.status.value == 'suspended' %}bg-gray-100 text-gray-500
+                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    {% if member.status.value == 'accepted' %}Actif
+                    {% elseif member.status.value == 'waiting' %}En attente
+                    {% elseif member.status.value == 'refused' %}Refusé
+                    {% elseif member.status.value == 'suspended' %}Suspendu
+                    {% else %}{{ member.status.value }}{% endif %}
+                </span>
+            </div>
+        </div>
+
+        {# Right: details #}
+        <div class="lg:col-span-2 space-y-4">
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
+                </div>
+                <dl class="divide-y divide-gray-100">
+                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
+                        <dt class="text-gray-500">Prénom</dt>
+                        <dd class="text-gray-900 font-medium">{{ member.profile.firstName }}</dd>
+                    </div>
+                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
+                        <dt class="text-gray-500">Nom</dt>
+                        <dd class="text-gray-900 font-medium">{{ member.profile.lastName }}</dd>
+                    </div>
+                    {% if member.profile.dob %}
+                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
+                        <dt class="text-gray-500">Date de naissance</dt>
+                        <dd class="text-gray-900 font-medium">{{ member.profile.dob|date('d/m/Y') }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if member.profile.gender %}
+                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
+                        <dt class="text-gray-500">Genre</dt>
+                        <dd class="text-gray-900 font-medium">
+                            {% if member.profile.gender.value == 'male' %}Homme
+                            {% elseif member.profile.gender.value == 'female' %}Femme
+                            {% else %}Ne pas définir{% endif %}
+                        </dd>
+                    </div>
+                    {% endif %}
+                    {% if member.profile.phone %}
+                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
+                        <dt class="text-gray-500">Téléphone</dt>
+                        <dd class="text-gray-900 font-medium">{{ member.profile.phone }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
+                        <dt class="text-gray-500">Membre depuis</dt>
+                        <dd class="text-gray-900 font-medium">{{ member.createdAt|date('d/m/Y') }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -7,6 +7,7 @@ namespace App\Controller\School;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\PaymentSchedule;
+use App\Entity\Season;
 use App\Entity\User;
 use App\Security\Voter\OrderVoter;
 use App\Security\Voter\TeamVoter;
@@ -28,7 +29,7 @@ final class OrderController extends AbstractController
     }
 
     #[Route('', name: 'school_orders_list', methods: ['GET'])]
-    public function list(): Response
+    public function list(\Symfony\Component\HttpFoundation\Request $request): Response
     {
         /** @var User $user */
         $user        = $this->getUser();
@@ -41,6 +42,25 @@ final class OrderController extends AbstractController
 
         $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
 
+        $session  = $request->getSession();
+        $seasonId = $request->query->get('season');
+
+        if ($seasonId !== null) {
+            $season = $this->em->getRepository(Season::class)->find($seasonId);
+            if ($season !== null && $season->getTeamId() !== $team->getId()) {
+                $season = null;
+            }
+            if ($season !== null) {
+                $session->set('school.season_id', $season->getId());
+            }
+        } else {
+            $storedId = $session->get('school.season_id');
+            if ($storedId) {
+                return $this->redirectToRoute('school_orders_list', ['season' => $storedId]);
+            }
+            $season = null;
+        }
+
         $orders = $this->em->getRepository(Order::class)->findBy([
             'teamProfileId' => $teamProfile->getId(),
             'teamId'        => $team->getId(),
@@ -49,6 +69,7 @@ final class OrderController extends AbstractController
         return $this->render('school/orders/list.html.twig', [
             'team'   => $team,
             'orders' => $orders,
+            'season' => $season,
         ]);
     }
 

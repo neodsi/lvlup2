@@ -47,7 +47,7 @@ final class SchoolController extends AbstractController
         $team = $this->teamContext->getCurrentTeam();
 
         if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+            return $this->redirectToRoute('app_home');
         }
 
         $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
@@ -89,7 +89,7 @@ final class SchoolController extends AbstractController
             }
 
             $this->em->flush();
-            $this->addFlash('success', 'Team info updated.');
+            $this->addFlash('success', 'Informations mises à jour.');
 
             return $this->redirectToRoute('school_edit');
         }

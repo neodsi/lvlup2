@@ -26,7 +26,7 @@ class SeasonService
     public function createSeason(Team $team, array $data): Season
     {
         $season = new Season();
-        $season->setTeam($team);
+        $season->setTeamId($team->getId());
         $season->setName($data['name']);
         $season->setStartAt($data['startAt']);
         $season->setEndAt($data['endAt']);
@@ -55,7 +55,7 @@ class SeasonService
         \DateTimeImmutable $end,
     ): Season {
         $newSeason = new Season();
-        $newSeason->setTeam($team);
+        $newSeason->setTeamId($team->getId());
         $newSeason->setName($newName);
         $newSeason->setStartAt($start);
         $newSeason->setEndAt($end);

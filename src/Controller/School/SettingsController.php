@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\School;
 
+use App\Entity\Room;
 use App\Entity\Season;
 use App\Entity\TeamProfileSeason;
 use App\Entity\User;
@@ -43,6 +44,113 @@ final class SettingsController extends AbstractController
         $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
 
         return $this->render('school/settings/index.html.twig', ['team' => $team]);
+    }
+
+    #[Route('/legal', name: 'school_settings_legal', methods: ['GET'])]
+    public function legal(): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $team = $this->teamContext->getCurrentTeam();
+
+        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a team member.');
+        }
+
+        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+
+        return $this->render('school/settings/legal.html.twig', ['team' => $team]);
+    }
+
+    #[Route('/stripe', name: 'school_settings_stripe', methods: ['GET'])]
+    public function stripe(): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $team = $this->teamContext->getCurrentTeam();
+
+        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a team member.');
+        }
+
+        $this->denyAccessUnlessGranted(TeamVoter::CONFIGURE_STRIPE, $team);
+
+        return $this->render('school/settings/stripe.html.twig', ['team' => $team]);
+    }
+
+    #[Route('/saisons', name: 'school_settings_seasons', methods: ['GET'])]
+    public function seasons(): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $team = $this->teamContext->getCurrentTeam();
+
+        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a team member.');
+        }
+
+        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+
+        $seasons = $this->em->getRepository(Season::class)->findBy(
+            ['teamId' => $team->getId()],
+            ['createdAt' => 'DESC'],
+        );
+
+        return $this->render('school/settings/seasons.html.twig', [
+            'team'    => $team,
+            'seasons' => $seasons,
+        ]);
+    }
+
+    #[Route('/rooms', name: 'school_settings_rooms', methods: ['GET', 'POST'])]
+    public function rooms(Request $request): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $team = $this->teamContext->getCurrentTeam();
+
+        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a team member.');
+        }
+
+        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+
+        $seasonId = $team->getCurrentSeasonId();
+        $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
+
+        if ($season !== null && $request->isMethod('POST')) {
+            $method = $request->request->get('_method');
+
+            if ($method === 'DELETE') {
+                $roomId = $request->request->get('roomId');
+                $room   = $this->em->getRepository(Room::class)->find($roomId);
+
+                if ($room !== null && $room->getTeamId() === $team->getId()) {
+                    $this->em->remove($room);
+                    $this->em->flush();
+                }
+            } else {
+                $room = new Room();
+                $room->setTeamId($team->getId());
+                $room->setSeasonId($season->getId());
+                $room->setName((string) $request->request->get('name'));
+                $this->em->persist($room);
+                $this->em->flush();
+                $this->addFlash('success', 'Salle ajoutée.');
+            }
+
+            return $this->redirectToRoute('school_settings_rooms');
+        }
+
+        $rooms = $season
+            ? $this->em->getRepository(Room::class)->findBy(['seasonId' => $season->getId()])
+            : [];
+
+        return $this->render('school/settings/rooms.html.twig', [
+            'team'   => $team,
+            'season' => $season,
+            'rooms'  => $rooms,
+        ]);
     }
 
     #[Route('/stripe/payments', name: 'school_settings_stripe_payments', methods: ['GET'])]
@@ -111,7 +219,7 @@ final class SettingsController extends AbstractController
                 'endAt'   => new \DateTimeImmutable((string) $request->request->get('endAt')),
             ]);
 
-            $this->addFlash('success', 'Season created.');
+            $this->addFlash('success', 'Saison créée avec succès.');
 
             return $this->redirectToRoute('school_settings_season', ['id' => $season->getId()]);
         }
@@ -154,7 +262,7 @@ final class SettingsController extends AbstractController
             }
 
             $this->em->flush();
-            $this->addFlash('success', 'Season updated.');
+            $this->addFlash('success', 'Saison mise à jour.');
 
             return $this->redirectToRoute('school_settings_season', ['id' => $id]);
         }

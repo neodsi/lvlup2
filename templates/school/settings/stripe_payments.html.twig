@@ -1,12 +1,11 @@
-{% extends 'base.html.twig' %}
+﻿{% extends 'layout/school.html.twig' %}
 
 {% block title %}Sessions Stripe — {{ team.name }}{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
+{% block school_content %}
 
     <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="py-4">
             <nav class="flex items-center gap-2 text-sm text-gray-500 mb-3">
                 <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition-colors">Paramètres</a>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -25,7 +24,7 @@
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="py-8">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             {% if sessions is empty %}
                 <div class="px-6 py-16 text-center">
@@ -106,5 +105,4 @@
             {% endif %}
         </div>
     </div>
-</div>
-{% endblock %}
+

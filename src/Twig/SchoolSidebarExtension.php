@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Twig;
+
+use App\Entity\Season;
+use App\Service\TeamContextService;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
+use Twig\Extension\AbstractExtension;
+use Twig\TwigFunction;
+
+class SchoolSidebarExtension extends AbstractExtension
+{
+    public function __construct(
+        private readonly TeamContextService $teamContext,
+        private readonly EntityManagerInterface $em,
+        private readonly Security $security,
+    ) {
+    }
+
+    public function getFunctions(): array
+    {
+        return [
+            new TwigFunction('school_sidebar_data', [$this, 'getSidebarData']),
+        ];
+    }
+
+    public function getSidebarData(): array
+    {
+        if (!$this->security->isGranted('ROLE_SCHOOL')) {
+            return ['seasons' => [], 'currentSeasonId' => null];
+        }
+
+        $team = $this->teamContext->getCurrentTeam();
+        if ($team === null) {
+            return ['seasons' => [], 'currentSeasonId' => null];
+        }
+
+        $seasons = $this->em->getRepository(Season::class)->findBy(
+            ['teamId' => $team->getId()],
+            ['createdAt' => 'DESC'],
+        );
+
+        return [
+            'seasons'         => $seasons,
+            'currentSeasonId' => $team->getCurrentSeasonId(),
+        ];
+    }
+}
