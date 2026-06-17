@@ -30,7 +30,7 @@ final class MemberController extends AbstractController
     }
 
     #[Route('/{type}', name: 'school_members_list', methods: ['GET'],
-        requirements: ['type' => 'students|teachers|admins'])]
+        requirements: ['type' => 'all|students|teachers|admins'])]
     public function list(string $type): Response
     {
         /** @var User $user */
@@ -49,11 +49,12 @@ final class MemberController extends AbstractController
             'admins'   => TeamRole::TeamAdmin,
         ];
 
-        $members = $this->em->getRepository(TeamProfile::class)->findBy([
-            'team'      => $team,
-            'role'      => $roleMap[$type],
-            'deletedAt' => null,
-        ]);
+        $criteria = ['team' => $team, 'deletedAt' => null];
+        if ($type !== 'all') {
+            $criteria['role'] = $roleMap[$type];
+        }
+
+        $members = $this->em->getRepository(TeamProfile::class)->findBy($criteria);
 
         return $this->render('school/members/list.html.twig', [
             'team'    => $team,
