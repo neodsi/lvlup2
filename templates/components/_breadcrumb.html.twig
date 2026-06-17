@@ -1,0 +1,41 @@
+{# Breadcrumb component.
+   Usage: {% include 'components/_breadcrumb.html.twig' with { items: breadcrumbs } %}
+
+   `items` is an array of objects with:
+     - label  (string, required) — display text
+     - url    (string, optional) — if absent the item is rendered as the current (last) crumb
+
+   Example:
+     {% set breadcrumbs = [
+         { label: 'Accueil', url: path('app_home') },
+         { label: 'Membres', url: path('school_members_list', {type: 'all'}) },
+         { label: 'Jean Dupont' }
+     ] %}
+     {% include 'components/_breadcrumb.html.twig' with { items: breadcrumbs } %}
+#}
+
+{% if items is defined and items|length > 0 %}
+<nav aria-label="Fil d'Ariane" class="flex items-center gap-1.5 text-sm text-gray-500 py-3 px-1 overflow-x-auto whitespace-nowrap">
+
+    {% for item in items %}
+
+        {% if not loop.first %}
+        <svg class="w-4 h-4 flex-shrink-0 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        {% endif %}
+
+        {% if item.url is defined and item.url and not loop.last %}
+        <a href="{{ item.url }}" class="hover:text-indigo-600 transition truncate max-w-[160px] md:max-w-none">
+            {{ item.label }}
+        </a>
+        {% else %}
+        <span class="font-medium text-gray-800 truncate max-w-[160px] md:max-w-none" aria-current="page">
+            {{ item.label }}
+        </span>
+        {% endif %}
+
+    {% endfor %}
+
+</nav>
+{% endif %}

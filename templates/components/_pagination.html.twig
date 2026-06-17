@@ -1,0 +1,99 @@
+{# Pagination component.
+   Usage: {% include 'components/_pagination.html.twig' with { pagination: pagination } %}
+
+   Expected `pagination` variable with properties:
+     - currentPage  (int)
+     - totalPages   (int)
+     - totalItems   (int)
+     - itemsPerPage (int)
+     - routeName    (string)
+     - routeParams  (array, optional, merged with page param)
+
+   You can also pass a KnpPaginator paginator object directly — in that case
+   use the knp_pagination_render() function instead and skip this component.
+#}
+
+{% if pagination is defined and pagination.totalPages is defined and pagination.totalPages > 1 %}
+
+{% set current = pagination.currentPage %}
+{% set total   = pagination.totalPages %}
+{% set route   = pagination.routeName %}
+{% set params  = pagination.routeParams ?? {} %}
+
+{# Build page range: always show first, last, current ±2, with ellipsis gaps #}
+{% set pages = [] %}
+{% for p in 1..total %}
+    {% if p == 1 or p == total or (p >= current - 2 and p <= current + 2) %}
+        {% set pages = pages|merge([p]) %}
+    {% endif %}
+{% endfor %}
+
+<nav aria-label="Pagination" class="flex items-center justify-between py-4 px-1">
+
+    {# Left: item count summary #}
+    <p class="hidden md:block text-sm text-gray-500">
+        {% set from = ((current - 1) * pagination.itemsPerPage) + 1 %}
+        {% set to   = [current * pagination.itemsPerPage, pagination.totalItems]|min %}
+        {{ from }}–{{ to }} sur {{ pagination.totalItems }} résultats
+    </p>
+
+    {# Right: page buttons #}
+    <div class="flex items-center gap-1 mx-auto md:mx-0">
+
+        {# Previous #}
+        {% if current > 1 %}
+        <a href="{{ path(route, params|merge({page: current - 1})) }}"
+           class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span class="hidden md:inline">Précédent</span>
+        </a>
+        {% else %}
+        <span class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-300 bg-white border border-gray-200 rounded-lg cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span class="hidden md:inline">Précédent</span>
+        </span>
+        {% endif %}
+
+        {# Page numbers #}
+        {% set prevPage = null %}
+        {% for p in pages %}
+            {% if prevPage is not null and p > prevPage + 1 %}
+            <span class="px-2 py-1.5 text-sm text-gray-400 select-none">&hellip;</span>
+            {% endif %}
+
+            {% if p == current %}
+            <span class="px-3 py-1.5 text-sm font-semibold text-white bg-indigo-600 border border-indigo-600 rounded-lg">{{ p }}</span>
+            {% else %}
+            <a href="{{ path(route, params|merge({page: p})) }}"
+               class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">{{ p }}</a>
+            {% endif %}
+
+            {% set prevPage = p %}
+        {% endfor %}
+
+        {# Next #}
+        {% if current < total %}
+        <a href="{{ path(route, params|merge({page: current + 1})) }}"
+           class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+            <span class="hidden md:inline">Suivant</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </a>
+        {% else %}
+        <span class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-300 bg-white border border-gray-200 rounded-lg cursor-not-allowed">
+            <span class="hidden md:inline">Suivant</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </span>
+        {% endif %}
+
+    </div>
+</nav>
+
+{% endif %}

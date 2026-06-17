@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ team.name }}</title>
+</head>
+<body class="shop-iframe">
+
+<div class="shop shop--iframe">
+
+    {# ── School header (compact) ── #}
+    <header class="shop__header shop__header--compact">
+        {% if team.avatarPath %}
+        <img
+            src="{{ team.avatarPath | imagine_filter('team_avatar') }}"
+            alt="{{ team.name }}"
+            class="shop__avatar-img shop__avatar-img--small"
+        >
+        {% endif %}
+        <h1 class="shop__school-name">{{ team.name }}</h1>
+    </header>
+
+    <main class="shop__content">
+
+        {# ── Season info ── #}
+        {% if season %}
+        <section class="shop__season">
+            <p class="shop__season-name">{{ season.name }}</p>
+            <p class="shop__season-dates">
+                {{ season.startAt | app_date }} &ndash; {{ season.endAt | app_date }}
+            </p>
+        </section>
+        {% endif %}
+
+        {# ── Packages ── #}
+        {% if packages|length > 0 %}
+        <section class="shop__packages">
+            <h2 class="shop__section-title">Formules</h2>
+            <ul class="shop__packages-list">
+                {% for package in packages %}
+                <li class="shop__package-item">
+                    <span class="shop__package-name">{{ package.name }}</span>
+                    <span class="shop__package-price">{{ package.price | money }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {# ── Events ── #}
+        {% if events|length > 0 %}
+        <section class="shop__events">
+            <h2 class="shop__section-title">Cours</h2>
+            <ul class="shop__events-list">
+                {% for event in events %}
+                <li class="shop__event-item">
+                    <span class="shop__event-name">{{ event.name }}</span>
+                    <span class="shop__event-type">
+                        {% if event.type.value == 'lesson' %}Cours
+                        {% elseif event.type.value == 'stage' %}Stage
+                        {% elseif event.type.value == 'gala' %}Gala
+                        {% elseif event.type.value == 'workshop' %}Atelier
+                        {% else %}{{ event.type.value }}{% endif %}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {# ── CTA ── #}
+        <section class="shop__cta">
+            {% if app.user and teamProfileSeason and teamProfileSeason.registrationStatus.value == 'registered' %}
+                <p class="shop__status shop__status--registered">Deja inscrit(e).</p>
+            {% else %}
+                <a
+                    href="{{ url('app_shop', { teamSlug: team.currentSlug }) }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="shop__cta-btn shop__cta-btn--primary"
+                >
+                    S'inscrire
+                </a>
+            {% endif %}
+        </section>
+
+    </main>
+</div>
+
+</body>
+</html>

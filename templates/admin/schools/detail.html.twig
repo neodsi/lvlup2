@@ -1,0 +1,115 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block title %}{{ team.name }} — Administration{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# Breadcrumb #}
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <a href="{{ path('app_admin') }}" class="hover:text-indigo-600 transition">Admin</a>
+        <span>/</span>
+        <a href="{{ path('app_admin_schools') }}" class="hover:text-indigo-600 transition">Écoles</a>
+        <span>/</span>
+        <span class="text-gray-700 font-medium">{{ team.name }}</span>
+    </div>
+
+    {# School header card #}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 border-b border-gray-100">
+            <div class="flex items-center gap-4">
+                <div class="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-2xl shrink-0">
+                    {{ team.name|first|upper }}
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900">{{ team.name }}</h1>
+                    <p class="text-xs text-gray-400 font-mono">{{ team.id }}</p>
+                </div>
+            </div>
+            {% set s = team.status.value ?? team.status ?? 'unknown' %}
+            <span class="self-start sm:self-auto inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold
+                {% if s == 'active' %}bg-green-50 text-green-700
+                {% elseif s == 'waiting' %}bg-amber-50 text-amber-700
+                {% elseif s == 'refused' %}bg-red-50 text-red-700
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                {% if s == 'active' %}Actif
+                {% elseif s == 'waiting' %}En attente
+                {% elseif s == 'refused' %}Refusé
+                {% else %}{{ s }}{% endif %}
+            </span>
+        </div>
+
+        <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 px-6 py-5 text-sm">
+            <div>
+                <dt class="text-gray-500">Type</dt>
+                <dd class="mt-1 font-medium text-gray-900">{{ team.type ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-gray-500">Créée le</dt>
+                <dd class="mt-1 font-medium text-gray-900">{{ team.createdAt|date('d/m/Y') }}</dd>
+            </div>
+            {% if team.invoicePrefix %}
+                <div>
+                    <dt class="text-gray-500">Préfixe facture</dt>
+                    <dd class="mt-1 font-medium text-gray-900 font-mono">{{ team.invoicePrefix }}</dd>
+                </div>
+            {% endif %}
+            {% if team.invoiceAddress %}
+                <div class="col-span-2 sm:col-span-3">
+                    <dt class="text-gray-500">Adresse de facturation</dt>
+                    <dd class="mt-1 text-gray-900 whitespace-pre-line">{{ team.invoiceAddress }}</dd>
+                </div>
+            {% endif %}
+        </dl>
+    </div>
+
+    {# Status change #}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-5">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Changer le statut</h2>
+        </div>
+        <div class="px-6 py-5">
+            <form method="post" action="{{ path('app_admin_school_detail', {id: team.id}) }}" class="flex flex-wrap gap-3">
+                {% for status in statuses %}
+                    {% set sv = status.value %}
+                    <button
+                        type="submit"
+                        name="status"
+                        value="{{ sv }}"
+                        class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition focus:outline-none
+                            {% if sv == (team.status.value ?? '') %}
+                                {% if sv == 'active' %}bg-green-600 text-white border-green-600 cursor-default
+                                {% elseif sv == 'waiting' %}bg-amber-500 text-white border-amber-500 cursor-default
+                                {% elseif sv == 'refused' %}bg-red-600 text-white border-red-600 cursor-default
+                                {% else %}bg-indigo-600 text-white border-indigo-600 cursor-default{% endif %}
+                            {% else %}
+                                {% if sv == 'active' %}border-green-300 text-green-700 hover:bg-green-50
+                                {% elseif sv == 'waiting' %}border-amber-300 text-amber-700 hover:bg-amber-50
+                                {% elseif sv == 'refused' %}border-red-300 text-red-700 hover:bg-red-50
+                                {% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %}
+                            {% endif %}"
+                        {% if sv == (team.status.value ?? '') %}disabled{% endif %}
+                    >
+                        {% if sv == 'active' %}Activer
+                        {% elseif sv == 'waiting' %}Mettre en attente
+                        {% elseif sv == 'refused' %}Refuser
+                        {% else %}{{ sv }}{% endif %}
+                        {% if sv == (team.status.value ?? '') %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        {% endif %}
+                    </button>
+                {% endfor %}
+            </form>
+        </div>
+    </div>
+
+    {# Danger zone / back #}
+    <div class="flex justify-start">
+        <a href="{{ path('app_admin_schools') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 font-medium transition">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Retour à la liste
+        </a>
+    </div>
+
+</div>
+{% endblock %}

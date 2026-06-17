@@ -1,0 +1,119 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}Tableau de bord — {{ team.name }}{% endblock %}
+
+{% block school_content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# Header #}
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ team.name }}</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Tableau de bord</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ path('school_members_list', {type: 'students'}) }}" class="inline-flex items-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                Membres
+            </a>
+            <a href="{{ path('school_events') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                Cours &amp; événements
+            </a>
+        </div>
+    </div>
+
+    {# KPI Cards #}
+    {% if kpis is defined and kpis|length > 0 %}
+        {% set latest = kpis|first %}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Membres actifs</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">{{ latest.membersCount ?? '—' }}</p>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Revenus ce mois</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">
+                    {% if latest.revenueMonth is defined %}
+                        {{ (latest.revenueMonth / 100)|number_format(2, ',', ' ') }} €
+                    {% else %}—{% endif %}
+                </p>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Commandes</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">{{ latest.ordersCount ?? '—' }}</p>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Paiements en attente</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">
+                    {% if latest.pendingAmount is defined %}
+                        {{ (latest.pendingAmount / 100)|number_format(2, ',', ' ') }} €
+                    {% else %}—{% endif %}
+                </p>
+            </div>
+
+        </div>
+    {% else %}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {% for label in ['Membres actifs', 'Revenus ce mois', 'Commandes', 'Paiements en attente'] %}
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 animate-pulse">
+                    <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">{{ label }}</p>
+                    <div class="mt-2 h-8 w-20 bg-gray-100 rounded"></div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# Quick links #}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <a href="{{ path('school_members_list', {type: 'students'}) }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition">Élèves</p>
+                <p class="text-xs text-gray-400">Gérer les membres</p>
+            </div>
+            <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
+        <a href="{{ path('school_orders_list') }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+                <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition">Commandes</p>
+                <p class="text-xs text-gray-400">Voir les inscriptions</p>
+            </div>
+            <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
+        <a href="{{ path('school_events') }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                <svg class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition">Cours &amp; événements</p>
+                <p class="text-xs text-gray-400">Planning de la saison</p>
+            </div>
+            <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
+        <a href="{{ path('school_fast_count') }}" class="group flex items-center gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition">
+            <div class="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+                <svg class="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition">Comptage rapide</p>
+                <p class="text-xs text-gray-400">Décompte à la carte</p>
+            </div>
+            <svg class="h-4 w-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
+    </div>
+
+</div>
+{% endblock %}

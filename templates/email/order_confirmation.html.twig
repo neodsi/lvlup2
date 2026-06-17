@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmation de votre commande</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Arial, sans-serif; color: #18181b; }
+    .wrapper { max-width: 580px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .header { background: #18181b; padding: 32px 40px; text-align: center; }
+    .header .logo { font-size: 28px; font-weight: 800; color: #facc15; letter-spacing: -1px; }
+    .header .logo span { color: #ffffff; }
+    .body { padding: 40px; }
+    .body h1 { font-size: 22px; font-weight: 700; margin: 0 0 16px; }
+    .body p { font-size: 15px; line-height: 1.6; color: #52525b; margin: 0 0 20px; }
+    .summary { border: 1px solid #e4e4e7; border-radius: 10px; overflow: hidden; margin-bottom: 28px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f4f4f5; font-size: 14px; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .label { color: #71717a; }
+    .summary-row .value { font-weight: 600; color: #18181b; }
+    .total-row { background: #f4f4f5; }
+    .total-row .value { font-size: 16px; color: #18181b; }
+    .badge { display: inline-block; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+    .footer { background: #f4f4f5; padding: 24px 40px; text-align: center; font-size: 12px; color: #a1a1aa; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <div class="logo"><span>Lvl</span>Up</div>
+    </div>
+    <div class="body">
+      <h1>Commande confirmée <span class="badge">Confirmée</span></h1>
+      <p>Bonjour {{ profile.firstName }},</p>
+      <p>Nous avons bien enregistré votre commande. Voici le récapitulatif :</p>
+      <div class="summary">
+        <div class="summary-row">
+          <span class="label">Référence commande</span>
+          <span class="value">{{ order.id|slice(0, 8)|upper }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Profil</span>
+          <span class="value">{{ profile.firstName }} {{ profile.lastName }}</span>
+        </div>
+        {% if order.packageType %}
+        <div class="summary-row">
+          <span class="label">Formule</span>
+          <span class="value">{{ order.packageType }}</span>
+        </div>
+        {% endif %}
+        <div class="summary-row">
+          <span class="label">Statut</span>
+          <span class="value">{{ order.status.value }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Montant réglé</span>
+          <span class="value">{{ (order.paidAmount / 100)|number_format(2, ',', ' ') }} €</span>
+        </div>
+        <div class="summary-row total-row">
+          <span class="label"><strong>Total commande</strong></span>
+          <span class="value">{{ (order.totalAmount / 100)|number_format(2, ',', ' ') }} €</span>
+        </div>
+      </div>
+      <p>Vous pouvez consulter le détail de votre commande directement depuis votre espace personnel.</p>
+      <p>Pour toute question, n'hésitez pas à nous contacter.</p>
+      <p>À bientôt sur LvlUp !</p>
+    </div>
+    <div class="footer">
+      &copy; {{ "now"|date("Y") }} LvlUp &mdash; Tous droits réservés.
+    </div>
+  </div>
+</body>
+</html>

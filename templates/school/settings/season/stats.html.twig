@@ -1,0 +1,161 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Statistiques — {{ season.name }}{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <nav class="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition-colors">Paramètres</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition-colors">{{ season.name }}</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="text-gray-900 font-medium">Statistiques</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Statistiques de la saison</h1>
+            <p class="text-sm text-gray-500 mt-0.5">{{ season.name }} — {{ season.startAt|date('d/m/Y') }} au {{ season.endAt|date('d/m/Y') }}</p>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        {# Computed stats #}
+        {% set totalRegistrations = registrations|length %}
+        {% set registeredCount = 0 %}
+        {% set packageTypeCounts = {} %}
+
+        {% for reg in registrations %}
+            {% if reg.registrationStatus.value != 'not_registered' %}
+                {% set registeredCount = registeredCount + 1 %}
+            {% endif %}
+        {% endfor %}
+
+        {# KPI Cards #}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-gray-500">Inscriptions</p>
+                    <div class="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">{{ registeredCount }}</p>
+                <p class="text-xs text-gray-400 mt-1">sur {{ totalRegistrations }} profils</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-gray-500">Taux d'inscription</p>
+                    <div class="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">
+                    {% if totalRegistrations > 0 %}{{ ((registeredCount / totalRegistrations) * 100)|round }}%{% else %}—{% endif %}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">membres inscrits</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-gray-500">Durée saison</p>
+                    <div class="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                </div>
+                {% set diff = season.startAt|date_modify('+0 days') %}
+                <p class="text-3xl font-bold text-gray-900">
+                    {{ ((season.endAt.timestamp - season.startAt.timestamp) / 86400 / 30)|round }} mois
+                </p>
+                <p class="text-xs text-gray-400 mt-1">{{ season.startAt|date('d/m/Y') }} → {{ season.endAt|date('d/m/Y') }}</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-gray-500">Fermetures</p>
+                    <div class="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">{{ season.closures ? season.closures|length : 0 }}</p>
+                <p class="text-xs text-gray-400 mt-1">périodes de fermeture</p>
+            </div>
+        </div>
+
+        {# Registration status breakdown #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Statuts d'inscription</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Répartition des membres par statut.</p>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                {% set statusGroups = {} %}
+                {% for reg in registrations %}
+                    {% set s = reg.registrationStatus.value %}
+                    {% if statusGroups[s] is defined %}
+                        {% set statusGroups = statusGroups|merge({(s): statusGroups[s] + 1}) %}
+                    {% else %}
+                        {% set statusGroups = statusGroups|merge({(s): 1}) %}
+                    {% endif %}
+                {% endfor %}
+
+                {% set statusColors = {
+                    'registered': 'bg-green-500',
+                    'pending': 'bg-amber-400',
+                    'not_registered': 'bg-gray-200',
+                    'cancelled': 'bg-red-400',
+                } %}
+                {% set statusLabels = {
+                    'registered': 'Inscrit',
+                    'pending': 'En attente',
+                    'not_registered': 'Non inscrit',
+                    'cancelled': 'Annulé',
+                } %}
+
+                {% if statusGroups is empty %}
+                    <p class="text-sm text-gray-400">Aucune donnée disponible.</p>
+                {% else %}
+                    {% for status, count in statusGroups %}
+                        {% set pct = totalRegistrations > 0 ? ((count / totalRegistrations) * 100)|round : 0 %}
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-sm text-gray-700">
+                                    {{ statusLabels[status] ?? status }}
+                                </span>
+                                <span class="text-sm font-semibold text-gray-900">{{ count }} <span class="text-gray-400 font-normal">({{ pct }}%)</span></span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                <div class="{{ statusColors[status] ?? 'bg-indigo-500' }} h-2.5 rounded-full transition-all duration-500"
+                                     style="width: {{ pct }}%"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        {# Closures list #}
+        {% if season.closures %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-6 py-5 border-b border-gray-100">
+                    <h2 class="text-base font-semibold text-gray-900">Fermetures planifiées</h2>
+                </div>
+                <div class="divide-y divide-gray-50">
+                    {% for closure in season.closures %}
+                        <div class="flex items-center justify-between px-6 py-3.5 text-sm">
+                            <span class="font-medium text-gray-800">{{ closure.label ?? 'Sans libellé' }}</span>
+                            <span class="text-gray-500">
+                                {{ closure.start_at is defined ? closure.start_at : '' }}
+                                {% if closure.end_at is defined %} → {{ closure.end_at }}{% endif %}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

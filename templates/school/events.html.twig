@@ -1,0 +1,92 @@
+{% extends 'layout/school.html.twig' %}
+
+{% block title %}Cours &amp; événements — {{ team.name }}{% endblock %}
+
+{% block school_content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# Header #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <a href="{{ path('school_home') }}" class="hover:text-indigo-600 transition">{{ team.name }}</a>
+                <span>/</span>
+                <span class="text-gray-700 font-medium">Cours &amp; événements</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">Cours &amp; événements</h1>
+            {% if season %}
+                <p class="text-sm text-gray-500 mt-0.5">Saison : {{ season.name }} — du {{ season.startAt|date('d/m/Y') }} au {{ season.endAt|date('d/m/Y') }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not season %}
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
+            <p class="text-amber-800 text-sm font-medium">Aucune saison active. Configurez une saison pour gérer les événements.</p>
+            <a href="{{ path('school_settings_season_current') }}" class="mt-3 inline-flex items-center gap-2 text-sm text-amber-700 font-semibold hover:text-amber-900 transition">
+                Configurer la saison
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+    {% elseif events is empty %}
+        <div class="rounded-xl border border-gray-200 bg-white p-12 text-center">
+            <svg class="mx-auto h-10 w-10 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <p class="text-gray-500 text-sm">Aucun événement pour cette saison.</p>
+        </div>
+    {% else %}
+        {# Group events by type #}
+        {% set eventsByType = {} %}
+        {% for event in events %}
+            {% set t = event.type.value ?? 'other' %}
+            {% set eventsByType = eventsByType|merge({(t): (eventsByType[t] ?? [])|merge([event])}) %}
+        {% endfor %}
+
+        <div class="space-y-6">
+            {% for eventType, typeEvents in eventsByType %}
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
+                        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+                            {% if eventType == 'lesson' %}bg-indigo-100 text-indigo-700
+                            {% elseif eventType == 'stage' %}bg-green-100 text-green-700
+                            {% elseif eventType == 'gala' %}bg-purple-100 text-purple-700
+                            {% elseif eventType == 'workshop' %}bg-amber-100 text-amber-700
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {% if eventType == 'lesson' %}Cours
+                            {% elseif eventType == 'stage' %}Stage
+                            {% elseif eventType == 'gala' %}Gala
+                            {% elseif eventType == 'workshop' %}Atelier
+                            {% else %}{{ eventType }}{% endif %}
+                        </span>
+                        <span class="text-sm text-gray-500">{{ typeEvents|length }} événement{{ typeEvents|length > 1 ? 's' : '' }}</span>
+                    </div>
+
+                    <ul class="divide-y divide-gray-100">
+                        {% for event in typeEvents %}
+                            <li class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
+                                <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 text-sm font-bold shrink-0">
+                                    {{ event.startAt|date('d') }}
+                                    <br>
+                                    <span class="text-xs font-normal">{{ event.startAt|date('M')|lower }}</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-sm text-gray-900 truncate">{{ event.name }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        {{ event.startAt|date('d/m/Y') }}
+                                        {% if event.endAt %}— {{ event.endAt|date('d/m/Y') }}{% endif %}
+                                    </p>
+                                </div>
+                                {% if event.maxParticipants %}
+                                    <span class="text-xs text-gray-400 shrink-0">
+                                        {{ event.maxParticipants }} places
+                                    </span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

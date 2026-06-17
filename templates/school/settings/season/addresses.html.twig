@@ -1,0 +1,105 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Adresses — {{ season.name }}{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <nav class="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition-colors">Paramètres</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition-colors">{{ season.name }}</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="text-gray-900 font-medium">Adresses</span>
+            </nav>
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900">Lieux &amp; Adresses</h1>
+                <span class="text-sm text-gray-500">{{ addresses|length }} adresse{{ addresses|length > 1 ? 's' : '' }}</span>
+            </div>
+        </div>
+    </header>
+
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <div class="rounded-lg px-4 py-3 text-sm font-medium
+                    {% if label == 'success' %}bg-green-50 text-green-800 border border-green-200
+                    {% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
+            {# Inline add form #}
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
+                <form method="POST" action="{{ path('school_season_addresses', {id: season.id}) }}"
+                      class="flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="_token" value="{{ csrf_token('address_create') }}">
+                    <div class="min-w-32">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Libellé</label>
+                        <input type="text" name="name" required placeholder="Salle principale"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div class="flex-1 min-w-48">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Adresse</label>
+                        <input type="text" name="address" required placeholder="1 rue de la Danse, 75001 Paris"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Ajouter
+                    </button>
+                </form>
+            </div>
+
+            {% if addresses is empty %}
+                <div class="px-6 py-12 text-center text-sm text-gray-400">
+                    Aucune adresse enregistrée. Utilisez le formulaire ci-dessus.
+                </div>
+            {% else %}
+                <ul class="divide-y divide-gray-50">
+                    {% for address in addresses %}
+                        <li class="flex items-start justify-between px-6 py-4 hover:bg-gray-50 transition-colors group gap-4">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition-colors mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">{{ address.name }}</p>
+                                    <p class="text-sm text-gray-500 mt-0.5 truncate">{{ address.address }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 flex-shrink-0">
+                                <span class="text-xs text-gray-400 font-mono hidden sm:inline">{{ address.id|slice(0, 8) }}…</span>
+                                <form method="POST" action="{{ path('school_season_addresses', {id: season.id}) }}"
+                                      onsubmit="return confirm('Supprimer cette adresse ?')">
+                                    <input type="hidden" name="_method" value="DELETE">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('address_delete_' ~ address.id) }}">
+                                    <input type="hidden" name="addressId" value="{{ address.id }}">
+                                    <button type="submit"
+                                            class="text-gray-300 hover:text-red-500 transition-colors p-1 rounded"
+                                            title="Supprimer">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
+                    {{ addresses|length }} adresse{{ addresses|length > 1 ? 's' : '' }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

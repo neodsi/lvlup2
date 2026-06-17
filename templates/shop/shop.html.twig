@@ -1,0 +1,182 @@
+{% extends 'layout/public.html.twig' %}
+
+{% block title %}{{ team.name }}{% endblock %}
+
+{% block body %}
+<div class="shop">
+
+    {# ── School header ── #}
+    <header class="shop__header">
+        <div class="shop__header-inner">
+
+            {% if team.avatarPath %}
+            <div class="shop__avatar">
+                <img
+                    src="{{ team.avatarPath | imagine_filter('team_avatar') }}"
+                    alt="{{ team.name }}"
+                    class="shop__avatar-img"
+                >
+            </div>
+            {% endif %}
+
+            <h1 class="shop__school-name">{{ team.name }}</h1>
+
+        </div>
+
+        {% if team.carouselPaths and team.carouselPaths|length > 0 %}
+        <div class="shop__carousel">
+            {% for path in team.carouselPaths %}
+            <div class="shop__carousel-slide{% if loop.first %} shop__carousel-slide--active{% endif %}">
+                <img
+                    src="{{ path | imagine_filter('team_carousel') }}"
+                    alt="{{ team.name }} - photo {{ loop.index }}"
+                    class="shop__carousel-img"
+                >
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </header>
+
+    <main class="shop__content">
+
+        {# ── Season info ── #}
+        {% if season %}
+        <section class="shop__season">
+            <h2 class="shop__season-name">{{ season.name }}</h2>
+            <p class="shop__season-dates">
+                Du {{ season.startAt | app_date }} au {{ season.endAt | app_date }}
+            </p>
+        </section>
+        {% endif %}
+
+        {# ── Authentication CTA (unauthenticated visitors) ── #}
+        {% if not app.user %}
+        <section class="shop__cta shop__cta--auth">
+            <p class="shop__cta-text">Connectez-vous pour vous inscrire ou consulter votre dossier.</p>
+            <a href="{{ path('app_login') }}" class="shop__cta-btn shop__cta-btn--primary">
+                Se connecter / S'inscrire
+            </a>
+        </section>
+        {% endif %}
+
+        {# ── Authenticated member: registration status ── #}
+        {% if app.user and teamProfile %}
+        <section class="shop__registration-status">
+            <h2 class="shop__section-title">Mon inscription</h2>
+            {% if teamProfileSeason %}
+                {% set status = teamProfileSeason.registrationStatus.value %}
+                <div class="shop__status shop__status--{{ status }}">
+                    {% if status == 'registered' %}
+                        Inscrit(e) pour cette saison.
+                    {% elseif status == 'pre_registered' %}
+                        Pre-inscription enregistree. Elle sera confirmee prochainement.
+                    {% elseif status == 'withdrawn' %}
+                        Desincrit(e) de cette saison.
+                    {% else %}
+                        Pas encore inscrit(e) pour cette saison.
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="shop__status shop__status--not_registered">
+                    Pas encore inscrit(e) pour cette saison.
+                </p>
+            {% endif %}
+
+            {% if not teamProfileSeason or teamProfileSeason.registrationStatus.value == 'not_registered' or teamProfileSeason.registrationStatus.value == 'withdrawn' %}
+            <a href="{{ path('app_login') }}" class="shop__cta-btn shop__cta-btn--primary">
+                S'inscrire
+            </a>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {# ── Packages ── #}
+        {% if packages|length > 0 %}
+        <section class="shop__packages">
+            <h2 class="shop__section-title">Formules et tarifs</h2>
+            <div class="shop__packages-grid">
+                {% for package in packages %}
+                <article class="shop__package-card">
+                    <h3 class="shop__package-name">{{ package.name }}</h3>
+
+                    <span class="shop__package-type shop__package-type--{{ package.type.value }}">
+                        {% if package.type.value == 'subscription_one_year' %}
+                            Abonnement annuel
+                        {% elseif package.type.value == 'subscription_one_semester' %}
+                            Abonnement semestriel
+                        {% elseif package.type.value == 'trial_class' %}
+                            Cours d'essai
+                        {% elseif package.type.value == 'a_la_carte' %}
+                            A la carte
+                        {% else %}
+                            {{ package.type.value }}
+                        {% endif %}
+                    </span>
+
+                    {% if package.classesQty %}
+                    <p class="shop__package-qty">{{ package.classesQty }} cours</p>
+                    {% endif %}
+
+                    <p class="shop__package-price">{{ package.price | money }}</p>
+
+                    {% if not app.user %}
+                    <a href="{{ path('app_login') }}" class="shop__cta-btn shop__cta-btn--secondary">
+                        Choisir cette formule
+                    </a>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# ── Events ── #}
+        {% if events|length > 0 %}
+        <section class="shop__events">
+            <h2 class="shop__section-title">Cours et activites</h2>
+            <ul class="shop__events-list">
+                {% for event in events %}
+                <li class="shop__event-item">
+                    <div class="shop__event-info">
+                        <span class="shop__event-name">{{ event.name }}</span>
+                        <span class="shop__event-type shop__event-type--{{ event.type.value }}">
+                            {% if event.type.value == 'lesson' %}
+                                Cours
+                            {% elseif event.type.value == 'stage' %}
+                                Stage
+                            {% elseif event.type.value == 'gala' %}
+                                Gala
+                            {% elseif event.type.value == 'workshop' %}
+                                Atelier
+                            {% else %}
+                                {{ event.type.value }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="shop__event-dates">
+                        {{ event.startAt | app_date }} &ndash; {{ event.endAt | app_date }}
+                    </div>
+                    {% if event.maxParticipants %}
+                    <span class="shop__event-capacity">
+                        Capacite : {{ event.maxParticipants }} personnes
+                    </span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {# ── Bottom CTA for unauthenticated visitors ── #}
+        {% if not app.user %}
+        <section class="shop__cta shop__cta--bottom">
+            <a href="{{ path('app_login') }}" class="shop__cta-btn shop__cta-btn--primary shop__cta-btn--large">
+                Rejoindre {{ team.name }}
+            </a>
+        </section>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}

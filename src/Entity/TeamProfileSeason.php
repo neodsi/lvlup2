@@ -1,0 +1,249 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Entity;
+
+use App\Enum\RegistrationStatus;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
+
+#[ORM\Entity]
+#[ORM\Table(name: 'team_profile_seasons')]
+#[ORM\UniqueConstraint(name: 'uq_team_profile_season', columns: ['team_profile_id', 'season_id'])]
+#[ORM\HasLifecycleCallbacks]
+class TeamProfileSeason
+{
+    #[ORM\Id]
+    #[ORM\Column(type: 'string', length: 36)]
+    private string $id;
+
+    #[ORM\Column(type: 'string', length: 36)]
+    private string $teamProfileId;
+
+    #[ORM\Column(type: 'string', length: 36)]
+    private string $seasonId;
+
+    #[ORM\Column(type: 'string', length: 36)]
+    private string $teamId;
+
+    #[ORM\Column(type: 'string', length: 50, enumType: RegistrationStatus::class, options: ['default' => 'not_registered'])]
+    private RegistrationStatus $registrationStatus = RegistrationStatus::NotRegistered;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $activityIds = null;
+
+    #[ORM\Column(type: 'string', length: 36, nullable: true)]
+    private ?string $ageGroupId = null;
+
+    #[ORM\Column(type: 'string', length: 36, nullable: true)]
+    private ?string $levelId = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $topSize = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $bottomSize = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $feetSize = null;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $regionSize = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $emergencyContact = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $injuryWarning = null;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $createdAt;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $updatedAt;
+
+    public function __construct()
+    {
+        $this->id = Uuid::v4()->toRfc4122();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    #[ORM\PreUpdate]
+    public function onPreUpdate(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getTeamProfileId(): string
+    {
+        return $this->teamProfileId;
+    }
+
+    public function setTeamProfileId(string $teamProfileId): static
+    {
+        $this->teamProfileId = $teamProfileId;
+
+        return $this;
+    }
+
+    public function getSeasonId(): string
+    {
+        return $this->seasonId;
+    }
+
+    public function setSeasonId(string $seasonId): static
+    {
+        $this->seasonId = $seasonId;
+
+        return $this;
+    }
+
+    public function getTeamId(): string
+    {
+        return $this->teamId;
+    }
+
+    public function setTeamId(string $teamId): static
+    {
+        $this->teamId = $teamId;
+
+        return $this;
+    }
+
+    public function getRegistrationStatus(): RegistrationStatus
+    {
+        return $this->registrationStatus;
+    }
+
+    public function setRegistrationStatus(RegistrationStatus $registrationStatus): static
+    {
+        $this->registrationStatus = $registrationStatus;
+
+        return $this;
+    }
+
+    public function getActivityIds(): ?array
+    {
+        return $this->activityIds;
+    }
+
+    public function setActivityIds(?array $activityIds): static
+    {
+        $this->activityIds = $activityIds;
+
+        return $this;
+    }
+
+    public function getAgeGroupId(): ?string
+    {
+        return $this->ageGroupId;
+    }
+
+    public function setAgeGroupId(?string $ageGroupId): static
+    {
+        $this->ageGroupId = $ageGroupId;
+
+        return $this;
+    }
+
+    public function getLevelId(): ?string
+    {
+        return $this->levelId;
+    }
+
+    public function setLevelId(?string $levelId): static
+    {
+        $this->levelId = $levelId;
+
+        return $this;
+    }
+
+    public function getTopSize(): ?string
+    {
+        return $this->topSize;
+    }
+
+    public function setTopSize(?string $topSize): static
+    {
+        $this->topSize = $topSize;
+
+        return $this;
+    }
+
+    public function getBottomSize(): ?string
+    {
+        return $this->bottomSize;
+    }
+
+    public function setBottomSize(?string $bottomSize): static
+    {
+        $this->bottomSize = $bottomSize;
+
+        return $this;
+    }
+
+    public function getFeetSize(): ?string
+    {
+        return $this->feetSize;
+    }
+
+    public function setFeetSize(?string $feetSize): static
+    {
+        $this->feetSize = $feetSize;
+
+        return $this;
+    }
+
+    public function getRegionSize(): ?string
+    {
+        return $this->regionSize;
+    }
+
+    public function setRegionSize(?string $regionSize): static
+    {
+        $this->regionSize = $regionSize;
+
+        return $this;
+    }
+
+    public function getEmergencyContact(): ?array
+    {
+        return $this->emergencyContact;
+    }
+
+    public function setEmergencyContact(?array $emergencyContact): static
+    {
+        $this->emergencyContact = $emergencyContact;
+
+        return $this;
+    }
+
+    public function getInjuryWarning(): ?string
+    {
+        return $this->injuryWarning;
+    }
+
+    public function setInjuryWarning(?string $injuryWarning): static
+    {
+        $this->injuryWarning = $injuryWarning;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+}

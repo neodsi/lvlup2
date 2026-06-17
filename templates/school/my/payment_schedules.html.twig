@@ -1,0 +1,152 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon échéancier de paiement{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 class="text-2xl font-bold text-gray-900">Mon échéancier</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Vos échéances de paiement et leur statut.</p>
+        </div>
+    </header>
+
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <div class="rounded-lg px-4 py-3 text-sm font-medium
+                    {% if label == 'success' %}bg-green-50 text-green-800 border border-green-200
+                    {% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {# Summary bar #}
+        {% if schedules is defined and schedules is not empty %}
+            {% set totalAmount = 0 %}{% set paidAmount = 0 %}{% set pendingAmount = 0 %}
+            {% for schedule in schedules %}
+                {% set totalAmount = totalAmount + schedule.amount %}
+                {% if schedule.status.value == 'paid' or schedule.status.value == 'settled' %}
+                    {% set paidAmount = paidAmount + schedule.amount %}
+                {% elseif schedule.status.value == 'pending' %}
+                    {% set pendingAmount = pendingAmount + schedule.amount %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-5 mb-6">
+                <div class="grid grid-cols-3 gap-6 text-center">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Total</p>
+                        <p class="text-xl font-bold text-gray-900">{{ (totalAmount / 100)|number_format(2, ',', ' ') }} €</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Payé</p>
+                        <p class="text-xl font-bold text-green-600">{{ (paidAmount / 100)|number_format(2, ',', ' ') }} €</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Restant</p>
+                        <p class="text-xl font-bold text-amber-600">{{ (pendingAmount / 100)|number_format(2, ',', ' ') }} €</p>
+                    </div>
+                </div>
+                {% if totalAmount > 0 %}
+                    <div class="mt-4">
+                        {% set paidPct = ((paidAmount / totalAmount) * 100)|round %}
+                        <div class="flex justify-between text-xs text-gray-400 mb-1.5">
+                            <span>Progression des paiements</span>
+                            <span>{{ paidPct }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-green-500 h-2.5 rounded-full transition-all duration-500"
+                                 style="width: {{ paidPct }}%"></div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# Schedules list #}
+        {% if schedules is not defined or schedules is empty %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-16 text-center">
+                <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <p class="mt-4 text-sm font-medium text-gray-700">Aucune échéance</p>
+                <p class="mt-1 text-sm text-gray-400">Vous n'avez pas d'échéancier de paiement actif.</p>
+            </div>
+        {% else %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="divide-y divide-gray-50">
+                    {% for schedule in schedules %}
+                        <div class="px-6 py-4 flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-4 min-w-0 flex-1">
+                                {# Status indicator #}
+                                <div class="flex-shrink-0">
+                                    {% set status = schedule.status.value %}
+                                    {% if status == 'paid' or status == 'settled' %}
+                                        <div class="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        </div>
+                                    {% elseif status == 'pending' %}
+                                        <div class="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </div>
+                                    {% elseif status == 'failed' %}
+                                        <div class="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                        </div>
+                                    {% else %}
+                                        <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        Échéance du {{ schedule.dueAt|date('d/m/Y') }}
+                                    </p>
+                                    <p class="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                            {% if status == 'paid' or status == 'settled' %}bg-green-50 text-green-700
+                                            {% elseif status == 'pending' %}bg-amber-50 text-amber-700
+                                            {% elseif status == 'failed' %}bg-red-50 text-red-700
+                                            {% else %}bg-gray-100 text-gray-500{% endif %}">
+                                            {% if status == 'paid' or status == 'settled' %}Payé
+                                            {% elseif status == 'pending' %}En attente
+                                            {% elseif status == 'failed' %}Échoué
+                                            {% else %}{{ status }}{% endif %}
+                                        </span>
+                                        {% if schedule.retryCount > 0 %}
+                                            <span class="text-red-400">{{ schedule.retryCount }} tentative{{ schedule.retryCount > 1 ? 's' : '' }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4 flex-shrink-0">
+                                <p class="text-base font-bold text-gray-900">
+                                    {{ (schedule.amount / 100)|number_format(2, ',', ' ') }} €
+                                </p>
+                                {# Pay button for pending #}
+                                {% if schedule.status.value == 'pending' %}
+                                    <a href="#pay-{{ schedule.id }}"
+                                       class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                        Payer
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

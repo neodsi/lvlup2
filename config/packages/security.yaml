@@ -1,0 +1,64 @@
+security:
+    password_hashers:
+        App\Entity\User:
+            algorithm: bcrypt
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        webhook:
+            pattern: ^/webhooks/
+            stateless: true
+            security: false
+        cron:
+            pattern: ^/crons/
+            stateless: true
+            security: false
+        main:
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                username_parameter: email
+                password_parameter: password
+                default_target_path: /home
+                enable_csrf: true
+            logout:
+                path: app_signout
+                target: app_login
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800
+            switch_user:
+                role: ROLE_APP_SUPER_ADMIN
+                parameter: _switch_user
+    role_hierarchy:
+        ROLE_APP_MODERATOR: [ROLE_USER]
+        ROLE_APP_ADMIN: [ROLE_APP_MODERATOR]
+        ROLE_APP_SUPER_ADMIN: [ROLE_APP_ADMIN]
+    access_control:
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/signup, roles: PUBLIC_ACCESS }
+        - { path: ^/reset-password, roles: PUBLIC_ACCESS }
+        - { path: ^/update-password, roles: PUBLIC_ACCESS }
+        - { path: ^/auth/confirm, roles: PUBLIC_ACCESS }
+        - { path: ^/invitations, roles: PUBLIC_ACCESS }
+        - { path: ^/shop, roles: PUBLIC_ACCESS }
+        - { path: ^/iframes, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_APP_MODERATOR }
+        - { path: ^/, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

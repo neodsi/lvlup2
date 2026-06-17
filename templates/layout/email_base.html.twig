@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{% block title %}lvlup{% endblock %}</title>
+    <style type="text/css">
+        /* Reset */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+        body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+
+        /* Base */
+        body { background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        .email-wrapper { width: 100%; background-color: #f9fafb; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+
+        /* Header */
+        .email-header { background-color: #4f46e5; padding: 24px 32px; text-align: center; }
+        .email-header a { color: #ffffff; font-size: 22px; font-weight: 700; text-decoration: none; letter-spacing: -0.5px; }
+
+        /* Body */
+        .email-body { padding: 32px; }
+        .email-body h1 { font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 16px 0; }
+        .email-body h2 { font-size: 16px; font-weight: 600; color: #374151; margin: 24px 0 8px 0; }
+        .email-body p { font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 16px 0; }
+        .email-body a { color: #4f46e5; text-decoration: underline; }
+
+        /* Button */
+        .btn-primary { display: inline-block; background-color: #4f46e5; color: #ffffff !important; font-size: 14px; font-weight: 600; padding: 12px 24px; border-radius: 8px; text-decoration: none !important; }
+        .btn-wrapper { text-align: center; margin: 24px 0; }
+
+        /* Divider */
+        .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+
+        /* Footer */
+        .email-footer { padding: 16px 32px 24px; text-align: center; }
+        .email-footer p { font-size: 12px; color: #9ca3af; margin: 0; }
+        .email-footer a { color: #6b7280; text-decoration: underline; }
+
+        /* Responsive */
+        @media only screen and (max-width: 620px) {
+            .email-container { width: 100% !important; }
+            .email-body { padding: 24px 20px !important; }
+            .email-footer { padding: 16px 20px 24px !important; }
+        }
+    </style>
+</head>
+<body>
+<table class="email-wrapper" cellpadding="0" cellspacing="0" border="0" width="100%">
+    <tr>
+        <td align="center" style="padding: 32px 16px;">
+            <table class="email-container" cellpadding="0" cellspacing="0" border="0" width="600" style="border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+
+                {# ── Header ── #}
+                <tr>
+                    <td class="email-header">
+                        <a href="{{ app.request ? app.request.schemeAndHttpHost : '' }}">lvlup</a>
+                    </td>
+                </tr>
+
+                {# ── Main body ── #}
+                <tr>
+                    <td class="email-body">
+                        {% block email_body %}{% endblock %}
+                    </td>
+                </tr>
+
+                {# ── Divider ── #}
+                <tr>
+                    <td style="padding: 0 32px;">
+                        <hr class="divider"/>
+                    </td>
+                </tr>
+
+                {# ── Footer ── #}
+                <tr>
+                    <td class="email-footer">
+                        {% block email_footer %}
+                        <p>Cet e-mail a été envoyé par lvlup.<br>
+                        Si vous n'attendiez pas cet e-mail, vous pouvez l'ignorer.</p>
+                        {% endblock %}
+                    </td>
+                </tr>
+
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

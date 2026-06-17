@@ -1,0 +1,83 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block body %}
+{% set currentTeamProfile = current_team_profile() %}
+{% set currentTeam = currentTeamProfile ? currentTeamProfile.team : null %}
+
+<div class="min-h-screen flex flex-col" x-data="{ userMenuOpen: false }">
+
+    {# ── Top Navbar ── #}
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="flex items-center justify-between h-14 px-4 md:px-6">
+
+            {# Logo #}
+            <a href="{{ path('app_home') }}" class="font-bold text-indigo-600 text-xl tracking-tight">
+                lvlup
+            </a>
+
+            {# Team name (center, desktop only) #}
+            {% if currentTeam %}
+            <span class="hidden md:block text-sm font-medium text-gray-600 truncate max-w-xs">
+                {{ currentTeam.name }}
+            </span>
+            {% endif %}
+
+            {# User menu #}
+            <div class="relative">
+                <button
+                    @click="userMenuOpen = !userMenuOpen"
+                    class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition focus:outline-none"
+                >
+                    <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-semibold text-xs select-none">
+                        {{ app.user ? app.user.email|first|upper : '?' }}
+                    </span>
+                    <span class="hidden md:inline truncate max-w-[140px]">{{ app.user ? app.user.email : '' }}</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform" :class="userMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div
+                    x-show="userMenuOpen"
+                    @click.outside="userMenuOpen = false"
+                    x-transition:enter="transition ease-out duration-100"
+                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-75"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-40"
+                    style="display: none;"
+                >
+                    <a href="{{ path('app_profile') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        Mon profil
+                    </a>
+                    <div class="border-t border-gray-100 my-1"></div>
+                    <a href="{{ path('app_signout') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        Se déconnecter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    {# ── Flash messages ── #}
+    {% include 'components/_flash.html.twig' %}
+
+    {# ── Page content ── #}
+    <main class="flex-1">
+        {% block app_content %}{% endblock %}
+    </main>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+{% endblock %}

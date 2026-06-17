@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle saison{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <nav class="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition-colors">Paramètres</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="text-gray-900 font-medium">Nouvelle saison</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Créer une nouvelle saison</h1>
+        </div>
+    </header>
+
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <div class="rounded-lg px-4 py-3 text-sm font-medium
+                    {% if label == 'success' %}bg-green-50 text-green-800 border border-green-200
+                    {% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Informations de la saison</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Renseignez les informations de base pour créer la saison.</p>
+            </div>
+            <form method="POST" action="{{ path('school_settings_season_create') }}" class="px-6 py-5 space-y-5">
+                <input type="hidden" name="_token" value="{{ csrf_token('season_create') }}">
+
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                        Nom de la saison <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" required
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                           placeholder="Ex: Saison 2025-2026">
+                    <p class="mt-1 text-xs text-gray-400">Un nom clair pour identifier facilement cette saison.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="startAt" class="block text-sm font-medium text-gray-700 mb-1">
+                            Date de début <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="startAt" name="startAt" required
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="endAt" class="block text-sm font-medium text-gray-700 mb-1">
+                            Date de fin <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="endAt" name="endAt" required
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between gap-4">
+                    <a href="{{ path('school_settings') }}"
+                       class="text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium">
+                        Annuler
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Créer la saison
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

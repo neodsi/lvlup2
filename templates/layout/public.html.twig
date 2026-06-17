@@ -1,0 +1,31 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block body %}
+<div class="min-h-screen flex flex-col">
+
+    {# ── Minimal header ── #}
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-5xl mx-auto px-4 h-14 flex items-center">
+            <a href="/" class="font-bold text-indigo-600 text-xl tracking-tight">
+                lvlup
+            </a>
+        </div>
+    </header>
+
+    {# ── Flash messages ── #}
+    {% include 'components/_flash.html.twig' %}
+
+    {# ── Main content ── #}
+    <main class="flex-1">
+        {% block public_content %}{% endblock %}
+    </main>
+
+    {# ── Minimal footer ── #}
+    <footer class="bg-white border-t border-gray-200 py-4">
+        <div class="max-w-5xl mx-auto px-4 text-center text-xs text-gray-400">
+            &copy; {{ "now"|date("Y") }} lvlup
+        </div>
+    </footer>
+
+</div>
+{% endblock %}

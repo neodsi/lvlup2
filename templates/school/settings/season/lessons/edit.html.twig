@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier — {{ lesson.name }}{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <nav class="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition-colors">Paramètres</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition-colors">{{ season.name }}</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ path('school_season_lessons', {id: season.id}) }}" class="hover:text-gray-700 transition-colors">Cours</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ path('school_season_lesson_detail', {id: season.id, lessonId: lesson.id}) }}" class="hover:text-gray-700 transition-colors">{{ lesson.name }}</a>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <span class="text-gray-900 font-medium">Modifier</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Modifier le cours</h1>
+        </div>
+    </header>
+
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                <div class="rounded-lg px-4 py-3 text-sm font-medium
+                    {% if label == 'success' %}bg-green-50 text-green-800 border border-green-200
+                    {% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Informations du cours</h2>
+            </div>
+            <form method="POST" action="{{ path('school_season_lesson_edit', {id: season.id, lessonId: lesson.id}) }}"
+                  class="px-6 py-5 space-y-5">
+                <input type="hidden" name="_token" value="{{ csrf_token('lesson_edit_' ~ lesson.id) }}">
+
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom du cours</label>
+                    <input type="text" id="name" name="name" value="{{ lesson.name }}" required
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="startAt" class="block text-sm font-medium text-gray-700 mb-1">Début</label>
+                        <input type="datetime-local" id="startAt" name="startAt"
+                               value="{{ lesson.startAt|date('Y-m-d\\TH:i') }}"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="endAt" class="block text-sm font-medium text-gray-700 mb-1">Fin</label>
+                        <input type="datetime-local" id="endAt" name="endAt"
+                               value="{{ lesson.endAt|date('Y-m-d\\TH:i') }}"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="rrule" class="block text-sm font-medium text-gray-700 mb-1">Règle de récurrence (RRule)</label>
+                    <input type="text" id="rrule" name="rrule" value="{{ lesson.rrule }}"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                           placeholder="FREQ=WEEKLY;BYDAY=MO;UNTIL=20260630T000000Z">
+                    <p class="mt-1 text-xs text-gray-400">Format RRule standard (RFC 5545).</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="maxParticipants" class="block text-sm font-medium text-gray-700 mb-1">Participants maximum</label>
+                        <input type="number" id="maxParticipants" name="maxParticipants" min="0"
+                               value="{{ lesson.maxParticipants ?? '' }}"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                               placeholder="Illimité">
+                    </div>
+                    <div>
+                        <label for="rruleDayOrder" class="block text-sm font-medium text-gray-700 mb-1">Ordre du jour (RRule)</label>
+                        <input type="number" id="rruleDayOrder" name="rruleDayOrder"
+                               value="{{ lesson.rruleDayOrder ?? '' }}"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                               placeholder="Optionnel">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="teacherId" class="block text-sm font-medium text-gray-700 mb-1">ID Intervenant</label>
+                    <input type="text" id="teacherId" name="teacherId"
+                           value="{{ lesson.teacherId ?? '' }}"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                           placeholder="UUID de l'intervenant">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="roomId" class="block text-sm font-medium text-gray-700 mb-1">ID Salle</label>
+                        <input type="text" id="roomId" name="roomId"
+                               value="{{ lesson.roomId ?? '' }}"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                               placeholder="UUID de la salle">
+                    </div>
+                    <div>
+                        <label for="addressId" class="block text-sm font-medium text-gray-700 mb-1">ID Adresse</label>
+                        <input type="text" id="addressId" name="addressId"
+                               value="{{ lesson.addressId ?? '' }}"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                               placeholder="UUID de l'adresse">
+                    </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between gap-4">
+                    <a href="{{ path('school_season_lesson_detail', {id: season.id, lessonId: lesson.id}) }}"
+                       class="text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium">
+                        Annuler
+                    </a>
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

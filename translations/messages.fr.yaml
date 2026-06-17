@@ -1,0 +1,141 @@
+# Navigation
+nav:
+    home: Accueil
+    dashboard: Tableau de bord
+    profile: Mon profil
+    settings: Paramètres
+    logout: Se déconnecter
+    login: Se connecter
+    signup: S'inscrire
+    admin: Administration
+    back: Retour
+    menu: Menu
+
+# Buttons & Actions
+btn:
+    save: Enregistrer
+    cancel: Annuler
+    delete: Supprimer
+    edit: Modifier
+    create: Créer
+    add: Ajouter
+    confirm: Confirmer
+    submit: Valider
+    send: Envoyer
+    close: Fermer
+    search: Rechercher
+    filter: Filtrer
+    reset: Réinitialiser
+    upload: Téléverser
+    download: Télécharger
+    view: Voir
+    next: Suivant
+    previous: Précédent
+    back: Retour
+    yes: Oui
+    no: Non
+    ok: OK
+
+# Auth forms
+auth:
+    login:
+        title: Connexion
+        email: Adresse email
+        password: Mot de passe
+        remember_me: Se souvenir de moi
+        submit: Se connecter
+        forgot_password: Mot de passe oublié ?
+        no_account: Pas encore de compte ?
+        signup_link: Créer un compte
+    signup:
+        title: Créer un compte
+        email: Adresse email
+        password: Mot de passe
+        password_confirm: Confirmer le mot de passe
+        submit: S'inscrire
+        already_account: Déjà un compte ?
+        login_link: Se connecter
+    reset_password:
+        title: Réinitialiser le mot de passe
+        email: Adresse email
+        submit: Envoyer le lien de réinitialisation
+        success: Un email de réinitialisation vous a été envoyé.
+    update_password:
+        title: Nouveau mot de passe
+        password: Nouveau mot de passe
+        password_confirm: Confirmer le mot de passe
+        submit: Mettre à jour le mot de passe
+    logout:
+        success: Vous avez été déconnecté avec succès.
+
+# Errors
+error:
+    generic: Une erreur est survenue. Veuillez réessayer.
+    not_found: La page demandée est introuvable.
+    forbidden: Vous n'avez pas accès à cette page.
+    unauthorized: Vous devez être connecté pour accéder à cette page.
+    validation: Veuillez corriger les erreurs dans le formulaire.
+    server: Erreur serveur. Veuillez contacter le support.
+    form:
+        required: Ce champ est obligatoire.
+        invalid_email: Adresse email invalide.
+        password_mismatch: Les mots de passe ne correspondent pas.
+        password_too_short: Le mot de passe doit contenir au moins 8 caractères.
+        file_too_large: Le fichier est trop volumineux.
+        invalid_file_type: Type de fichier non autorisé.
+
+# Flash messages
+flash:
+    success: Opération réalisée avec succès.
+    error: Une erreur est survenue.
+    warning: Attention.
+    info: Information.
+    saved: Modifications enregistrées.
+    deleted: Élément supprimé.
+    created: Élément créé avec succès.
+    updated: Élément mis à jour avec succès.
+
+# Common labels
+label:
+    name: Nom
+    email: Email
+    phone: Téléphone
+    address: Adresse
+    city: Ville
+    country: Pays
+    date: Date
+    status: Statut
+    actions: Actions
+    description: Description
+    created_at: Créé le
+    updated_at: Modifié le
+    active: Actif
+    inactive: Inactif
+    enabled: Activé
+    disabled: Désactivé
+    yes: Oui
+    no: Non
+    none: Aucun
+    all: Tous
+    loading: Chargement...
+    no_results: Aucun résultat trouvé.
+    per_page: Par page
+    total: Total
+    of: sur
+
+# Pagination
+pagination:
+    first: Première
+    last: Dernière
+    next: Suivante
+    previous: Précédente
+    page: Page
+    summary: 'Page %current% sur %total%'
+
+# Profile
+profile:
+    title: Mon profil
+    edit: Modifier le profil
+    avatar: Photo de profil
+    change_password: Changer le mot de passe
+    saved: Profil mis à jour avec succès.
