@@ -19,7 +19,7 @@ class TeamProfile
     #[ORM\Column(type: 'string', length: 36)]
     private string $id;
 
-    #[ORM\ManyToOne(targetEntity: Team::class, inversedBy: 'teamProfiles')]
+    #[ORM\ManyToOne(targetEntity: Team::class)]
     #[ORM\JoinColumn(name: 'team_id', referencedColumnName: 'id', nullable: false)]
     private ?Team $team = null;
 

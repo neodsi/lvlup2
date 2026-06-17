@@ -7,8 +7,6 @@ namespace App\Entity;
 use App\Enum\FeePaidBy;
 use App\Enum\StripeAccountStatus;
 use App\Enum\TeamStatus;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
@@ -77,19 +75,11 @@ class Team
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
-    #[ORM\OneToMany(mappedBy: 'team', targetEntity: Season::class)]
-    private Collection $seasons;
-
-    #[ORM\OneToMany(mappedBy: 'team', targetEntity: TeamProfile::class)]
-    private Collection $teamProfiles;
-
     public function __construct()
     {
-        $this->id           = Uuid::v4()->toRfc4122();
-        $this->createdAt    = new \DateTimeImmutable();
-        $this->updatedAt    = new \DateTimeImmutable();
-        $this->seasons      = new ArrayCollection();
-        $this->teamProfiles = new ArrayCollection();
+        $this->id        = Uuid::v4()->toRfc4122();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): string
@@ -325,53 +315,4 @@ class Team
         return $this;
     }
 
-    /**
-     * @return Collection<int, Season>
-     */
-    public function getSeasons(): Collection
-    {
-        return $this->seasons;
-    }
-
-    public function addSeason(Season $season): static
-    {
-        if (!$this->seasons->contains($season)) {
-            $this->seasons->add($season);
-            $season->setTeam($this);
-        }
-
-        return $this;
-    }
-
-    public function removeSeason(Season $season): static
-    {
-        $this->seasons->removeElement($season);
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, TeamProfile>
-     */
-    public function getTeamProfiles(): Collection
-    {
-        return $this->teamProfiles;
-    }
-
-    public function addTeamProfile(TeamProfile $teamProfile): static
-    {
-        if (!$this->teamProfiles->contains($teamProfile)) {
-            $this->teamProfiles->add($teamProfile);
-            $teamProfile->setTeam($this);
-        }
-
-        return $this;
-    }
-
-    public function removeTeamProfile(TeamProfile $teamProfile): static
-    {
-        $this->teamProfiles->removeElement($teamProfile);
-
-        return $this;
-    }
 }
