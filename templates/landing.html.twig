@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lvlup — Gestion d'écoles de danse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { DEFAULT: '#4f46e5', dark: '#3730a3', light: '#818cf8' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+
+{# ── Navbar ── #}
+<header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <span class="text-2xl font-bold text-indigo-600 tracking-tight">lvlup</span>
+        <nav class="flex items-center gap-4">
+            <a href="{{ path('app_login') }}"
+               class="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
+                Se connecter
+            </a>
+            <a href="{{ path('app_signup') }}"
+               class="text-sm font-semibold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                Commencer gratuitement
+            </a>
+        </nav>
+    </div>
+</header>
+
+{# ── Hero ── #}
+<section class="pt-32 pb-20 px-6 bg-gradient-to-b from-indigo-50 to-white">
+    <div class="max-w-4xl mx-auto text-center">
+        <span class="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1 mb-6">
+            SaaS B2B • Gestion d'écoles de danse
+        </span>
+        <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+            Gérez votre école de danse<br>
+            <span class="text-indigo-600">sans friction.</span>
+        </h1>
+        <p class="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
+            Inscriptions, forfaits, paiements échelonnés, planning des cours —
+            tout ce dont votre école a besoin, dans une seule application.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ path('app_signup') }}"
+               class="inline-flex items-center justify-center bg-indigo-600 text-white text-base font-semibold px-8 py-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                Créer mon école
+                <svg class="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </a>
+            <a href="{{ path('app_login') }}"
+               class="inline-flex items-center justify-center bg-white text-gray-700 text-base font-semibold px-8 py-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 transition-colors">
+                J'ai déjà un compte
+            </a>
+        </div>
+    </div>
+</section>
+
+{# ── Features ── #}
+<section class="py-20 px-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl font-bold text-gray-900 mb-3">Tout ce qu'il faut pour piloter votre école</h2>
+            <p class="text-gray-500 text-lg">Conçu pour les gérants, utile pour les élèves.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8">
+
+            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Gestion des membres</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Invitations par email, profils multi-enfants, rôles (élève, professeur, admin), export CSV, fiches détaillées.
+                </p>
+            </div>
+
+            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Planning des cours</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Cours récurrents avec règles rrule, gestion des présences, occurrences, annulations, galas et stages.
+                </p>
+            </div>
+
+            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Paiements en ligne</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Stripe Connect par école, paiements échelonnés, prélèvements SEPA automatiques, factures PDF, remboursements.
+                </p>
+            </div>
+
+            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Forfaits flexibles</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Abonnements annuels, semestriels, cours à la carte, essais. Modificateurs de prix, remises par profil.
+                </p>
+            </div>
+
+            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Emails automatiques</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Rappels de paiement à J-3, J0, J+3, J+10, J+15. Confirmations de commande. Invitations. Confirmation email.
+                </p>
+            </div>
+
+            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Statistiques & KPIs</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">
+                    Tableau de bord par saison : membres inscrits, chiffre d'affaires, taux de paiement, répartition par forfait.
+                </p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{# ── Roles ── #}
+<section class="py-20 px-6 bg-gray-50">
+    <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 mb-3">Un espace pour chaque profil</h2>
+        </div>
+        <div class="grid md:grid-cols-4 gap-6">
+            {% set roles = [
+                { icon: '🎓', title: 'Gérant', desc: 'Pilotez votre école, vos saisons, vos finances et votre équipe depuis un seul tableau de bord.' },
+                { icon: '🎤', title: 'Professeur', desc: 'Consultez les fiches élèves, les inscriptions et gérez les présences à chaque cours.' },
+                { icon: '💃', title: 'Élève', desc: 'Inscrivez-vous aux cours, consultez vos forfaits et payez vos échéances en ligne.' },
+                { icon: '⚙️', title: 'Super-admin', desc: 'Gérez toutes les écoles de la plateforme, validez les comptes et impersonnez les utilisateurs.' },
+            ] %}
+            {% for role in roles %}
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 text-center">
+                <div class="text-4xl mb-4">{{ role.icon }}</div>
+                <h3 class="font-semibold text-gray-900 mb-2">{{ role.title }}</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">{{ role.desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# ── CTA ── #}
+<section class="py-24 px-6 bg-indigo-600">
+    <div class="max-w-3xl mx-auto text-center">
+        <h2 class="text-4xl font-bold text-white mb-4">Prêt à démarrer ?</h2>
+        <p class="text-indigo-200 text-lg mb-10">
+            Créez votre compte, configurez votre école en quelques minutes et invitez vos élèves.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ path('app_signup') }}"
+               class="inline-flex items-center justify-center bg-white text-indigo-600 text-base font-bold px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg">
+                Créer mon compte
+            </a>
+            <a href="{{ path('app_login') }}"
+               class="inline-flex items-center justify-center text-white text-base font-semibold px-8 py-4 rounded-xl border border-indigo-400 hover:bg-indigo-700 transition-colors">
+                Se connecter
+            </a>
+        </div>
+    </div>
+</section>
+
+{# ── Footer ── #}
+<footer class="py-8 px-6 border-t border-gray-100">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <span class="font-bold text-indigo-600">lvlup</span>
+        <p class="text-sm text-gray-400">&copy; {{ "now"|date("Y") }} lvlup — Gestion d'écoles de danse</p>
+        <div class="flex gap-6 text-sm text-gray-400">
+            <a href="{{ path('app_login') }}" class="hover:text-indigo-600 transition-colors">Connexion</a>
+            <a href="{{ path('app_signup') }}" class="hover:text-indigo-600 transition-colors">Inscription</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

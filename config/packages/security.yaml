@@ -52,6 +52,7 @@ security:
         - { path: ^/shop, roles: PUBLIC_ACCESS }
         - { path: ^/iframes, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_APP_MODERATOR }
+        - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }
 
 when@test:
