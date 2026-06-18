@@ -91,8 +91,16 @@
                 {# Consentements #}
                 <div>
                     <p class="text-sm font-medium text-gray-700 mb-2">Consentements signés</p>
-                    <div class="space-y-2">
-                        {{ form_widget(form.accepted) }}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {% for choice in form.accepted %}
+                        <label for="{{ choice.vars.id }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer select-none transition-colors [&:has(input:checked)]:border-indigo-300 [&:has(input:checked)]:bg-indigo-50">
+                            {{ form_widget(choice, {attr: {class: 'peer sr-only'}}) }}
+                            <span class="h-4 w-4 shrink-0 rounded border-2 border-gray-300 bg-white flex items-center justify-center transition-colors peer-checked:bg-indigo-600 peer-checked:border-indigo-600">
+                                <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                            </span>
+                            <span class="text-sm text-gray-700 leading-tight">{{ choice.vars.label }}</span>
+                        </label>
+                        {% endfor %}
                     </div>
                     <div class="mt-1 text-xs text-red-500">{{ form_errors(form.accepted) }}</div>
                 </div>

@@ -21,6 +21,7 @@ use App\Enum\RegistrationStatus;
 use App\Enum\ScheduleStatus;
 use App\Enum\SchoolRole;
 use App\Form\School\MemberType;
+use App\Form\School\StaffMemberType;
 use App\Security\Voter\SchoolVoter;
 use App\Service\Email\EmailService;
 use App\Service\Member\MemberService;
@@ -695,11 +696,34 @@ final class MemberController extends AbstractController
             ]);
         }
 
+        $profile = $member->getProfile();
+        $emergencyContact = $tps?->getEmergencyContact();
+        $initialData = [
+            'firstName'          => $profile?->getFirstName(),
+            'lastName'           => $profile?->getLastName(),
+            'dob'                => $profile?->getDob(),
+            'phone'              => $profile?->getPhone(),
+            'addressText'        => $profile?->getAddressText(),
+            'gender'             => $profile?->getGender()?->value,
+            'note'               => $member->getNote(),
+            'registrationStatus' => $tps?->getRegistrationStatus()?->value,
+            'injuryWarning'      => $tps?->getInjuryWarning(),
+        ];
+
+        $form = $this->createForm(MemberType::class, $initialData);
+        $form->get('email')->setData($profile?->getUser()?->getEmail());
+        $form->get('emergencyName')->setData($emergencyContact['name'] ?? null);
+        $form->get('emergencyRelationship')->setData($emergencyContact['relationship'] ?? null);
+        $form->get('emergencyEmail')->setData($emergencyContact['email'] ?? null);
+        $form->get('emergencyPhone')->setData($emergencyContact['phone'] ?? null);
+        $form->get('accepted')->setData($tps?->getAccepted() ?? []);
+
         return $this->render('school/members/detail.html.twig', [
             'school'   => $school,
-            'member' => $member,
-            'season' => $season,
-            'tps'    => $tps,
+            'member'   => $member,
+            'season'   => $season,
+            'tps'      => $tps,
+            'form'     => $form->createView(),
         ]);
     }
 
@@ -894,32 +918,32 @@ final class MemberController extends AbstractController
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $form = $this->createForm(MemberType::class, []);
+        $isStudent = $type === 'students';
+        $form = $this->createForm($isStudent ? MemberType::class : StaffMemberType::class, []);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $seasonId = $school->getCurrentSeasonId();
-            $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
-
-            if ($season === null) {
-                throw $this->createNotFoundException('No active season found.');
-            }
-
             $roleMap = [
                 'students' => SchoolRole::Student,
                 'teachers' => SchoolRole::Teacher,
                 'admins'   => SchoolRole::Admin,
             ];
 
+            $season = null;
+            if ($isStudent) {
+                $seasonId = $school->getCurrentSeasonId();
+                $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
+
+                if ($season === null) {
+                    throw $this->createNotFoundException('No active season found.');
+                }
+            }
+
             $data = $form->getData();
 
             // Resolve Gender enum from string value
             $genderVal = $data['gender'] ?? null;
             $gender    = $genderVal ? Gender::tryFrom($genderVal) : null;
-
-            // Resolve RegistrationStatus enum from string value
-            $regStatus    = $data['registrationStatus'] ?? null;
-            $regStatusVal = $regStatus ? RegistrationStatus::tryFrom($regStatus) : null;
 
             // Resolve dob: DateType returns a DateTimeInterface or null
             $dobVal = $data['dob'] ?? null;
@@ -931,18 +955,26 @@ final class MemberController extends AbstractController
             // Unmapped fields
             $memberEmail = trim((string) ($form->get('email')->getData() ?? ''));
 
-            $accepted = $form->get('accepted')->getData() ?? [];
-
-            $ecName  = $form->get('emergencyName')->getData();
-            $ecPhone = $form->get('emergencyPhone')->getData();
+            // Student-only season fields
+            $regStatusVal    = null;
             $emergencyContact = null;
-            if ($ecName || $ecPhone) {
-                $emergencyContact = [
-                    'name'         => $form->get('emergencyName')->getData() ?? '',
-                    'relationship' => $form->get('emergencyRelationship')->getData() ?? '',
-                    'email'        => $form->get('emergencyEmail')->getData() ?? '',
-                    'phone'        => $form->get('emergencyPhone')->getData() ?? '',
-                ];
+            $accepted        = [];
+            if ($isStudent) {
+                $regStatus    = $data['registrationStatus'] ?? null;
+                $regStatusVal = $regStatus ? RegistrationStatus::tryFrom($regStatus) : null;
+
+                $accepted = $form->get('accepted')->getData() ?? [];
+
+                $ecName  = $form->get('emergencyName')->getData();
+                $ecPhone = $form->get('emergencyPhone')->getData();
+                if ($ecName || $ecPhone) {
+                    $emergencyContact = [
+                        'name'         => $form->get('emergencyName')->getData() ?? '',
+                        'relationship' => $form->get('emergencyRelationship')->getData() ?? '',
+                        'email'        => $form->get('emergencyEmail')->getData() ?? '',
+                        'phone'        => $form->get('emergencyPhone')->getData() ?? '',
+                    ];
+                }
             }
 
             // Create or reuse User account
@@ -1007,7 +1039,7 @@ final class MemberController extends AbstractController
                 'addressText'        => $data['addressText'] ?: null,
                 'note'               => $data['note'] ?: null,
                 'registrationStatus' => $regStatusVal,
-                'injuryWarning'      => $data['injuryWarning'] ?: null,
+                'injuryWarning'      => $isStudent ? ($data['injuryWarning'] ?: null) : null,
                 'emergencyContact'   => $emergencyContact,
                 'accepted'           => $accepted ?: null,
                 'role'               => $roleMap[$type],

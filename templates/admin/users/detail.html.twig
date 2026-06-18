@@ -1,0 +1,236 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block title %}{{ user.email }} — Utilisateurs — Administration{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('app_admin') }}" class="hover:text-gray-700 transition">Tableau de bord</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('app_admin_users') }}" class="hover:text-gray-700 transition">Utilisateurs</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">{{ user.email }}</span>
+{% endblock %}
+
+{% block admin_content %}
+{% set _primaryProfile = null %}
+{% for p in user.profiles %}
+    {% if p.isPrimary() and not p.deletedAt %}{% set _primaryProfile = p %}{% endif %}
+{% endfor %}
+
+<div class="py-8">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">
+            {% if _primaryProfile %}{{ _primaryProfile.firstName }} {{ _primaryProfile.lastName }}{% else %}{{ user.email }}{% endif %}
+        </h1>
+        <div class="flex items-center gap-2">
+            {% if is_granted('ROLE_ADMIN') and user.id != app.user.id and 'ROLE_ADMIN' not in user.roles %}
+                <a href="{{ path('app_admin_impersonate', {userId: user.id}) }}"
+                   class="inline-flex items-center gap-2 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-medium px-4 py-2 rounded-lg transition">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    Impersoner
+                </a>
+            {% endif %}
+            {% if is_granted('ROLE_ADMIN') and user.id != app.user.id %}
+                <button type="button"
+                        onclick="openDeleteModal('{{ user.id }}', '{{ user.email|e('html_attr') }}', '{{ csrf_token('delete_user_' ~ user.id) }}')"
+                        class="inline-flex items-center gap-2 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-sm font-medium px-4 py-2 rounded-lg transition">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Supprimer
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {# Left: compte utilisateur #}
+        <div class="lg:col-span-1 space-y-6">
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div class="flex flex-col items-center text-center mb-5">
+                    {% if _primaryProfile and _primaryProfile.avatarPath %}
+                        <img src="{{ _primaryProfile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-20 w-20 rounded-full object-cover border-2 border-gray-200 mb-3">
+                    {% else %}
+                        <span class="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-2xl mb-3">
+                            {{ user.email|first|upper }}
+                        </span>
+                    {% endif %}
+                    <p class="font-semibold text-gray-900">
+                        {% if _primaryProfile %}{{ _primaryProfile.firstName }} {{ _primaryProfile.lastName }}{% else %}—{% endif %}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-0.5 break-all">{{ user.email }}</p>
+                </div>
+
+                <dl class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <dt class="text-gray-500">E-mail confirmé</dt>
+                        <dd>
+                            {% if user.emailVerified %}
+                                <span class="inline-flex items-center gap-1 text-green-700 text-xs font-medium">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    Confirmé
+                                </span>
+                            {% else %}
+                                <span class="text-xs text-gray-400">Non confirmé</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <dt class="text-gray-500">Inscrit le</dt>
+                        <dd class="text-gray-900">{{ user.createdAt|date('d/m/Y') }}</dd>
+                    </div>
+                    <div class="flex items-start justify-between gap-2">
+                        <dt class="text-gray-500 shrink-0">Rôles</dt>
+                        <dd class="flex flex-wrap gap-1 justify-end">
+                            {% for role in user.roles %}
+                                {% if role != 'ROLE_USER' %}
+                                    <span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-700">{{ role|replace({'ROLE_': ''}) }}</span>
+                                {% endif %}
+                            {% endfor %}
+                            {% if user.roles == ['ROLE_USER'] or user.roles is empty %}
+                                <span class="text-xs text-gray-400">Aucun</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+        </div>
+
+        {# Right: profils & appartenances #}
+        <div class="lg:col-span-2 space-y-6">
+
+            {# Profils #}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-sm font-semibold text-gray-700">Profils</h2>
+                </div>
+                {% set _profiles = user.profiles|filter(p => not p.deletedAt) %}
+                {% if _profiles is empty %}
+                    <p class="px-6 py-5 text-sm text-gray-400">Aucun profil.</p>
+                {% else %}
+                    <div class="divide-y divide-gray-100">
+                        {% for profile in _profiles %}
+                            <div class="flex items-center gap-4 px-6 py-4">
+                                {% if profile.avatarPath %}
+                                    <img src="{{ profile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-10 w-10 rounded-full object-cover shrink-0">
+                                {% else %}
+                                    <span class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm shrink-0">
+                                        {{ profile.firstName|first|upper }}
+                                    </span>
+                                {% endif %}
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        {{ profile.firstName }} {{ profile.lastName }}
+                                        {% if profile.isPrimary() %}
+                                            <span class="ml-1.5 inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">Principal</span>
+                                        {% endif %}
+                                    </p>
+                                    <div class="flex items-center flex-wrap gap-x-4 gap-y-0.5 mt-0.5 text-xs text-gray-400">
+                                        {% if profile.dob %}<span>{{ profile.dob|date('d/m/Y') }}</span>{% endif %}
+                                        {% if profile.phone %}<span>{{ profile.phone }}</span>{% endif %}
+                                        {% if profile.gender %}
+                                            <span>{% if profile.gender.value == 'male' %}Homme{% elseif profile.gender.value == 'female' %}Femme{% else %}{{ profile.gender.value }}{% endif %}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Appartenances aux écoles #}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-sm font-semibold text-gray-700">Écoles</h2>
+                </div>
+                {% if schoolProfiles is empty %}
+                    <p class="px-6 py-5 text-sm text-gray-400">Aucune appartenance.</p>
+                {% else %}
+                    <div class="divide-y divide-gray-100">
+                        {% for sp in schoolProfiles %}
+                            {% set school = sp.school %}
+                            <div class="flex items-center gap-4 px-6 py-4">
+                                {% if school.logoPath %}
+                                    <img src="{{ school.logoPath | imagine_filter('team_logo') }}" alt="" class="h-10 w-10 rounded-lg object-cover shrink-0 border border-gray-100">
+                                {% else %}
+                                    <span class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
+                                        {{ school.name|first|upper }}
+                                    </span>
+                                {% endif %}
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <a href="{{ path('app_admin_school_detail', {id: school.id}) }}" class="text-sm font-medium text-gray-900 hover:text-indigo-600 transition">
+                                            {{ school.name }}
+                                        </a>
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                            {% if sp.role.value == 'owner' %}bg-amber-50 text-amber-700
+                                            {% elseif sp.role.value == 'admin' %}bg-red-50 text-red-700
+                                            {% elseif sp.role.value == 'teacher' %}bg-blue-50 text-blue-700
+                                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                            {{ sp.role.value|capitalize }}
+                                        </span>
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                            {% if sp.status.value == 'accepted' %}bg-green-50 text-green-700
+                                            {% elseif sp.status.value == 'waiting' %}bg-yellow-50 text-yellow-700
+                                            {% else %}bg-gray-100 text-gray-500{% endif %}">
+                                            {{ sp.status.value|capitalize }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-0.5">Depuis le {{ sp.createdAt|date('d/m/Y') }}</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{# Modal suppression utilisateur #}
+<div id="modal-delete-user" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-red-100">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-base font-semibold text-gray-900">Supprimer cet utilisateur ?</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    Le compte <strong id="modal-delete-email"></strong> sera supprimé. Cette action est irréversible.
+                </p>
+            </div>
+        </div>
+        <div class="mt-6 flex gap-3 justify-end">
+            <button type="button" onclick="closeDeleteModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Annuler
+            </button>
+            <form id="modal-delete-form" method="post" action="">
+                <input type="hidden" name="_token" id="modal-delete-token" value="">
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                    Supprimer définitivement
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDeleteModal(userId, userEmail, csrfToken) {
+    document.getElementById('modal-delete-email').textContent = userEmail;
+    document.getElementById('modal-delete-form').action = '/admin/users/' + userId + '/delete';
+    document.getElementById('modal-delete-token').value = csrfToken;
+    document.getElementById('modal-delete-user').classList.remove('hidden');
+}
+function closeDeleteModal() {
+    document.getElementById('modal-delete-user').classList.add('hidden');
+}
+</script>
+{% endblock %}

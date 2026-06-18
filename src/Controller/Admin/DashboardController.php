@@ -165,6 +165,34 @@ class DashboardController extends AbstractController
         ]);
     }
 
+    #[Route('/admin/users/{userId}', name: 'app_admin_user_detail', methods: ['GET'])]
+    #[IsGranted('ROLE_SCHOOL')]
+    public function userDetail(string $userId): Response
+    {
+        $user = $this->em->getRepository(User::class)->find($userId);
+
+        if ($user === null || $user->getDeletedAt() !== null) {
+            throw $this->createNotFoundException('Utilisateur introuvable.');
+        }
+
+        $schoolProfiles = $this->em->createQueryBuilder()
+            ->select('tp, p, s')
+            ->from(SchoolProfile::class, 'tp')
+            ->join('tp.profile', 'p')
+            ->join('tp.school', 's')
+            ->where('p.user = :user')
+            ->andWhere('tp.deletedAt IS NULL')
+            ->orderBy('s.name', 'ASC')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+
+        return $this->render('admin/users/detail.html.twig', [
+            'user'           => $user,
+            'schoolProfiles' => $schoolProfiles,
+        ]);
+    }
+
     #[Route('/admin/users/{userId}/delete', name: 'app_admin_user_delete', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN')]
     public function deleteUser(string $userId, Request $request): Response

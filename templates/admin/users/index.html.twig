@@ -125,6 +125,11 @@
                                 </td>
                                 <td class="py-4 pl-3 pr-6 text-right">
                                     <div class="inline-flex items-center gap-2">
+                                        <a href="{{ path('app_admin_user_detail', {userId: user.id}) }}"
+                                           class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg transition">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            Voir
+                                        </a>
                                         {% if is_granted('ROLE_ADMIN') and user.id != app.user.id and 'ROLE_ADMIN' not in user.roles %}
                                             <a href="{{ path('app_admin_impersonate', {userId: user.id}) }}"
                                                class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-800 border border-amber-200 hover:bg-amber-50 px-2.5 py-1.5 rounded-lg transition">
