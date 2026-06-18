@@ -13,35 +13,69 @@
 {% block school_content %}
 <div class="py-8">
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Paramètres</h1>
-    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Paramètres</h1>
 
     {% include 'school/settings/_tabs.html.twig' %}
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
-            <div class="px-6 py-5">
-                <h2 class="text-base font-semibold text-gray-900">Configuration Stripe</h2>
-                <p class="text-sm text-gray-500 mt-1">Clés API et paramètres de paiement.</p>
+    {% set statusLabel = {
+        'not_created': 'Non configuré',
+        'pending':     'En cours de validation',
+        'active':      'Actif',
+        'restricted':  'Restreint',
+    } %}
+    {% set statusColor = {
+        'not_created': 'bg-gray-100 text-gray-600',
+        'pending':     'bg-amber-100 text-amber-700',
+        'active':      'bg-green-100 text-green-700',
+        'restricted':  'bg-red-100 text-red-700',
+    } %}
+    {% set status = team.stripeAccountStatus.value %}
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
+            <div>
+                <h2 class="text-base font-semibold text-gray-900">Compte Stripe Connect</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Les paiements en ligne transitent via votre compte Stripe.</p>
             </div>
-            <div class="px-6 py-5">
-                <p class="text-sm text-gray-500">Les clés Stripe sont configurées via les variables d'environnement du serveur.</p>
-            </div>
+            <span class="shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ statusColor[status] ?? 'bg-gray-100 text-gray-600' }}">
+                {{ statusLabel[status] ?? status }}
+            </span>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
-            <div class="px-6 py-5">
-                <h2 class="text-base font-semibold text-gray-900">Accès rapides</h2>
-            </div>
-            <div class="px-6 py-4">
-                <a href="{{ path('school_settings_stripe_payments') }}"
-                   class="flex items-center gap-3 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+
+        <div class="px-6 py-6 flex flex-col sm:flex-row sm:items-center gap-4">
+
+            {% if team.stripeAccountId %}
+
+                <div class="flex-1">
+                    <p class="text-sm text-gray-700">
+                        ID du compte&nbsp;:
+                        <span class="font-mono text-gray-500 text-xs">{{ team.stripeAccountId }}</span>
+                    </p>
+                    {% if status == 'active' %}
+                        <p class="text-xs text-green-600 mt-1">Votre compte est actif. Les paiements en ligne sont opérationnels.</p>
+                    {% elseif status == 'pending' %}
+                        <p class="text-xs text-amber-600 mt-1">Votre compte est en cours de validation par Stripe. Complétez les informations requises.</p>
+                    {% elseif status == 'restricted' %}
+                        <p class="text-xs text-red-600 mt-1">Votre compte est restreint. Accédez au tableau de bord Stripe pour résoudre les problèmes.</p>
+                    {% endif %}
+                </div>
+
+                <a href="{{ path('school_settings_stripe_portal') }}"
+                   class="shrink-0 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                     </svg>
-                    Sessions de paiement Stripe
+                    Accéder à mon compte Stripe
                 </a>
-            </div>
+
+            {% else %}
+
+                <div class="flex-1">
+                    <p class="text-sm text-gray-500">Aucun compte Stripe n'est encore associé à cette école. Contactez le support LVL UP pour configurer votre compte Stripe Connect.</p>
+                </div>
+
+            {% endif %}
+
         </div>
     </div>
 

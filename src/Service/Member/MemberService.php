@@ -77,6 +77,9 @@ class MemberService
             if (isset($data['status'])) {
                 $teamProfile->setStatus($data['status']);
             }
+            if (isset($data['note'])) {
+                $teamProfile->setNote($data['note'] ?: null);
+            }
 
             $this->em->persist($teamProfile);
             $this->em->flush();
@@ -116,6 +119,9 @@ class MemberService
             }
             if (isset($data['injuryWarning'])) {
                 $tps->setInjuryWarning($data['injuryWarning']);
+            }
+            if (isset($data['accepted'])) {
+                $tps->setAccepted($data['accepted'] ?: null);
             }
 
             $this->em->persist($tps);

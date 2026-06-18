@@ -57,6 +57,9 @@ class TeamProfileSeason
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $injuryWarning = null;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $accepted = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -236,6 +239,9 @@ class TeamProfileSeason
 
         return $this;
     }
+
+    public function getAccepted(): ?array { return $this->accepted; }
+    public function setAccepted(?array $accepted): static { $this->accepted = $accepted; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable
     {

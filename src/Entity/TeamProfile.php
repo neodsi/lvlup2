@@ -36,6 +36,9 @@ class TeamProfile
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $stripeCustomerId = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $note = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -122,6 +125,9 @@ class TeamProfile
 
         return $this;
     }
+
+    public function getNote(): ?string { return $this->note; }
+    public function setNote(?string $note): static { $this->note = $note; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable
     {

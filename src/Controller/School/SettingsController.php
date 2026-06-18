@@ -15,6 +15,7 @@ use App\Security\Voter\TeamVoter;
 use App\Service\Season\SeasonService;
 use App\Service\TeamContextService;
 use Doctrine\ORM\EntityManagerInterface;
+use Stripe\StripeClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -187,6 +188,56 @@ final class SettingsController extends AbstractController
         $this->denyAccessUnlessGranted(TeamVoter::CONFIGURE_STRIPE, $team);
 
         return $this->render('school/settings/stripe.html.twig', ['team' => $team]);
+    }
+
+    #[Route('/stripe/portal', name: 'school_settings_stripe_portal', methods: ['GET'])]
+    public function stripePortal(Request $request): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $team = $this->teamContext->getCurrentTeam();
+
+        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a team member.');
+        }
+
+        $this->denyAccessUnlessGranted(TeamVoter::CONFIGURE_STRIPE, $team);
+
+        $accountId = $team->getStripeAccountId();
+        if ($accountId === null) {
+            $this->addFlash('error', 'Aucun compte Stripe associé à cette école.');
+            return $this->redirectToRoute('school_settings_stripe');
+        }
+
+        $stripeKey = $this->getParameter('app.stripe_secret_key');
+        $stripe    = new StripeClient((string) $stripeKey);
+
+        $returnUrl  = $this->generateUrl('school_settings_stripe', [], \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL);
+        $refreshUrl = $returnUrl . '?refresh=true';
+
+        // Try login link first (only works for fully onboarded accounts)
+        $loginUrl = null;
+        try {
+            $loginLink = $stripe->accounts->createLoginLink($accountId);
+            $loginUrl  = $loginLink->url;
+        } catch (\Exception) {
+            // Account not yet onboarded — fall through to account link
+        }
+
+        // Always generate an onboarding/update account link
+        $accountLink = $stripe->accountLinks->create([
+            'account'            => $accountId,
+            'refresh_url'        => $refreshUrl,
+            'return_url'         => $returnUrl,
+            'type'               => 'account_onboarding',
+            'collection_options' => ['fields' => 'eventually_due'],
+        ]);
+
+        // Prefer login link when account is active and has no pending requirements
+        $hasRequirements = $team->getStripeAccountStatus()->value !== 'active';
+        $redirectUrl     = ($loginUrl && !$hasRequirements) ? $loginUrl : $accountLink->url;
+
+        return $this->redirect($redirectUrl);
     }
 
     #[Route('/saisons', name: 'school_settings_seasons', methods: ['GET'])]

@@ -20,10 +20,8 @@
 <div class="py-8">
 
     <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Membres{% if season %} · {{ season.name }}{% endif %}</h1>
-        </div>
-        <a href="{{ path('school_members_create', {type: type}) }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+        <h1 class="text-2xl font-bold text-gray-900">Membres{% if season %} · {{ season.name }}{% endif %}</h1>
+        <a href="{{ path('school_members_create', {type: type != 'all' ? type : 'students'}) }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Ajouter
         </a>
@@ -31,17 +29,13 @@
 
     {% include 'school/members/_tabs.html.twig' %}
 
-    {# Search #}
-    <div class="mb-4">
-        <div class="relative max-w-sm">
+    <div class="mb-4 flex items-center gap-3">
+        <div class="relative flex-1 max-w-sm">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
-            <input
-                type="search"
-                id="member-search"
-                placeholder="Rechercher..."
-                class="block w-full rounded-lg border border-gray-300 bg-gray-50 py-2.5 pl-9 pr-4 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
-            >
+            <input type="search" id="member-search" placeholder="Rechercher…"
+                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 py-2.5 pl-9 pr-4 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
         </div>
+        <span class="text-sm text-gray-400">{{ members|length }} membre{{ members|length > 1 ? 's' }}</span>
     </div>
 
     {% if members is empty %}
@@ -56,49 +50,67 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="py-3 pl-6 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date de naissance</th>
+                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Naissance</th>
+                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Genre</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Téléphone</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
+                            {% if season %}
+                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Inscription</th>
+                            {% endif %}
                             <th class="py-3 pl-3 pr-6 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         {% for member in members %}
+                            {% set tps = tpsMap[member.id] ?? null %}
                             <tr class="hover:bg-gray-50 transition member-row">
-                                <td class="py-4 pl-6 pr-3">
+                                <td class="py-3.5 pl-6 pr-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm shrink-0">
-                                            {{ member.profile.firstName|first|upper }}
-                                        </div>
+                                        {% if member.profile.avatarPath %}
+                                            <img src="{{ member.profile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-8 w-8 rounded-full object-cover shrink-0">
+                                        {% else %}
+                                            <span class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm shrink-0">
+                                                {{ member.profile.firstName|first|upper }}
+                                            </span>
+                                        {% endif %}
                                         <div>
                                             <p class="font-medium text-gray-900 text-sm member-name">{{ member.profile.firstName }} {{ member.profile.lastName }}</p>
-                                            {% if member.profile.user is defined %}
+                                            {% if member.profile.user %}
                                                 <p class="text-xs text-gray-400">{{ member.profile.user.email }}</p>
                                             {% endif %}
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-3 py-4 text-sm text-gray-600">
+                                <td class="px-3 py-3.5 text-sm text-gray-600 whitespace-nowrap">
                                     {{ member.profile.dob ? member.profile.dob|date('d/m/Y') : '—' }}
                                 </td>
-                                <td class="px-3 py-4 text-sm text-gray-600">
+                                <td class="px-3 py-3.5 text-sm text-gray-600">
+                                    {% if member.profile.gender %}
+                                        {% if member.profile.gender.value == 'male' %}♂{% elseif member.profile.gender.value == 'female' %}♀{% else %}—{% endif %}
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td class="px-3 py-3.5 text-sm text-gray-600">
                                     {{ member.profile.phone ?? '—' }}
                                 </td>
-                                <td class="px-3 py-4">
-                                    {% if member.registrationStatus is defined %}
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                                            {% if member.registrationStatus.value == 'registered' %}bg-green-50 text-green-700
-                                            {% elseif member.registrationStatus.value == 'pre_registered' %}bg-amber-50 text-amber-700
-                                            {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                            {% if member.registrationStatus.value == 'registered' %}Inscrit
-                                            {% elseif member.registrationStatus.value == 'pre_registered' %}Pré-inscrit
-                                            {% else %}{{ member.registrationStatus.value }}{% endif %}
+                                {% if season %}
+                                <td class="px-3 py-3.5">
+                                    {% if tps %}
+                                        {% set rs = tps.registrationStatus.value %}
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                            {% if rs == 'registered' %}bg-green-50 text-green-700
+                                            {% elseif rs == 'pre_registered' %}bg-amber-50 text-amber-700
+                                            {% elseif rs == 'trial_class' %}bg-blue-50 text-blue-700
+                                            {% else %}bg-gray-100 text-gray-500{% endif %}">
+                                            {% if rs == 'registered' %}Inscrit
+                                            {% elseif rs == 'pre_registered' %}Pré-inscrit
+                                            {% elseif rs == 'trial_class' %}Cours d'essai
+                                            {% else %}Non inscrit{% endif %}
                                         </span>
                                     {% else %}
-                                        <span class="text-gray-400 text-xs">—</span>
+                                        <span class="text-gray-300 text-xs">—</span>
                                     {% endif %}
                                 </td>
-                                <td class="py-4 pl-3 pr-6 text-right">
+                                {% endif %}
+                                <td class="py-3.5 pl-3 pr-6 text-right">
                                     <a href="{{ path('school_member_detail', {id: member.id}) }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">Voir</a>
                                 </td>
                             </tr>

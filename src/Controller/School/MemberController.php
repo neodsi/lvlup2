@@ -6,8 +6,10 @@ namespace App\Controller\School;
 
 use App\Entity\Season;
 use App\Entity\TeamProfile;
-
+use App\Entity\TeamProfileSeason;
 use App\Entity\User;
+use App\Enum\Gender;
+use App\Enum\RegistrationStatus;
 use App\Enum\TeamRole;
 use App\Security\Voter\TeamVoter;
 use App\Service\Member\MemberService;
@@ -76,16 +78,28 @@ final class MemberController extends AbstractController
 
         $members = $this->em->getRepository(TeamProfile::class)->findBy($criteria);
 
+        // Index TeamProfileSeason by teamProfileId for the current season
+        $tpsMap = [];
+        if ($season !== null && count($members) > 0) {
+            $tpsList = $this->em->getRepository(TeamProfileSeason::class)->findBy([
+                'seasonId' => $season->getId(),
+            ]);
+            foreach ($tpsList as $tps) {
+                $tpsMap[$tps->getTeamProfileId()] = $tps;
+            }
+        }
+
         return $this->render('school/members/list.html.twig', [
             'team'    => $team,
             'type'    => $type,
             'members' => $members,
             'season'  => $season,
+            'tpsMap'  => $tpsMap,
         ]);
     }
 
     #[Route('/detail/{id}', name: 'school_member_detail', methods: ['GET'])]
-    public function detail(string $id): Response
+    public function detail(string $id, Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -103,10 +117,117 @@ final class MemberController extends AbstractController
             throw $this->createNotFoundException('Member not found.');
         }
 
+        // Fetch TPS for current season
+        $seasonId = $team->getCurrentSeasonId();
+        $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
+        $tps      = null;
+        if ($season !== null) {
+            $tps = $this->em->getRepository(TeamProfileSeason::class)->findOneBy([
+                'teamProfileId' => $member->getId(),
+                'seasonId'      => $season->getId(),
+            ]);
+        }
+
         return $this->render('school/members/detail.html.twig', [
             'team'   => $team,
             'member' => $member,
+            'season' => $season,
+            'tps'    => $tps,
         ]);
+    }
+
+    #[Route('/detail/{id}/edit', name: 'school_member_edit', methods: ['POST'])]
+    public function edit(string $id, Request $request): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $team = $this->teamContext->getCurrentTeam();
+
+        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a team member.');
+        }
+
+        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+
+        $member = $this->em->getRepository(TeamProfile::class)->find($id);
+
+        if ($member === null || $member->getTeam()?->getId() !== $team->getId() || $member->getDeletedAt() !== null) {
+            throw $this->createNotFoundException('Member not found.');
+        }
+
+        $f = $request->request;
+
+        // Update Profile
+        $profile = $member->getProfile();
+        if ($profile !== null) {
+            $profile->setFirstName(trim((string) $f->get('first_name', $profile->getFirstName())));
+            $profile->setLastName(trim((string) $f->get('last_name', $profile->getLastName())));
+            $profile->setPhone($f->get('phone') ?: null);
+            $profile->setAddressText($f->get('address_text') ?: null);
+
+            $genderVal = $f->get('gender');
+            $profile->setGender($genderVal ? Gender::from($genderVal) : null);
+
+            $dobVal = $f->get('dob');
+            if ($dobVal) {
+                $dob = \DateTimeImmutable::createFromFormat('Y-m-d', $dobVal);
+                if ($dob !== false) {
+                    $profile->setDob($dob);
+                }
+            } else {
+                $profile->setDob(null);
+            }
+        }
+
+        // Update note
+        $member->setNote($f->get('note') ?: null);
+
+        // Update or create TeamProfileSeason
+        $seasonId = $team->getCurrentSeasonId();
+        $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
+
+        if ($season !== null) {
+            $tps = $this->em->getRepository(TeamProfileSeason::class)->findOneBy([
+                'teamProfileId' => $member->getId(),
+                'seasonId'      => $season->getId(),
+            ]);
+
+            if ($tps === null) {
+                $tps = new TeamProfileSeason();
+                $tps->setTeamProfileId($member->getId());
+                $tps->setSeasonId($season->getId());
+                $tps->setTeamId($team->getId());
+                $this->em->persist($tps);
+            }
+
+            $regStatus = $f->get('registration_status');
+            if ($regStatus) {
+                $tps->setRegistrationStatus(RegistrationStatus::from($regStatus));
+            }
+            $tps->setTopSize($f->get('top_size') ?: null);
+            $tps->setBottomSize($f->get('bottom_size') ?: null);
+            $tps->setFeetSize($f->get('feet_size') ?: null);
+            $tps->setRegionSize($f->get('region_size') ?: null);
+            $tps->setInjuryWarning($f->get('injury_warning') ?: null);
+
+            $accepted = $f->all('accepted');
+            $tps->setAccepted($accepted ?: null);
+
+            $ecName = $f->get('emergency_name');
+            if ($ecName || $f->get('emergency_phone')) {
+                $tps->setEmergencyContact([
+                    'name'         => $f->get('emergency_name', ''),
+                    'relationship' => $f->get('emergency_relationship', ''),
+                    'email'        => $f->get('emergency_email', ''),
+                    'phone'        => $f->get('emergency_phone', ''),
+                ]);
+            }
+        }
+
+        $this->em->flush();
+        $this->addFlash('success', 'Fiche mise à jour.');
+
+        return $this->redirectToRoute('school_member_detail', ['id' => $id]);
     }
 
     #[Route('/{type}/create', name: 'school_members_create', methods: ['GET', 'POST'],
@@ -138,10 +259,54 @@ final class MemberController extends AbstractController
                 'admins'   => TeamRole::TeamAdmin,
             ];
 
-            $this->memberService->createMember($team, $season, array_merge(
-                $request->request->all(),
-                ['role' => $roleMap[$type]],
-            ));
+            $f = $request->request;
+
+            $dobVal = $f->get('dob');
+            $dob    = null;
+            if ($dobVal) {
+                $d = \DateTimeImmutable::createFromFormat('Y-m-d', $dobVal);
+                if ($d !== false) {
+                    $dob = $d;
+                }
+            }
+
+            $genderVal = $f->get('gender');
+            $gender    = $genderVal ? Gender::tryFrom($genderVal) : null;
+
+            $regStatus    = $f->get('registration_status');
+            $regStatusVal = $regStatus ? RegistrationStatus::tryFrom($regStatus) : null;
+
+            $accepted = $f->all('accepted');
+
+            $ecName = $f->get('emergency_name');
+            $emergencyContact = null;
+            if ($ecName || $f->get('emergency_phone')) {
+                $emergencyContact = [
+                    'name'         => $f->get('emergency_name', ''),
+                    'relationship' => $f->get('emergency_relationship', ''),
+                    'email'        => $f->get('emergency_email', ''),
+                    'phone'        => $f->get('emergency_phone', ''),
+                ];
+            }
+
+            $this->memberService->createMember($team, $season, [
+                'firstName'          => trim((string) $f->get('first_name', '')),
+                'lastName'           => trim((string) $f->get('last_name', '')),
+                'dob'                => $dob,
+                'phone'              => $f->get('phone') ?: null,
+                'gender'             => $gender,
+                'addressText'        => $f->get('address_text') ?: null,
+                'note'               => $f->get('note') ?: null,
+                'registrationStatus' => $regStatusVal,
+                'injuryWarning'      => $f->get('injury_warning') ?: null,
+                'emergencyContact'   => $emergencyContact,
+                'topSize'            => $f->get('top_size') ?: null,
+                'bottomSize'         => $f->get('bottom_size') ?: null,
+                'feetSize'           => $f->get('feet_size') ?: null,
+                'regionSize'         => $f->get('region_size') ?: null,
+                'accepted'           => $accepted ?: null,
+                'role'               => $roleMap[$type],
+            ]);
 
             $this->addFlash('success', 'Membre ajouté avec succès.');
 

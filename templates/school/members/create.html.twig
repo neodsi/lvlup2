@@ -3,61 +3,209 @@
 {% set typeLabel = type == 'students' ? 'élève' : (type == 'teachers' ? 'professeur' : 'administrateur') %}
 {% block title %}Ajouter un {{ typeLabel }} — {{ team.name }}{% endblock %}
 
-{% block school_content %}
-<div class="max-w-2xl mx-auto">
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_members_list', {type: type}) }}" class="hover:text-gray-700 transition">
+    {% if type == 'students' %}Élèves{% elseif type == 'teachers' %}Professeurs{% else %}Admins{% endif %}
+</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Ajouter</span>
+{% endblock %}
 
-    <div class="mb-6 flex items-center gap-4">
-        <a href="{{ path('school_members_list', {type: type}) }}" class="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Retour
-        </a>
-        <h1 class="text-xl font-bold text-gray-900">Ajouter un {{ typeLabel }}</h1>
-    </div>
+{% block school_content %}
+<div class="py-8">
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Ajouter un {{ typeLabel }}</h1>
 
     {% include 'components/_flash.html.twig' %}
 
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <form method="post" action="{{ path('school_members_create', {type: type}) }}" class="divide-y divide-gray-100">
+    <form method="post" action="{{ path('school_members_create', {type: type}) }}" class="space-y-6">
 
+        {# Informations personnelles #}
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
+            </div>
             <div class="px-6 py-5 space-y-4">
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">Prénom <span class="text-red-500">*</span></label>
                         <input type="text" id="first_name" name="first_name" required
-                            class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     </div>
                     <div>
                         <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Nom <span class="text-red-500">*</span></label>
                         <input type="text" id="last_name" name="last_name" required
-                            class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
+                        <input type="date" id="dob" name="dob"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    </div>
+                    <div>
+                        <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Genre</label>
+                        <select id="gender" name="gender"
+                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            <option value="">— Choisir —</option>
+                            <option value="female">Femme</option>
+                            <option value="male">Homme</option>
+                            <option value="other">Ne pas préciser</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+33 6 12 34 56 78"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     </div>
                 </div>
 
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input type="email" id="email" name="email"
-                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <p class="mt-1 text-xs text-gray-400">Un email d'invitation sera envoyé si renseigné.</p>
                 </div>
 
                 <div>
-                    <label for="dob" class="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
-                    <input type="date" id="dob" name="dob"
-                        class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <label for="address_text" class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                    <input type="text" id="address_text" name="address_text" placeholder="123 rue de la Danse, 75001 Paris"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
+        </div>
+
+        {# Saison actuelle #}
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-900">Saison actuelle</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Ces informations sont liées à la saison en cours.</p>
+            </div>
+            <div class="px-6 py-5 space-y-5">
+
+                <div class="sm:w-1/2">
+                    <label for="registration_status" class="block text-sm font-medium text-gray-700 mb-1">Statut d'inscription</label>
+                    <select id="registration_status" name="registration_status"
+                            class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        <option value="not_registered">Non inscrit</option>
+                        <option value="trial_class">Cours d'essai</option>
+                        <option value="pre_registered">Pré-inscrit</option>
+                        <option value="registered">Inscrit</option>
+                    </select>
+                </div>
+
+                {# Tailles #}
+                <div>
+                    <p class="text-sm font-medium text-gray-700 mb-2">Tailles</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label for="region_size" class="block text-xs text-gray-500 mb-1">Système</label>
+                            <select id="region_size" name="region_size"
+                                    class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                                <option value="">—</option>
+                                <option value="EU">EU</option>
+                                <option value="UK">UK</option>
+                                <option value="US">US</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="top_size" class="block text-xs text-gray-500 mb-1">Haut</label>
+                            <input type="text" id="top_size" name="top_size" placeholder="ex: M, L, 42"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <div>
+                            <label for="bottom_size" class="block text-xs text-gray-500 mb-1">Bas</label>
+                            <input type="text" id="bottom_size" name="bottom_size" placeholder="ex: 38, 40"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <div>
+                            <label for="feet_size" class="block text-xs text-gray-500 mb-1">Chaussures</label>
+                            <input type="text" id="feet_size" name="feet_size" placeholder="ex: 38, 39"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                    </div>
+                </div>
+
+                {# Consentements #}
+                <div>
+                    <p class="text-sm font-medium text-gray-700 mb-2">Consentements signés</p>
+                    <div class="space-y-2">
+                        {% for key, label in {
+                            'medical_certificate':                    'Certificat médical',
+                            'civil_liability_insurance_certificate':  'Attestation responsabilité civile',
+                            'image_rights_authorization':             'Autorisation droit à l\'image',
+                            'personal_data_storage_authorization':    'Autorisation données personnelles',
+                            'medical_emergency_action_consent':       'Consentement intervention médicale d\'urgence',
+                        } %}
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" name="accepted[]" value="{{ key }}"
+                                   class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm text-gray-700">{{ label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {# Contact d'urgence #}
+                <div>
+                    <p class="text-sm font-medium text-gray-700 mb-2">Contact d'urgence</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Nom</label>
+                            <input type="text" name="emergency_name"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Relation</label>
+                            <input type="text" name="emergency_relationship" placeholder="ex: Parent, conjoint"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Email</label>
+                            <input type="email" name="emergency_email"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Téléphone</label>
+                            <input type="tel" name="emergency_phone"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="injury_warning" class="block text-sm font-medium text-gray-700 mb-1">Avertissement blessure</label>
+                    <textarea id="injury_warning" name="injury_warning" rows="2" maxlength="200"
+                              placeholder="Préciser toute blessure ou limitation physique…"
+                              class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"></textarea>
                 </div>
 
             </div>
+        </div>
 
-            <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-between items-center">
-                <a href="{{ path('school_members_list', {type: type}) }}" class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
-                <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
-                    Ajouter
-                </button>
+        {# Note interne #}
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-900">Note interne</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Visible uniquement par les administrateurs.</p>
             </div>
+            <div class="px-6 py-5">
+                <textarea id="note" name="note" rows="3" maxlength="500"
+                          class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"></textarea>
+            </div>
+        </div>
 
-        </form>
-    </div>
+        <div class="flex items-center justify-between">
+            <a href="{{ path('school_members_list', {type: type}) }}" class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
+            <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+                Ajouter
+            </button>
+        </div>
 
+    </form>
 </div>
 {% endblock %}

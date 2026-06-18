@@ -30,16 +30,7 @@ class ProfileController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function profile(): Response
     {
-        /** @var \App\Entity\User $user */
-        $user = $this->getUser();
-
-        $profiles = $user->getProfiles()->filter(
-            fn (Profile $p) => $p->getDeletedAt() === null
-        )->getValues();
-
-        return $this->render('app/profile/index.html.twig', [
-            'profiles' => $profiles,
-        ]);
+        return $this->redirectToRoute('app_profile_edit');
     }
 
     #[Route('/profile/edit', name: 'app_profile_edit', methods: ['GET', 'POST'])]
@@ -79,6 +70,9 @@ class ProfileController extends AbstractController
             if ($formData['last_name'] === '') {
                 $errors['last_name'] = 'Le nom est obligatoire.';
             }
+            if ($formData['phone'] === '') {
+                $errors['phone'] = 'Le numéro de téléphone est obligatoire.';
+            }
 
             if (empty($errors)) {
                 $primaryProfile->setFirstName($formData['first_name']);
@@ -116,7 +110,7 @@ class ProfileController extends AbstractController
                     $this->em->flush();
                     $this->addFlash('success', 'Profil mis à jour avec succès.');
 
-                    return $this->redirectToRoute('app_profile');
+                    return $this->redirectToRoute('app_profile_edit');
                 }
             }
         }

@@ -2,20 +2,11 @@
 
 {% block title %}{{ member.profile.firstName }} {{ member.profile.lastName }} — {{ team.name }}{% endblock %}
 
-{% set _roleLabel %}
-    {% if member.role.value == 'team_student' %}Élève
-    {% elseif member.role.value == 'team_teacher' %}Professeur
-    {% elseif member.role.value == 'team_admin' %}Administrateur
-    {% elseif member.role.value == 'team_owner' %}Directeur
-    {% else %}{{ member.role.value }}{% endif %}
-{% endset %}
-
+{% set _roleLabel %}{% if member.role.value == 'team_student' %}Élève{% elseif member.role.value == 'team_teacher' %}Professeur{% elseif member.role.value == 'team_admin' %}Administrateur{% elseif member.role.value == 'team_owner' %}Directeur{% else %}{{ member.role.value }}{% endif %}{% endset %}
 {% set _listType = member.role.value == 'team_teacher' ? 'teachers' : (member.role.value == 'team_admin' ? 'admins' : 'students') %}
 
 {% block breadcrumb %}
 <a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
-<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<a href="{{ path('school_members_list', {type: 'students'}) }}" class="hover:text-gray-700 transition">Membres</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_members_list', {type: _listType}) }}" class="hover:text-gray-700 transition">
     {{ member.role.value == 'team_teacher' ? 'Professeurs' : (member.role.value == 'team_admin' ? 'Admins' : 'Élèves') }}
@@ -27,13 +18,12 @@
 {% block school_content %}
 <div class="py-8">
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">{{ member.profile.firstName }} {{ member.profile.lastName }}</h1>
-    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ member.profile.firstName }} {{ member.profile.lastName }}</h1>
 
+    <form method="post" action="{{ path('school_member_edit', {id: member.id}) }}">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {# Left: identity card #}
+        {# Left: avatar + badges #}
         <div class="lg:col-span-1 space-y-4">
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center text-center">
                 {% if member.profile.avatarPath %}
@@ -61,64 +51,205 @@
                     {% if member.status.value == 'accepted' %}bg-green-50 text-green-700
                     {% elseif member.status.value == 'waiting' %}bg-amber-50 text-amber-700
                     {% elseif member.status.value == 'refused' %}bg-red-50 text-red-700
-                    {% elseif member.status.value == 'suspended' %}bg-gray-100 text-gray-500
-                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    {% else %}bg-gray-100 text-gray-500{% endif %}">
                     {% if member.status.value == 'accepted' %}Actif
                     {% elseif member.status.value == 'waiting' %}En attente
                     {% elseif member.status.value == 'refused' %}Refusé
-                    {% elseif member.status.value == 'suspended' %}Suspendu
                     {% else %}{{ member.status.value }}{% endif %}
                 </span>
+
+                <p class="mt-4 text-xs text-gray-400">Membre depuis le {{ member.createdAt|date('d/m/Y') }}</p>
+            </div>
+
+            {# Note interne #}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <p class="text-sm font-semibold text-gray-700">Note interne</p>
+                    <p class="text-xs text-gray-400">Visible admins uniquement</p>
+                </div>
+                <div class="px-5 py-4">
+                    <textarea name="note" rows="4" maxlength="500"
+                              placeholder="Aucune note…"
+                              class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-none">{{ member.note ?? '' }}</textarea>
+                </div>
             </div>
         </div>
 
-        {# Right: details #}
+        {# Right: info + saison #}
         <div class="lg:col-span-2 space-y-4">
 
+            {# Informations personnelles #}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
                 </div>
-                <dl class="divide-y divide-gray-100">
-                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
-                        <dt class="text-gray-500">Prénom</dt>
-                        <dd class="text-gray-900 font-medium">{{ member.profile.firstName }}</dd>
+                <div class="px-6 py-5 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Prénom</label>
+                            <input type="text" name="first_name" value="{{ member.profile.firstName }}" required
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Nom</label>
+                            <input type="text" name="last_name" value="{{ member.profile.lastName }}" required
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
                     </div>
-                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
-                        <dt class="text-gray-500">Nom</dt>
-                        <dd class="text-gray-900 font-medium">{{ member.profile.lastName }}</dd>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Date de naissance</label>
+                            <input type="date" name="dob" value="{{ member.profile.dob ? member.profile.dob|date('Y-m-d') : '' }}"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Genre</label>
+                            <select name="gender"
+                                    class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                                <option value="">—</option>
+                                <option value="female" {{ member.profile.gender and member.profile.gender.value == 'female' ? 'selected' }}>Femme</option>
+                                <option value="male"   {{ member.profile.gender and member.profile.gender.value == 'male'   ? 'selected' }}>Homme</option>
+                                <option value="other"  {{ member.profile.gender and member.profile.gender.value == 'other'  ? 'selected' }}>Ne pas préciser</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Téléphone</label>
+                            <input type="tel" name="phone" value="{{ member.profile.phone ?? '' }}"
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        </div>
                     </div>
-                    {% if member.profile.dob %}
-                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
-                        <dt class="text-gray-500">Date de naissance</dt>
-                        <dd class="text-gray-900 font-medium">{{ member.profile.dob|date('d/m/Y') }}</dd>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Adresse</label>
+                        <input type="text" name="address_text" value="{{ member.profile.addressText ?? '' }}"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     </div>
-                    {% endif %}
-                    {% if member.profile.gender %}
-                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
-                        <dt class="text-gray-500">Genre</dt>
-                        <dd class="text-gray-900 font-medium">
-                            {% if member.profile.gender.value == 'male' %}Homme
-                            {% elseif member.profile.gender.value == 'female' %}Femme
-                            {% else %}Ne pas définir{% endif %}
-                        </dd>
+                </div>
+            </div>
+
+            {# Saison actuelle #}
+            {% if season %}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-sm font-semibold text-gray-900">Saison {{ season.name }}</h2>
+                </div>
+                <div class="px-6 py-5 space-y-5">
+
+                    <div class="sm:w-1/2">
+                        <label class="block text-xs text-gray-500 mb-1">Statut d'inscription</label>
+                        <select name="registration_status"
+                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            {% set rs = tps ? tps.registrationStatus.value : 'not_registered' %}
+                            <option value="not_registered" {{ rs == 'not_registered' ? 'selected' }}>Non inscrit</option>
+                            <option value="trial_class"    {{ rs == 'trial_class'    ? 'selected' }}>Cours d'essai</option>
+                            <option value="pre_registered" {{ rs == 'pre_registered' ? 'selected' }}>Pré-inscrit</option>
+                            <option value="registered"     {{ rs == 'registered'     ? 'selected' }}>Inscrit</option>
+                        </select>
                     </div>
-                    {% endif %}
-                    {% if member.profile.phone %}
-                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
-                        <dt class="text-gray-500">Téléphone</dt>
-                        <dd class="text-gray-900 font-medium">{{ member.profile.phone }}</dd>
+
+                    {# Tailles #}
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 mb-2">Tailles</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Système</label>
+                                <select name="region_size"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                                    <option value="">—</option>
+                                    <option value="EU" {{ tps and tps.regionSize == 'EU' ? 'selected' }}>EU</option>
+                                    <option value="UK" {{ tps and tps.regionSize == 'UK' ? 'selected' }}>UK</option>
+                                    <option value="US" {{ tps and tps.regionSize == 'US' ? 'selected' }}>US</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Haut</label>
+                                <input type="text" name="top_size" value="{{ tps ? tps.topSize : '' }}" placeholder="M, L…"
+                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Bas</label>
+                                <input type="text" name="bottom_size" value="{{ tps ? tps.bottomSize : '' }}" placeholder="38, 40…"
+                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Chaussures</label>
+                                <input type="text" name="feet_size" value="{{ tps ? tps.feetSize : '' }}" placeholder="38, 39…"
+                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                        </div>
                     </div>
-                    {% endif %}
-                    <div class="px-6 py-3.5 grid grid-cols-2 gap-4 text-sm">
-                        <dt class="text-gray-500">Membre depuis</dt>
-                        <dd class="text-gray-900 font-medium">{{ member.createdAt|date('d/m/Y') }}</dd>
+
+                    {# Consentements #}
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 mb-2">Consentements signés</p>
+                        {% set acceptedList = tps ? (tps.accepted ?? []) : [] %}
+                        <div class="space-y-2">
+                            {% for key, label in {
+                                'medical_certificate':                    'Certificat médical',
+                                'civil_liability_insurance_certificate':  'Attestation responsabilité civile',
+                                'image_rights_authorization':             'Autorisation droit à l\'image',
+                                'personal_data_storage_authorization':    'Autorisation données personnelles',
+                                'medical_emergency_action_consent':       'Consentement intervention médicale d\'urgence',
+                            } %}
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" name="accepted[]" value="{{ key }}"
+                                       {{ key in acceptedList ? 'checked' }}
+                                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-gray-700">{{ label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
                     </div>
-                </dl>
+
+                    {# Contact d'urgence #}
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 mb-2">Contact d'urgence</p>
+                        {% set ec = tps ? (tps.emergencyContact ?? {}) : {} %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Nom</label>
+                                <input type="text" name="emergency_name" value="{{ ec.name ?? '' }}"
+                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Relation</label>
+                                <input type="text" name="emergency_relationship" value="{{ ec.relationship ?? '' }}"
+                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Email</label>
+                                <input type="email" name="emergency_email" value="{{ ec.email ?? '' }}"
+                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Téléphone</label>
+                                <input type="tel" name="emergency_phone" value="{{ ec.phone ?? '' }}"
+                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Avertissement blessure #}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Avertissement blessure</label>
+                        <textarea name="injury_warning" rows="2" maxlength="200"
+                                  placeholder="Préciser toute blessure ou limitation physique…"
+                                  class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">{{ tps ? tps.injuryWarning : '' }}</textarea>
+                    </div>
+
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+                    Enregistrer
+                </button>
             </div>
 
         </div>
     </div>
+    </form>
 
 </div>
 {% endblock %}
