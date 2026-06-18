@@ -60,7 +60,7 @@ class AppExtension extends AbstractExtension
      */
     public function isSchoolAdmin(SchoolProfile $schoolProfile): bool
     {
-        return in_array($schoolProfile->getRole(), [SchoolRole::Admin, SchoolRole::Owner], true);
+        return in_array($schoolProfile->getRole(), [SchoolRole::School, SchoolRole::School], true);
     }
 
     /**

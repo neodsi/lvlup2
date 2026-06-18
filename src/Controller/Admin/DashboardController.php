@@ -10,7 +10,6 @@ use App\Entity\SchoolProfile;
 use App\Entity\User;
 use App\Enum\SchoolRole;
 use App\Enum\SchoolStatus;
-use App\Form\Admin\SchoolStatusType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -77,39 +76,40 @@ class DashboardController extends AbstractController
 
         $schools = $qb->getQuery()->getResult();
 
+        // Member counts per school (student/teacher/school) in one native query
+        $memberCounts = [];
+        if (!empty($schools)) {
+            $schoolIds = array_map(static fn(School $s) => $s->getId(), $schools);
+            $in        = implode(',', array_fill(0, count($schoolIds), '?'));
+            $rows      = $this->em->getConnection()->executeQuery(
+                "SELECT school_id, CASE WHEN role IN ('admin','owner') THEN 'school' ELSE role END AS role, COUNT(*) AS cnt
+                 FROM school_profiles
+                 WHERE school_id IN ({$in}) AND deleted_at IS NULL
+                 GROUP BY school_id, role",
+                $schoolIds
+            )->fetchAllAssociative();
+
+            foreach ($rows as $row) {
+                $memberCounts[$row['school_id']][$row['role']] = (int) $row['cnt'];
+            }
+        }
+
         return $this->render('admin/schools/index.html.twig', [
-            'schools'        => $schools,
+            'schools'      => $schools,
+            'memberCounts' => $memberCounts,
             'statusFilter' => $statusFilter,
             'statuses'     => SchoolStatus::cases(),
         ]);
     }
 
-    #[Route('/admin/schools/{id}', name: 'app_admin_school_detail')]
+    #[Route('/admin/schools/{id}', name: 'app_admin_school_detail', methods: ['GET'])]
     #[IsGranted('ROLE_SCHOOL')]
-    public function schoolDetail(string $id, Request $request): Response
+    public function schoolDetail(string $id): Response
     {
         $school = $this->em->getRepository(School::class)->find($id);
 
         if ($school === null) {
             throw $this->createNotFoundException('School not found.');
-        }
-
-        $form = $this->createForm(SchoolStatusType::class, ['status' => $school->getStatus()->value]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $newStatus = SchoolStatus::tryFrom((string) $form->get('status')->getData());
-
-            if ($newStatus !== null) {
-                $school->setStatus($newStatus);
-                $this->em->flush();
-
-                $this->addFlash('success', 'Statut mis à jour.');
-            } else {
-                $this->addFlash('error', 'Statut invalide.');
-            }
-
-            return $this->redirectToRoute('app_admin_school_detail', ['id' => $id]);
         }
 
         $ownerProfile = $this->em->createQueryBuilder()
@@ -121,16 +121,82 @@ class DashboardController extends AbstractController
             ->andWhere('tp.role = :role')
             ->andWhere('tp.deletedAt IS NULL')
             ->setParameter('school', $school)
-            ->setParameter('role', SchoolRole::Owner)
+            ->setParameter('role', SchoolRole::School)
             ->getQuery()
             ->getOneOrNullResult();
 
+        $memberCount = (int) $this->em->createQueryBuilder()
+            ->select('COUNT(tp.id)')
+            ->from(SchoolProfile::class, 'tp')
+            ->where('tp.school = :school')
+            ->setParameter('school', $school)
+            ->getQuery()
+            ->getSingleScalarResult();
+
         return $this->render('admin/schools/detail.html.twig', [
-            'school'          => $school,
-            'statuses'      => SchoolStatus::cases(),
-            'ownerProfile'  => $ownerProfile,
-            'form'          => $form->createView(),
+            'school'       => $school,
+            'statuses'     => SchoolStatus::cases(),
+            'ownerProfile' => $ownerProfile,
+            'canDelete'    => $memberCount === 0,
         ]);
+    }
+
+    #[Route('/admin/schools/{id}/status', name: 'app_admin_school_status', methods: ['POST'])]
+    #[IsGranted('ROLE_SCHOOL')]
+    public function setSchoolStatus(string $id, Request $request): Response
+    {
+        $school = $this->em->getRepository(School::class)->find($id);
+
+        if ($school === null) {
+            throw $this->createNotFoundException('School not found.');
+        }
+
+        if (!$this->isCsrfTokenValid('school_status_' . $id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $newStatus = SchoolStatus::tryFrom((string) $request->request->get('status'));
+        if ($newStatus !== null) {
+            $school->setStatus($newStatus);
+            $this->em->flush();
+            $this->addFlash('success', 'Statut mis à jour.');
+        }
+
+        return $this->redirectToRoute('app_admin_school_detail', ['id' => $id]);
+    }
+
+    #[Route('/admin/schools/{id}/delete', name: 'app_admin_school_delete', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function deleteSchool(string $id, Request $request): Response
+    {
+        $school = $this->em->getRepository(School::class)->find($id);
+
+        if ($school === null) {
+            throw $this->createNotFoundException('School not found.');
+        }
+
+        if (!$this->isCsrfTokenValid('delete_school_' . $id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $memberCount = (int) $this->em->createQueryBuilder()
+            ->select('COUNT(tp.id)')
+            ->from(SchoolProfile::class, 'tp')
+            ->where('tp.school = :school')
+            ->setParameter('school', $school)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        if ($memberCount > 0) {
+            $this->addFlash('error', 'Impossible de supprimer une école avec des membres.');
+            return $this->redirectToRoute('app_admin_school_detail', ['id' => $id]);
+        }
+
+        $this->em->remove($school);
+        $this->em->flush();
+
+        $this->addFlash('success', 'École supprimée.');
+        return $this->redirectToRoute('app_admin_schools');
     }
 
     #[Route('/admin/users', name: 'app_admin_users')]
@@ -158,10 +224,39 @@ class DashboardController extends AbstractController
 
         $users = $qb->getQuery()->getResult();
 
+        // 2nd query: fetch all school memberships for the listed users in one shot (native SQL to bypass enum hydration)
+        $memberships = [];
+        if (!empty($users)) {
+            $userIds = array_map(static fn(User $u) => $u->getId(), $users);
+
+            $conn  = $this->em->getConnection();
+            $in    = implode(',', array_fill(0, count($userIds), '?'));
+            $rows  = $conn->executeQuery(
+                "SELECT p.user_id AS userId, s.id AS schoolId, s.name AS schoolName,
+                        CASE WHEN tp.role IN ('admin','owner') THEN 'school' ELSE tp.role END AS role
+                 FROM school_profiles tp
+                 INNER JOIN profiles p   ON p.id = tp.profile_id
+                 INNER JOIN schools s    ON s.id = tp.school_id
+                 WHERE p.user_id IN ({$in})
+                   AND tp.deleted_at IS NULL
+                 ORDER BY s.name ASC",
+                $userIds
+            )->fetchAllAssociative();
+
+            foreach ($rows as $row) {
+                $memberships[$row['userId']][] = [
+                    'schoolId'   => $row['schoolId'],
+                    'schoolName' => $row['schoolName'],
+                    'role'       => $row['role'],
+                ];
+            }
+        }
+
         return $this->render('admin/users/index.html.twig', [
-            'users'      => $users,
-            'search'     => $search,
-            'roleFilter' => $roleFilter,
+            'users'       => $users,
+            'memberships' => $memberships,
+            'search'      => $search,
+            'roleFilter'  => $roleFilter,
         ]);
     }
 
@@ -239,14 +334,9 @@ class DashboardController extends AbstractController
                 ->setParameter('ids', $schoolProfileIds)->execute();
         }
 
-        // Detach profiles from the user then remove the user row
-        $this->em->createQueryBuilder()
-            ->update(Profile::class, 'p')
-            ->set('p.user', ':null')
-            ->where('p.user = :user')
-            ->setParameter('null', null)
+        // Delete profiles linked to this user
+        $this->em->createQuery('DELETE FROM App\Entity\Profile p WHERE p.user = :user')
             ->setParameter('user', $user)
-            ->getQuery()
             ->execute();
 
         $this->em->remove($user);

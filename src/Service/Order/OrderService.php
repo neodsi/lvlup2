@@ -72,8 +72,8 @@ class OrderService
 
         if (!$isSelf) {
             $hasUpdatePermission = \in_array($currentUserSchoolProfile->getRole(), [
-                SchoolRole::Admin,
-                SchoolRole::Owner,
+                SchoolRole::School,
+                SchoolRole::School,
             ], true);
 
             if (!$hasUpdatePermission) {
@@ -151,8 +151,8 @@ class OrderService
         }
 
         $hasUpdatePermission = \in_array($schoolProfile->getRole(), [
-            SchoolRole::Admin,
-            SchoolRole::Owner,
+            SchoolRole::School,
+            SchoolRole::School,
         ], true);
 
         if (!$hasUpdatePermission) {

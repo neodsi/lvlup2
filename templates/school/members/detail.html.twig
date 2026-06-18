@@ -2,18 +2,14 @@
 
 {% block title %}{{ member.profile.firstName }} {{ member.profile.lastName }} — {{ school.name }}{% endblock %}
 
-{% set _listType  = member.role.value == 'teacher' ? 'teachers' : (member.role.value == 'admin' ? 'admins' : 'students') %}
-{% set _listLabel = member.role.value == 'teacher' ? 'Professeurs' : (member.role.value == 'admin' ? 'Admins' : 'Élèves') %}
-{% set _roleLabel = member.role.value == 'student' ? 'Élève' : (member.role.value == 'teacher' ? 'Professeur' : (member.role.value == 'admin' ? 'Administrateur' : 'Directeur')) %}
+{% set _listType  = member.role.value == 'teacher' ? 'teachers' : (member.role.value == 'school' ? 'admins' : 'students') %}
+{% set _listLabel = member.role.value == 'teacher' ? 'Professeurs' : (member.role.value == 'school' ? 'Admins' : 'Élèves') %}
+{% set _roleLabel = member.role.value == 'student' ? 'Élève' : (member.role.value == 'teacher' ? 'Professeur' : 'Administrateur') %}
 
 {% block breadcrumb %}
 <a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<a href="{{ path('school_members_list', {type: _listType, season: season ? season.id : null}) }}" class="hover:text-gray-700 transition">
-    Membres{% if season %} · {{ season.name }}{% endif %}
-</a>
-<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<a href="{{ path('school_members_list', {type: _listType, season: season ? season.id : null}) }}" class="hover:text-gray-700 transition">{{ _listLabel }}</a>
+<a href="{{ path('school_members_list', {type: _listType}) }}" class="hover:text-gray-700 transition">{{ _listLabel }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <span class="text-gray-700 font-medium">{{ member.profile.firstName }} {{ member.profile.lastName }}</span>
 {% endblock %}
@@ -23,7 +19,9 @@
 
     <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ member.profile.firstName }} {{ member.profile.lastName }}</h1>
 
+    {# email is in the form (used on create) but not editable here #}
     {{ form_start(form, {'action': path('school_member_edit', {'id': member.id})}) }}
+    {% do form.email.setRendered() %}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {# Left: avatar + badges #}
@@ -45,7 +43,7 @@
                 <span class="mt-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
                     {% if member.role.value == 'student' %}bg-blue-50 text-blue-700
                     {% elseif member.role.value == 'teacher' %}bg-purple-50 text-purple-700
-                    {% elseif member.role.value == 'admin' %}bg-amber-50 text-amber-700
+                    {% elseif member.role.value == 'school' %}bg-amber-50 text-amber-700
                     {% else %}bg-indigo-50 text-indigo-700{% endif %}">
                     {{ _roleLabel | trim }}
                 </span>
@@ -86,6 +84,12 @@
                     <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
                 </div>
                 <div class="px-6 py-5 space-y-4">
+                    {% if member.profile.user %}
+                    <div>
+                        <p class="block text-xs text-gray-500 mb-1">E-mail</p>
+                        <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500 select-all">{{ member.profile.user.email }}</p>
+                    </div>
+                    {% endif %}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             {{ form_label(form.firstName) }}
@@ -122,6 +126,30 @@
                     </div>
                 </div>
             </div>
+
+            {# Tailles — élèves uniquement #}
+            {% if member.role.value == 'student' %}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                    <h2 class="text-sm font-semibold text-gray-900">Tailles</h2>
+                    <span class="text-xs text-gray-400">galas &amp; certains cours</span>
+                </div>
+                <div class="px-6 py-4 grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-0.5">Haut</p>
+                        <p class="font-medium text-gray-900">{{ member.profile.sizeTop ?: '—' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-0.5">Bas</p>
+                        <p class="font-medium text-gray-900">{{ member.profile.sizeBottom ?: '—' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-0.5">Pointure</p>
+                        <p class="font-medium text-gray-900">{{ member.profile.sizeShoe ?: '—' }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             {# Saison actuelle #}
             {% if season and member.role.value == 'student' %}

@@ -61,7 +61,7 @@ final class PaymentVoter extends Voter
         return match ($attribute) {
             self::VIEW   => true,
             self::CREATE => true,
-            self::REFUND => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::REFUND => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
             default      => false,
         };
     }

@@ -82,11 +82,11 @@ final class MemberVoter extends Voter
 
         return match ($attribute) {
             self::VIEW                    => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Teacher),
-            self::CREATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
-            self::UPDATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
-            self::DELETE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
-            self::EXPORT_CSV              => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
-            self::SCHOOL_PROFILES_EXPORT_CSV => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::CREATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::UPDATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::DELETE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::EXPORT_CSV              => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::SCHOOL_PROFILES_EXPORT_CSV => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
             default                       => false,
         };
     }

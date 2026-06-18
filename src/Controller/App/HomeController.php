@@ -199,7 +199,7 @@ class HomeController extends AbstractController
                 $schoolProfile = new SchoolProfile();
                 $schoolProfile->setSchool($school);
                 $schoolProfile->setProfile($primaryProfile);
-                $schoolProfile->setRole(SchoolRole::Owner);
+                $schoolProfile->setRole(SchoolRole::School);
                 $this->em->persist($schoolProfile);
             }
 

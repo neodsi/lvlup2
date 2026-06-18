@@ -102,7 +102,7 @@ class FastCountApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $allowed = [SchoolRole::Teacher, SchoolRole::Admin, SchoolRole::Owner];
+        $allowed = [SchoolRole::Teacher, SchoolRole::School, SchoolRole::School];
 
         if (!\in_array($schoolProfile->getRole(), $allowed, true)) {
             return new JsonResponse(['success' => false, 'error' => 'teacher role or higher required.'], 403);

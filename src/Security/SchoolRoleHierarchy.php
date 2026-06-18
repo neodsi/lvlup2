@@ -13,8 +13,7 @@ final class SchoolRoleHierarchy
         return [
             SchoolRole::Student->value => 1,
             SchoolRole::Teacher->value => 2,
-            SchoolRole::Admin->value   => 3,
-            SchoolRole::Owner->value   => 4,
+            SchoolRole::School->value  => 3,
         ];
     }
 

@@ -100,7 +100,7 @@ class PaymentApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::Admin, SchoolRole::Owner], true);
+        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::School, SchoolRole::School], true);
 
         if (!$isAdmin) {
             return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);

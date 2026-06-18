@@ -93,7 +93,7 @@ final class SchoolController extends AbstractController
             'kpis'         => $kpis,
             'countStudents' => $countMembers(SchoolRole::Student),
             'countTeachers' => $countMembers(SchoolRole::Teacher),
-            'countAdmins'   => $countMembers(SchoolRole::Admin),
+            'countAdmins'   => $countMembers(SchoolRole::School),
             'countOrders'   => $countOrders,
             'countCours'    => $countCours,
         ]);

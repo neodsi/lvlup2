@@ -132,20 +132,6 @@ class EmailService
         );
     }
 
-    public function sendInvitation(string $to, School $school, string $inviteToken): void
-    {
-        $this->sendTemplated(
-            $to,
-            sprintf('Vous avez été invité(e) à rejoindre %s – LVL UP', $school->getName()),
-            'invitation',
-            [
-                'school'         => $school,
-                'invite_token' => $inviteToken,
-                'to'           => $to,
-            ],
-        );
-    }
-
     public function sendOrderConfirmation(Order $order, Profile $profile): void
     {
         $email = $profile->getUser()?->getEmail();

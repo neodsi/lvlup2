@@ -8,6 +8,5 @@ enum SchoolRole: string
 {
     case Student = 'student';
     case Teacher = 'teacher';
-    case Admin = 'admin';
-    case Owner = 'owner';
+    case School  = 'school';
 }

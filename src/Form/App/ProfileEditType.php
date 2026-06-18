@@ -62,6 +62,24 @@ class ProfileEditType extends AbstractType
                     'Ne pas préciser' => 'other',
                 ],
             ])
+            ->add('sizeTop', TextType::class, [
+                'label'      => 'Taille haut',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass, 'placeholder' => 'ex: M, L, XL…'],
+                'required'   => false,
+            ])
+            ->add('sizeBottom', TextType::class, [
+                'label'      => 'Taille bas',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass, 'placeholder' => 'ex: 38, 40…'],
+                'required'   => false,
+            ])
+            ->add('sizeShoe', TextType::class, [
+                'label'      => 'Pointure',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass, 'placeholder' => 'ex: 42, 43…'],
+                'required'   => false,
+            ])
             ->add('avatar', FileType::class, [
                 'label' => 'Photo de profil',
                 'label_attr' => ['class' => $labelClass],

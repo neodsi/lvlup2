@@ -50,11 +50,14 @@ class ProfileController extends AbstractController
         }
 
         $initialData = [
-            'firstName' => $primaryProfile->getFirstName(),
-            'lastName'  => $primaryProfile->getLastName(),
-            'phone'     => $primaryProfile->getPhone() ?? '',
-            'dob'       => $primaryProfile->getDob()?->format('Y-m-d') ?? '',
-            'gender'    => $primaryProfile->getGender()?->value ?? '',
+            'firstName'  => $primaryProfile->getFirstName(),
+            'lastName'   => $primaryProfile->getLastName(),
+            'phone'      => $primaryProfile->getPhone() ?? '',
+            'dob'        => $primaryProfile->getDob()?->format('Y-m-d') ?? '',
+            'gender'     => $primaryProfile->getGender()?->value ?? '',
+            'sizeTop'    => $primaryProfile->getSizeTop() ?? '',
+            'sizeBottom' => $primaryProfile->getSizeBottom() ?? '',
+            'sizeShoe'   => $primaryProfile->getSizeShoe() ?? '',
         ];
 
         $form = $this->createForm(ProfileEditType::class, $initialData);
@@ -65,6 +68,12 @@ class ProfileController extends AbstractController
 
             $primaryProfile->setFirstName($data['firstName']);
             $primaryProfile->setLastName($data['lastName']);
+
+            if ($this->isGranted('ROLE_STUDENT')) {
+                $primaryProfile->setSizeTop($data['sizeTop'] !== '' ? $data['sizeTop'] : null);
+                $primaryProfile->setSizeBottom($data['sizeBottom'] !== '' ? $data['sizeBottom'] : null);
+                $primaryProfile->setSizeShoe($data['sizeShoe'] !== '' ? $data['sizeShoe'] : null);
+            }
 
             $dob = $data['dob'] ?? '';
             if ($dob !== '' && $dob !== null) {

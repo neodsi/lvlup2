@@ -44,6 +44,11 @@
                     <h2 class="text-sm font-semibold text-gray-700 mb-4">Informations personnelles</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
+                        <div class="sm:col-span-2">
+                            <p class="block text-xs text-gray-500 mb-1">E-mail</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500 select-all">{{ app.user.email }}</p>
+                        </div>
+
                         <div>
                             {{ form_label(form.firstName) }}
                             {{ form_widget(form.firstName) }}
@@ -76,6 +81,37 @@
 
                     </div>
                 </div>
+
+                {% if is_granted('ROLE_STUDENT') %}
+                <div class="px-6 py-5">
+                    <div class="flex items-start gap-2 mb-4">
+                        <h2 class="text-sm font-semibold text-gray-700">Tailles</h2>
+                        <span class="text-xs text-gray-400 mt-0.5">Utilisées pour les galas et certains cours</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            {{ form_label(form.sizeTop) }}
+                            {{ form_widget(form.sizeTop) }}
+                            <div class="mt-1 text-xs text-red-600">{{ form_errors(form.sizeTop) }}</div>
+                        </div>
+                        <div>
+                            {{ form_label(form.sizeBottom) }}
+                            {{ form_widget(form.sizeBottom) }}
+                            <div class="mt-1 text-xs text-red-600">{{ form_errors(form.sizeBottom) }}</div>
+                        </div>
+                        <div>
+                            {{ form_label(form.sizeShoe) }}
+                            {{ form_widget(form.sizeShoe) }}
+                            <div class="mt-1 text-xs text-red-600">{{ form_errors(form.sizeShoe) }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                    {# Mark as rendered so form_end doesn't inject them as hidden inputs #}
+                    {% do form.sizeTop.setRendered() %}
+                    {% do form.sizeBottom.setRendered() %}
+                    {% do form.sizeShoe.setRendered() %}
+                {% endif %}
 
                 <div class="px-6 py-4 flex items-center justify-end">
                     <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">

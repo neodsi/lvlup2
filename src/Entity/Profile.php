@@ -43,6 +43,15 @@ class Profile
     #[ORM\Column(type: 'string', nullable: true)]
     private ?string $avatarPath = null;
 
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $sizeTop = null;
+
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $sizeBottom = null;
+
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $sizeShoe = null;
+
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $isPrimary = true;
 
@@ -95,7 +104,7 @@ class Profile
 
     public function setFirstName(string $firstName): static
     {
-        $this->firstName = $firstName;
+        $this->firstName = self::normalizeFirstName($firstName);
 
         return $this;
     }
@@ -107,9 +116,29 @@ class Profile
 
     public function setLastName(string $lastName): static
     {
-        $this->lastName = $lastName;
+        $this->lastName = mb_strtoupper(trim($lastName));
 
         return $this;
+    }
+
+    /**
+     * Capitalizes each part of a compound first name (handles hyphens and spaces).
+     * e.g. "jean-pierre", "JEAN PIERRE" → "Jean-Pierre", "Jean Pierre"
+     */
+    public static function normalizeFirstName(string $name): string
+    {
+        $name  = trim($name);
+        $parts = preg_split('/([- ])/', mb_strtolower($name), -1, \PREG_SPLIT_DELIM_CAPTURE) ?: [];
+        $out   = '';
+        foreach ($parts as $part) {
+            if ($part === '-' || $part === ' ') {
+                $out .= $part;
+            } elseif ($part !== '') {
+                $out .= mb_strtoupper(mb_substr($part, 0, 1)) . mb_substr($part, 1);
+            }
+        }
+
+        return $out;
     }
 
     public function getDob(): ?\DateTimeImmutable
@@ -171,6 +200,15 @@ class Profile
 
         return $this;
     }
+
+    public function getSizeTop(): ?string { return $this->sizeTop; }
+    public function setSizeTop(?string $v): static { $this->sizeTop = $v; return $this; }
+
+    public function getSizeBottom(): ?string { return $this->sizeBottom; }
+    public function setSizeBottom(?string $v): static { $this->sizeBottom = $v; return $this; }
+
+    public function getSizeShoe(): ?string { return $this->sizeShoe; }
+    public function setSizeShoe(?string $v): static { $this->sizeShoe = $v; return $this; }
 
     public function isPrimary(): bool
     {

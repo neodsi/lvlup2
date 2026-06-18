@@ -120,12 +120,7 @@
                                     </span>
                                 {% endif %}
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900">
-                                        {{ profile.firstName }} {{ profile.lastName }}
-                                        {% if profile.isPrimary() %}
-                                            <span class="ml-1.5 inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">Principal</span>
-                                        {% endif %}
-                                    </p>
+                                    <p class="text-sm font-medium text-gray-900">{{ profile.firstName }} {{ profile.lastName }}</p>
                                     <div class="flex items-center flex-wrap gap-x-4 gap-y-0.5 mt-0.5 text-xs text-gray-400">
                                         {% if profile.dob %}<span>{{ profile.dob|date('d/m/Y') }}</span>{% endif %}
                                         {% if profile.phone %}<span>{{ profile.phone }}</span>{% endif %}
@@ -139,6 +134,32 @@
                     </div>
                 {% endif %}
             </div>
+
+            {# Tailles — uniquement si ROLE_STUDENT #}
+            {% if 'ROLE_STUDENT' in user.roles %}
+            {% set _primaryForSizes = null %}
+            {% for p in user.profiles %}{% if p.isPrimary() and not p.deletedAt %}{% set _primaryForSizes = p %}{% endif %}{% endfor %}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                    <h2 class="text-sm font-semibold text-gray-700">Tailles</h2>
+                    <span class="text-xs text-gray-400">galas &amp; certains cours</span>
+                </div>
+                <div class="px-6 py-4 grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-0.5">Haut</p>
+                        <p class="font-medium text-gray-900">{{ _primaryForSizes ? (_primaryForSizes.sizeTop ?: '—') : '—' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-0.5">Bas</p>
+                        <p class="font-medium text-gray-900">{{ _primaryForSizes ? (_primaryForSizes.sizeBottom ?: '—') : '—' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 mb-0.5">Pointure</p>
+                        <p class="font-medium text-gray-900">{{ _primaryForSizes ? (_primaryForSizes.sizeShoe ?: '—') : '—' }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             {# Appartenances aux écoles #}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -165,8 +186,7 @@
                                             {{ school.name }}
                                         </a>
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                                            {% if sp.role.value == 'owner' %}bg-amber-50 text-amber-700
-                                            {% elseif sp.role.value == 'admin' %}bg-red-50 text-red-700
+                                            {% if sp.role.value == 'school' %}bg-amber-50 text-amber-700
                                             {% elseif sp.role.value == 'teacher' %}bg-blue-50 text-blue-700
                                             {% else %}bg-gray-100 text-gray-600{% endif %}">
                                             {{ sp.role.value|capitalize }}

@@ -85,7 +85,7 @@ final class MemberController extends AbstractController
         $roleMap = [
             'students' => SchoolRole::Student,
             'teachers' => SchoolRole::Teacher,
-            'admins'   => SchoolRole::Admin,
+            'admins'   => SchoolRole::School,
         ];
 
         // Filters
@@ -880,7 +880,7 @@ final class MemberController extends AbstractController
 
         $type = match ($member->getRole()) {
             \App\Enum\SchoolRole::Teacher => 'teachers',
-            \App\Enum\SchoolRole::Admin   => 'admins',
+            \App\Enum\SchoolRole::School   => 'admins',
             default                         => 'students',
         };
 
@@ -926,7 +926,7 @@ final class MemberController extends AbstractController
             $roleMap = [
                 'students' => SchoolRole::Student,
                 'teachers' => SchoolRole::Teacher,
-                'admins'   => SchoolRole::Admin,
+                'admins'   => SchoolRole::School,
             ];
 
             $season = null;
@@ -1045,6 +1045,10 @@ final class MemberController extends AbstractController
                 'role'               => $roleMap[$type],
                 'user'               => $userAccount,
             ]);
+
+            // Recalculate users.roles from all active school memberships
+            $this->memberService->syncUserRoles($userAccount);
+            $this->em->flush();
 
             try {
                 $this->emailService->sendMemberWelcome($userAccount, $school, $isNewAccount);

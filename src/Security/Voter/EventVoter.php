@@ -63,9 +63,9 @@ final class EventVoter extends Voter
 
         return match ($attribute) {
             self::VIEW   => true,
-            self::CREATE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
-            self::UPDATE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
-            self::DELETE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::CREATE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::UPDATE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::DELETE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
             default      => false,
         };
     }

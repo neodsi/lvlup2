@@ -17,6 +17,7 @@ use App\Enum\SchoolRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+
 class MemberService
 {
     private const CANCEL_WINDOW_SESSION_KEY = 'fastcount_last_remove';
@@ -210,6 +211,46 @@ class MemberService
         fclose($handle);
 
         return $csv !== false ? $csv : '';
+    }
+
+    /**
+     * Recalculates users.roles from all active school_profiles.
+     * Preserves ROLE_ADMIN (set manually). Call after any SchoolProfile create/delete.
+     */
+    public function syncUserRoles(User $user): void
+    {
+        // Mapping school_profiles.role → users.roles
+        $roleMap = [
+            SchoolRole::School->value  => 'ROLE_SCHOOL',
+            SchoolRole::Teacher->value => 'ROLE_TEACHER',
+            SchoolRole::Student->value => 'ROLE_STUDENT',
+        ];
+
+        $rows = $this->em->createQueryBuilder()
+            ->select('DISTINCT tp.role')
+            ->from(SchoolProfile::class, 'tp')
+            ->join('tp.profile', 'p')
+            ->where('p.user = :user')
+            ->andWhere('tp.deletedAt IS NULL')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        $derived = [];
+        foreach ($rows as $roleValue) {
+            $mapped = $roleMap[$roleValue instanceof SchoolRole ? $roleValue->value : (string) $roleValue] ?? null;
+            if ($mapped !== null) {
+                $derived[] = $mapped;
+            }
+        }
+
+        // Always preserve ROLE_ADMIN if already set
+        $current = array_filter($user->getRoles(), static fn(string $r) => $r !== 'ROLE_USER');
+        if (in_array('ROLE_ADMIN', $current, true)) {
+            $derived[] = 'ROLE_ADMIN';
+        }
+
+        $user->setRoles(array_values(array_unique($derived)));
     }
 
     public function fastCount(SchoolProfilePackage $package, User $actor, string $action): SchoolProfilePackage
