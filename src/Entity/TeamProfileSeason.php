@@ -39,18 +39,6 @@ class TeamProfileSeason
     #[ORM\Column(type: 'string', length: 36, nullable: true)]
     private ?string $levelId = null;
 
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $topSize = null;
-
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $bottomSize = null;
-
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $feetSize = null;
-
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private ?string $regionSize = null;
-
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $emergencyContact = null;
 
@@ -164,54 +152,6 @@ class TeamProfileSeason
     public function setLevelId(?string $levelId): static
     {
         $this->levelId = $levelId;
-
-        return $this;
-    }
-
-    public function getTopSize(): ?string
-    {
-        return $this->topSize;
-    }
-
-    public function setTopSize(?string $topSize): static
-    {
-        $this->topSize = $topSize;
-
-        return $this;
-    }
-
-    public function getBottomSize(): ?string
-    {
-        return $this->bottomSize;
-    }
-
-    public function setBottomSize(?string $bottomSize): static
-    {
-        $this->bottomSize = $bottomSize;
-
-        return $this;
-    }
-
-    public function getFeetSize(): ?string
-    {
-        return $this->feetSize;
-    }
-
-    public function setFeetSize(?string $feetSize): static
-    {
-        $this->feetSize = $feetSize;
-
-        return $this;
-    }
-
-    public function getRegionSize(): ?string
-    {
-        return $this->regionSize;
-    }
-
-    public function setRegionSize(?string $regionSize): static
-    {
-        $this->regionSize = $regionSize;
 
         return $this;
     }

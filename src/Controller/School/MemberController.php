@@ -204,10 +204,6 @@ final class MemberController extends AbstractController
             if ($regStatus) {
                 $tps->setRegistrationStatus(RegistrationStatus::from($regStatus));
             }
-            $tps->setTopSize($f->get('top_size') ?: null);
-            $tps->setBottomSize($f->get('bottom_size') ?: null);
-            $tps->setFeetSize($f->get('feet_size') ?: null);
-            $tps->setRegionSize($f->get('region_size') ?: null);
             $tps->setInjuryWarning($f->get('injury_warning') ?: null);
 
             $accepted = $f->all('accepted');
@@ -327,10 +323,6 @@ final class MemberController extends AbstractController
                 'registrationStatus' => $regStatusVal,
                 'injuryWarning'      => $f->get('injury_warning') ?: null,
                 'emergencyContact'   => $emergencyContact,
-                'topSize'            => $f->get('top_size') ?: null,
-                'bottomSize'         => $f->get('bottom_size') ?: null,
-                'feetSize'           => $f->get('feet_size') ?: null,
-                'regionSize'         => $f->get('region_size') ?: null,
                 'accepted'           => $accepted ?: null,
                 'role'               => $roleMap[$type],
             ]);

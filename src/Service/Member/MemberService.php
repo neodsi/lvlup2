@@ -102,18 +102,6 @@ class MemberService
             if (isset($data['levelId'])) {
                 $tps->setLevelId($data['levelId']);
             }
-            if (isset($data['topSize'])) {
-                $tps->setTopSize($data['topSize']);
-            }
-            if (isset($data['bottomSize'])) {
-                $tps->setBottomSize($data['bottomSize']);
-            }
-            if (isset($data['feetSize'])) {
-                $tps->setFeetSize($data['feetSize']);
-            }
-            if (isset($data['regionSize'])) {
-                $tps->setRegionSize($data['regionSize']);
-            }
             if (isset($data['emergencyContact'])) {
                 $tps->setEmergencyContact($data['emergencyContact']);
             }
@@ -164,10 +152,6 @@ class MemberService
             'activity_ids',
             'age_group',
             'level',
-            'top_size',
-            'bottom_size',
-            'feet_size',
-            'region_size',
             'emergency_contact',
             'injury_warning',
         ]);
@@ -210,10 +194,6 @@ class MemberService
                 $activityIds,
                 $tps?->getAgeGroupId() ?? '',
                 $tps?->getLevelId() ?? '',
-                $tps?->getTopSize() ?? '',
-                $tps?->getBottomSize() ?? '',
-                $tps?->getFeetSize() ?? '',
-                $tps?->getRegionSize() ?? '',
                 $emergencyContact,
                 $tps?->getInjuryWarning() ?? '',
             ]);

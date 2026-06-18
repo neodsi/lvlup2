@@ -146,38 +146,6 @@
                         </select>
                     </div>
 
-                    {# Tailles #}
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 mb-2">Tailles</p>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Système</label>
-                                <select name="region_size"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                                    <option value="">—</option>
-                                    <option value="EU" {{ tps and tps.regionSize == 'EU' ? 'selected' }}>EU</option>
-                                    <option value="UK" {{ tps and tps.regionSize == 'UK' ? 'selected' }}>UK</option>
-                                    <option value="US" {{ tps and tps.regionSize == 'US' ? 'selected' }}>US</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Haut</label>
-                                <input type="text" name="top_size" value="{{ tps ? tps.topSize : '' }}" placeholder="M, L…"
-                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Bas</label>
-                                <input type="text" name="bottom_size" value="{{ tps ? tps.bottomSize : '' }}" placeholder="38, 40…"
-                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Chaussures</label>
-                                <input type="text" name="feet_size" value="{{ tps ? tps.feetSize : '' }}" placeholder="38, 39…"
-                                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                            </div>
-                        </div>
-                    </div>
-
                     {# Consentements #}
                     <div>
                         <p class="text-xs font-medium text-gray-500 mb-2">Consentements signés</p>
