@@ -2,15 +2,18 @@
 
 {% block title %}{{ member.profile.firstName }} {{ member.profile.lastName }} — {{ team.name }}{% endblock %}
 
-{% set _roleLabel %}{% if member.role.value == 'team_student' %}Élève{% elseif member.role.value == 'team_teacher' %}Professeur{% elseif member.role.value == 'team_admin' %}Administrateur{% elseif member.role.value == 'team_owner' %}Directeur{% else %}{{ member.role.value }}{% endif %}{% endset %}
-{% set _listType = member.role.value == 'team_teacher' ? 'teachers' : (member.role.value == 'team_admin' ? 'admins' : 'students') %}
+{% set _listType  = member.role.value == 'team_teacher' ? 'teachers' : (member.role.value == 'team_admin' ? 'admins' : 'students') %}
+{% set _listLabel = member.role.value == 'team_teacher' ? 'Professeurs' : (member.role.value == 'team_admin' ? 'Admins' : 'Élèves') %}
+{% set _roleLabel = member.role.value == 'team_student' ? 'Élève' : (member.role.value == 'team_teacher' ? 'Professeur' : (member.role.value == 'team_admin' ? 'Administrateur' : 'Directeur')) %}
 
 {% block breadcrumb %}
 <a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<a href="{{ path('school_members_list', {type: _listType}) }}" class="hover:text-gray-700 transition">
-    {{ member.role.value == 'team_teacher' ? 'Professeurs' : (member.role.value == 'team_admin' ? 'Admins' : 'Élèves') }}
+<a href="{{ path('school_members_list', {type: _listType, season: season ? season.id : null}) }}" class="hover:text-gray-700 transition">
+    Membres{% if season %} · {{ season.name }}{% endif %}
 </a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_members_list', {type: _listType, season: season ? season.id : null}) }}" class="hover:text-gray-700 transition">{{ _listLabel }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <span class="text-gray-700 font-medium">{{ member.profile.firstName }} {{ member.profile.lastName }}</span>
 {% endblock %}
@@ -127,7 +130,7 @@
             </div>
 
             {# Saison actuelle #}
-            {% if season %}
+            {% if season and member.role.value == 'team_student' %}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h2 class="text-sm font-semibold text-gray-900">Saison {{ season.name }}</h2>
@@ -208,7 +211,12 @@
             </div>
             {% endif %}
 
-            <div class="flex justify-end">
+            <div class="flex items-center justify-between">
+                <button type="button" onclick="document.getElementById('modal-delete-member').classList.remove('hidden')"
+                        class="inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Supprimer ce membre
+                </button>
                 <button type="submit"
                         class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                     Enregistrer
@@ -219,5 +227,36 @@
     </div>
     </form>
 
+</div>
+
+{# Modal suppression #}
+<div id="modal-delete-member" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('modal-delete-member').classList.add('hidden')"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-red-100">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-base font-semibold text-gray-900">Supprimer ce membre ?</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    <strong>{{ member.profile.firstName }} {{ member.profile.lastName }}</strong> sera retiré(e) de l'école. Cette action est irréversible.
+                </p>
+            </div>
+        </div>
+        <div class="mt-6 flex gap-3 justify-end">
+            <button type="button" onclick="document.getElementById('modal-delete-member').classList.add('hidden')"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Annuler
+            </button>
+            <form method="post" action="{{ path('school_member_delete', {id: member.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_member_' ~ member.id) }}">
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                    Supprimer définitivement
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

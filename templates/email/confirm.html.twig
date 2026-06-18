@@ -1,49 +1,22 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmez votre adresse e-mail</title>
-  <style>
-    body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Arial, sans-serif; color: #18181b; }
-    .wrapper { max-width: 580px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-    .header { background: #18181b; padding: 32px 40px; text-align: center; }
-    .header .logo { font-size: 28px; font-weight: 800; color: #facc15; letter-spacing: -1px; }
-    .header .logo span { color: #ffffff; }
-    .body { padding: 40px; }
-    .body h1 { font-size: 22px; font-weight: 700; margin: 0 0 16px; }
-    .body p { font-size: 15px; line-height: 1.6; color: #52525b; margin: 0 0 20px; }
-    .btn { display: inline-block; background: #facc15; color: #18181b; font-weight: 700; font-size: 15px; padding: 14px 32px; border-radius: 8px; text-decoration: none; }
-    .btn-wrap { text-align: center; margin: 32px 0; }
-    .footer { background: #f4f4f5; padding: 24px 40px; text-align: center; font-size: 12px; color: #a1a1aa; }
-    .footer a { color: #a1a1aa; }
-  </style>
-</head>
-<body>
-  <div class="wrapper">
-    <div class="header">
-      <div class="logo"><span>Lvl</span>Up</div>
-    </div>
-    <div class="body">
-      <h1>Confirmez votre adresse e-mail</h1>
-      <p>Bonjour,</p>
-      <p>Merci de vous être inscrit(e) sur <strong>LvlUp</strong>. Pour activer votre compte, veuillez confirmer votre adresse e-mail en cliquant sur le bouton ci-dessous.</p>
-      <div class="btn-wrap">
-        <a class="btn" href="{{ app.request is defined ? app.request.schemeAndHttpHost : '' }}/auth/confirm-email/{{ confirmation_token }}">
-          Confirmer mon adresse e-mail
-        </a>
-      </div>
-      <p>Si le bouton ne fonctionne pas, copiez-collez le lien suivant dans votre navigateur :</p>
-      <p style="word-break:break-all; font-size:13px; color:#71717a;">
-        {{ app.request is defined ? app.request.schemeAndHttpHost : '' }}/auth/confirm-email/{{ confirmation_token }}
-      </p>
-      <p>Ce lien est valable jusqu'à ce qu'il soit utilisé.</p>
-      <p>Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet e-mail.</p>
-    </div>
-    <div class="footer">
-      &copy; {{ "now"|date("Y") }} LvlUp &mdash; Tous droits réservés.<br>
-      Vous recevez cet e-mail car vous venez de créer un compte sur lvlup.com.
-    </div>
+{% extends 'email/base.html.twig' %}
+
+{% block title %}Confirmez votre adresse e-mail – LVL UP{% endblock %}
+
+{% block body %}
+  <h1>Confirmez votre adresse e-mail</h1>
+  <p>Bonjour,</p>
+  <p>Merci de vous être inscrit(e) sur <strong>LVL UP</strong>. Pour activer votre compte, veuillez confirmer votre adresse e-mail en cliquant sur le bouton ci-dessous.</p>
+  <div class="btn-wrap">
+    <a class="btn" href="{{ app.request is defined ? app.request.schemeAndHttpHost : '' }}/auth/confirm?token={{ confirmation_token }}">
+      Confirmer mon adresse e-mail
+    </a>
   </div>
-</body>
-</html>
+  <p>Si le bouton ne fonctionne pas, copiez-collez le lien suivant dans votre navigateur :</p>
+  <p style="word-break:break-all; font-size:13px; color:#71717a;">
+    {{ app.request is defined ? app.request.schemeAndHttpHost : '' }}/auth/confirm?token={{ confirmation_token }}
+  </p>
+  <p>Ce lien est valable jusqu'à ce qu'il soit utilisé.</p>
+  <p>Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet e-mail.</p>
+{% endblock %}
+
+{% block footer_extra %}<br>Vous recevez cet e-mail car vous venez de créer un compte sur LVL UP.{% endblock %}

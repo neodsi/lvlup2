@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Entity\Profile;
 use App\Entity\Team;
+use App\Entity\TeamProfile;
 use App\Entity\User;
+use App\Enum\TeamRole;
 use App\Enum\TeamStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -98,17 +101,31 @@ class DashboardController extends AbstractController
                 $team->setStatus($status);
                 $this->em->flush();
 
-                $this->addFlash('success', sprintf('School status updated to "%s".', $status->value));
+                $this->addFlash('success', 'Statut mis à jour.');
             } else {
-                $this->addFlash('error', 'Invalid status value.');
+                $this->addFlash('error', 'Statut invalide.');
             }
 
             return $this->redirectToRoute('app_admin_school_detail', ['id' => $id]);
         }
 
+        $ownerProfile = $this->em->createQueryBuilder()
+            ->select('tp, p, u')
+            ->from(TeamProfile::class, 'tp')
+            ->join('tp.profile', 'p')
+            ->join('p.user', 'u')
+            ->where('tp.team = :team')
+            ->andWhere('tp.role = :role')
+            ->andWhere('tp.deletedAt IS NULL')
+            ->setParameter('team', $team)
+            ->setParameter('role', TeamRole::TeamOwner)
+            ->getQuery()
+            ->getOneOrNullResult();
+
         return $this->render('admin/schools/detail.html.twig', [
-            'team'     => $team,
-            'statuses' => TeamStatus::cases(),
+            'team'          => $team,
+            'statuses'      => TeamStatus::cases(),
+            'ownerProfile'  => $ownerProfile,
         ]);
     }
 
@@ -116,7 +133,8 @@ class DashboardController extends AbstractController
     #[IsGranted('ROLE_SCHOOL')]
     public function users(Request $request): Response
     {
-        $search = $request->query->get('q', '');
+        $search     = $request->query->get('q', '');
+        $roleFilter = $request->query->get('role', '');
 
         $qb = $this->em->createQueryBuilder()
             ->select('u')
@@ -129,12 +147,82 @@ class DashboardController extends AbstractController
                ->setParameter('search', '%' . $search . '%');
         }
 
+        if ($roleFilter !== '') {
+            $qb->andWhere('u.roles LIKE :role')
+               ->setParameter('role', '%' . $roleFilter . '%');
+        }
+
         $users = $qb->getQuery()->getResult();
 
         return $this->render('admin/users/index.html.twig', [
-            'users'  => $users,
-            'search' => $search,
+            'users'      => $users,
+            'search'     => $search,
+            'roleFilter' => $roleFilter,
         ]);
+    }
+
+    #[Route('/admin/users/{userId}/delete', name: 'app_admin_user_delete', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function deleteUser(string $userId, Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_user_' . $userId, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $user = $this->em->getRepository(User::class)->find($userId);
+
+        if ($user === null || $user->getDeletedAt() !== null) {
+            throw $this->createNotFoundException('Utilisateur introuvable.');
+        }
+
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        if ($user->getId() === $currentUser->getId()) {
+            $this->addFlash('error', 'Vous ne pouvez pas supprimer votre propre compte.');
+            return $this->redirectToRoute('app_admin_users');
+        }
+
+        // Collect all TeamProfile IDs linked to this user's profiles
+        $teamProfileIds = array_column(
+            $this->em->createQuery(
+                'SELECT tp.id FROM App\Entity\TeamProfile tp
+                 JOIN tp.profile p
+                 WHERE p.user = :user'
+            )
+            ->setParameter('user', $user)
+            ->getArrayResult(),
+            'id'
+        );
+
+        if (!empty($teamProfileIds)) {
+            $this->em->createQuery('DELETE FROM App\Entity\TeamProfileSeason tps WHERE tps.teamProfileId IN (:ids)')
+                ->setParameter('ids', $teamProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\TeamProfilePackage tpp WHERE tpp.teamProfileId IN (:ids)')
+                ->setParameter('ids', $teamProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.teamProfileId IN (:ids)')
+                ->setParameter('ids', $teamProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\TeamProfileGalaParticipation tpgp WHERE tpgp.teamProfileId IN (:ids)')
+                ->setParameter('ids', $teamProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\TeamProfile tp WHERE tp.id IN (:ids)')
+                ->setParameter('ids', $teamProfileIds)->execute();
+        }
+
+        // Detach profiles from the user then remove the user row
+        $this->em->createQueryBuilder()
+            ->update(Profile::class, 'p')
+            ->set('p.user', ':null')
+            ->where('p.user = :user')
+            ->setParameter('null', null)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->execute();
+
+        $this->em->remove($user);
+        $this->em->flush();
+
+        $this->addFlash('success', 'Utilisateur supprimé.');
+
+        return $this->redirectToRoute('app_admin_users');
     }
 
     #[Route('/admin/impersonate/{userId}', name: 'app_admin_impersonate')]
@@ -161,6 +249,6 @@ class DashboardController extends AbstractController
     #[Route('/switch-back', name: 'app_admin_switch_back')]
     public function switchBack(): Response
     {
-        return $this->redirect('/?_switch_user=_exit');
+        return $this->redirect($this->generateUrl('app_admin_users') . '?_switch_user=_exit');
     }
 }

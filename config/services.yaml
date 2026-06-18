@@ -5,6 +5,7 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app.stripe_secret_key: '%env(STRIPE_SECRET_KEY)%'
+    app.mailer_from: '%env(MAILER_FROM)%'
 
 services:
     # default configuration for services in *this* file
@@ -40,6 +41,11 @@ services:
     App\Controller\Webhook\ResendWebhookController:
         arguments:
             $resendWebhookSecret: '%env(RESEND_WEBHOOK_SECRET)%'
+
+    App\Service\Email\EmailService:
+        arguments:
+            $mailerFrom: '%app.mailer_from%'
+            $projectDir: '%kernel.project_dir%'
 
     App\Controller\Api\DocumentApiController:
         arguments:

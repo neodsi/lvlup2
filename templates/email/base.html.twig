@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}LVL UP{% endblock %}</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f5f3ff; font-family: 'Segoe UI', Arial, sans-serif; color: #18181b; }
+    .wrapper { max-width: 580px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 16px rgba(79,70,229,.12); }
+    .header { background: #4f46e5; padding: 24px 40px; text-align: center; }
+    .logo-text { font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: 4px; text-transform: uppercase; }
+    .body { padding: 40px; }
+    .body h1 { font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #18181b; }
+    .body p { font-size: 15px; line-height: 1.6; color: #52525b; margin: 0 0 20px; }
+    .btn { display: inline-block; background: #4f46e5; color: #ffffff !important; font-weight: 700; font-size: 15px; padding: 14px 32px; border-radius: 8px; text-decoration: none; }
+    .btn-wrap { text-align: center; margin: 32px 0; }
+    .notice { background: #eef2ff; border-left: 4px solid #4f46e5; padding: 14px 18px; border-radius: 6px; font-size: 14px; color: #3730a3; margin-bottom: 20px; }
+    .footer { background: #f5f3ff; padding: 24px 40px; text-align: center; font-size: 12px; color: #a1a1aa; }
+    .footer a { color: #a1a1aa; }
+    {% block extra_styles %}{% endblock %}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <div class="header">
+      {% if logoCid is defined and logoCid %}
+        <img src="cid:{{ logoCid }}" alt="LVL UP" style="height:48px;width:auto;display:block;margin:0 auto;">
+      {% else %}
+        <div class="logo-text">LVL UP</div>
+      {% endif %}
+    </div>
+
+    <div class="body">
+      {% block body %}{% endblock %}
+    </div>
+
+    <div class="footer">
+      &copy; {{ "now"|date("Y") }} LVL UP &mdash; Tous droits réservés.{% block footer_extra %}{% endblock %}
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,45 +1,64 @@
-{% extends 'layout/admin.html.twig' %}
+﻿{% extends 'layout/admin.html.twig' %}
 
 {% block title %}Utilisateurs — Administration{% endblock %}
 
-{% block admin_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+{% block breadcrumb %}
+<a href="{{ path('app_admin') }}" class="hover:text-gray-700 transition">Tableau de bord</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Utilisateurs</span>
+{% endblock %}
 
-    <div class="flex items-center gap-3 mb-6">
-        <a href="{{ path('app_admin') }}" class="text-gray-400 hover:text-gray-600 transition">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        </a>
+{% block admin_content %}
+<div class="py-8">
+
+    <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Utilisateurs</h1>
     </div>
 
-    {# Search #}
-    <form method="get" action="{{ path('app_admin_users') }}" class="mb-6">
-        <div class="flex gap-3 max-w-md">
-            <div class="relative flex-1">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
-                <input
-                    type="search"
-                    name="q"
-                    value="{{ search }}"
-                    placeholder="Rechercher par e-mail..."
-                    class="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
-                >
+    {# Search + role filter #}
+    <div class="mb-6 space-y-3">
+        <form method="get" action="{{ path('app_admin_users') }}">
+            {% if roleFilter %}<input type="hidden" name="role" value="{{ roleFilter }}">{% endif %}
+            <div class="flex gap-3 max-w-md">
+                <div class="relative flex-1">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ search }}"
+                        placeholder="Rechercher par e-mail..."
+                        class="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                    >
+                </div>
+                <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
+                    Rechercher
+                </button>
+                {% if search or roleFilter %}
+                    <a href="{{ path('app_admin_users') }}" class="inline-flex items-center gap-1 border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 text-sm px-3 py-2.5 rounded-lg transition-colors">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </a>
+                {% endif %}
             </div>
-            <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
-                Rechercher
-            </button>
-            {% if search %}
-                <a href="{{ path('app_admin_users') }}" class="inline-flex items-center gap-1 border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 text-sm px-3 py-2.5 rounded-lg transition-colors">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </form>
+
+        {# Role filter chips #}
+        <div class="flex flex-wrap gap-2">
+            {% for label, role in {'Tous': '', 'Admin': 'ROLE_ADMIN', 'School': 'ROLE_SCHOOL', 'Professeur': 'ROLE_TEACHER', 'Élève': 'ROLE_STUDENT'} %}
+                <a href="{{ path('app_admin_users', {q: search, role: role}) }}"
+                   class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                       {{ roleFilter == role
+                           ? 'bg-indigo-600 text-white border-indigo-600'
+                           : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50' }}">
+                    {{ label }}
                 </a>
-            {% endif %}
+            {% endfor %}
         </div>
-    </form>
+    </div>
 
     {% if users is empty %}
         <div class="rounded-xl border border-gray-200 bg-white p-12 text-center">
             <p class="text-gray-500 text-sm">
-                {% if search %}Aucun utilisateur trouvé pour "{{ search }}".{% else %}Aucun utilisateur.{% endif %}
+                {% if search %}Aucun utilisateur trouvé pour "{{ search }}".{% elseif roleFilter %}Aucun utilisateur avec ce rôle.{% else %}Aucun utilisateur.{% endif %}
             </p>
         </div>
     {% else %}
@@ -64,10 +83,23 @@
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="py-4 pl-6 pr-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm shrink-0">
-                                            {{ user.email|first|upper }}
+                                        {% set _primaryProfile = null %}
+                                        {% for p in user.profiles %}
+                                            {% if p.isPrimary() and not p.deletedAt %}{% set _primaryProfile = p %}{% endif %}
+                                        {% endfor %}
+                                        {% if _primaryProfile and _primaryProfile.avatarPath %}
+                                            <img src="{{ _primaryProfile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-8 w-8 rounded-full object-cover shrink-0">
+                                        {% else %}
+                                            <span class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm shrink-0">{{ user.email|first|upper }}</span>
+                                        {% endif %}
+                                        <div>
+                                            {% if _primaryProfile %}
+                                                <p class="text-sm font-medium text-gray-900">{{ _primaryProfile.firstName }} {{ _primaryProfile.lastName }}</p>
+                                                <p class="text-xs text-gray-400">{{ user.email }}</p>
+                                            {% else %}
+                                                <span class="text-sm text-gray-900 font-medium">{{ user.email }}</span>
+                                            {% endif %}
                                         </div>
-                                        <span class="text-sm text-gray-900 font-medium">{{ user.email }}</span>
                                     </div>
                                 </td>
                                 <td class="px-3 py-4">
@@ -85,22 +117,30 @@
                                     {{ user.createdAt|date('d/m/Y') }}
                                 </td>
                                 <td class="px-3 py-4">
-                                    {% if user.emailConfirmedAt is defined and user.emailConfirmedAt %}
+                                    {% if user.emailVerified %}
                                         <svg class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     {% else %}
                                         <svg class="h-5 w-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     {% endif %}
                                 </td>
                                 <td class="py-4 pl-3 pr-6 text-right">
-                                    {% if is_granted('ROLE_ADMIN') and user.id != app.user.id and 'ROLE_ADMIN' not in user.roles %}
-                                        <a
-                                            href="{{ path('app_admin_impersonate', {userId: user.id}) }}"
-                                            class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-800 border border-amber-200 hover:bg-amber-50 px-2.5 py-1.5 rounded-lg transition"
-                                                        >
-                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                            Impersoner
-                                        </a>
-                                    {% endif %}
+                                    <div class="inline-flex items-center gap-2">
+                                        {% if is_granted('ROLE_ADMIN') and user.id != app.user.id and 'ROLE_ADMIN' not in user.roles %}
+                                            <a href="{{ path('app_admin_impersonate', {userId: user.id}) }}"
+                                               class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-800 border border-amber-200 hover:bg-amber-50 px-2.5 py-1.5 rounded-lg transition">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                Impersoner
+                                            </a>
+                                        {% endif %}
+                                        {% if is_granted('ROLE_ADMIN') and user.id != app.user.id %}
+                                            <button type="button"
+                                                    onclick="openDeleteModal('{{ user.id }}', '{{ user.email|e('html_attr') }}', '{{ csrf_token('delete_user_' ~ user.id) }}')"
+                                                    class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-800 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                Supprimer
+                                            </button>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -111,4 +151,47 @@
     {% endif %}
 
 </div>
+
+{# Modal suppression utilisateur #}
+<div id="modal-delete-user" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-red-100">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-base font-semibold text-gray-900">Supprimer cet utilisateur ?</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    Le compte <strong id="modal-delete-email"></strong> sera supprimé. Cette action est irréversible.
+                </p>
+            </div>
+        </div>
+        <div class="mt-6 flex gap-3 justify-end">
+            <button type="button" onclick="closeDeleteModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Annuler
+            </button>
+            <form id="modal-delete-form" method="post" action="">
+                <input type="hidden" name="_token" id="modal-delete-token" value="">
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                    Supprimer définitivement
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDeleteModal(userId, userEmail, csrfToken) {
+    document.getElementById('modal-delete-email').textContent = userEmail;
+    document.getElementById('modal-delete-form').action = '/admin/users/' + userId + '/delete';
+    document.getElementById('modal-delete-token').value = csrfToken;
+    document.getElementById('modal-delete-user').classList.remove('hidden');
+}
+function closeDeleteModal() {
+    document.getElementById('modal-delete-user').classList.add('hidden');
+}
+</script>
 {% endblock %}

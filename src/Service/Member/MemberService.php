@@ -12,6 +12,7 @@ use App\Entity\TeamProfilePackage;
 use App\Entity\TeamProfileSeason;
 use App\Entity\User;
 use App\Enum\PackageStatus;
+use App\Enum\TeamProfileStatus;
 use App\Enum\TeamRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -27,7 +28,7 @@ class MemberService
     ) {
     }
 
-    public function createMember(Team $team, Season $season, array $data): TeamProfile
+    public function createMember(Team $team, ?Season $season, array $data): TeamProfile
     {
         $teamProfile = null;
 
@@ -70,6 +71,7 @@ class MemberService
             $teamProfile = new TeamProfile();
             $teamProfile->setTeam($team);
             $teamProfile->setProfile($profile);
+            $teamProfile->setStatus(TeamProfileStatus::Accepted);
 
             $role = $data['role'] ?? TeamRole::TeamStudent;
             $teamProfile->setRole($role instanceof TeamRole ? $role : TeamRole::from($role));
@@ -83,6 +85,10 @@ class MemberService
 
             $this->em->persist($teamProfile);
             $this->em->flush();
+
+            if ($season === null) {
+                return;
+            }
 
             // Create TeamProfileSeason for current season
             $tps = new TeamProfileSeason();

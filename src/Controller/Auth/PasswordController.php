@@ -79,6 +79,12 @@ class PasswordController extends AbstractController
         return $this->redirect('/login');
     }
 
+    #[Route('/auth/confirm-email/{token}', name: 'app_email_confirm_legacy', methods: ['GET'])]
+    public function confirmEmailLegacy(string $token): Response
+    {
+        return $this->redirectToRoute('app_email_confirm', ['token' => $token], 301);
+    }
+
     #[Route('/auth/confirm', name: 'app_email_confirm', methods: ['GET'])]
     public function confirmEmail(Request $request): Response
     {

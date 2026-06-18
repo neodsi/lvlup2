@@ -21,6 +21,7 @@
     {% include 'components/_flash.html.twig' %}
 
     <form method="post" action="{{ path('school_members_create', {type: type}) }}" class="space-y-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('create_member_' ~ type) }}">
 
         {# Informations personnelles #}
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -78,7 +79,8 @@
             </div>
         </div>
 
-        {# Saison actuelle #}
+        {# Saison actuelle — élèves uniquement #}
+        {% if type == 'students' %}
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div class="px-6 py-4 border-b border-gray-100">
                 <h2 class="text-sm font-semibold text-gray-900">Saison actuelle</h2>
@@ -153,6 +155,7 @@
 
             </div>
         </div>
+        {% endif %}
 
         {# Note interne #}
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
