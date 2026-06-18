@@ -261,6 +261,33 @@ final class MemberController extends AbstractController
 
             $f = $request->request;
 
+            // Required field validation
+            $errors = [];
+            if (!trim((string) $f->get('first_name', ''))) {
+                $errors[] = 'Le prénom est obligatoire.';
+            }
+            if (!trim((string) $f->get('last_name', ''))) {
+                $errors[] = 'Le nom est obligatoire.';
+            }
+            if (!$f->get('dob')) {
+                $errors[] = 'La date de naissance est obligatoire.';
+            }
+            if (!$f->get('phone')) {
+                $errors[] = 'Le téléphone est obligatoire.';
+            }
+            if (!$f->get('email')) {
+                $errors[] = 'L\'email est obligatoire.';
+            }
+            if (!$f->get('address_text')) {
+                $errors[] = 'L\'adresse est obligatoire.';
+            }
+            if (!empty($errors)) {
+                foreach ($errors as $error) {
+                    $this->addFlash('error', $error);
+                }
+                return $this->render('school/members/create.html.twig', ['team' => $team, 'type' => $type]);
+            }
+
             $dobVal = $f->get('dob');
             $dob    = null;
             if ($dobVal) {
