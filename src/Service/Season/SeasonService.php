@@ -13,7 +13,7 @@ use App\Entity\PaymentScheduleTemplate;
 use App\Entity\PriceModifier;
 use App\Entity\Room;
 use App\Entity\Season;
-use App\Entity\Team;
+use App\Entity\School;
 use Doctrine\ORM\EntityManagerInterface;
 
 class SeasonService
@@ -23,10 +23,10 @@ class SeasonService
     ) {
     }
 
-    public function createSeason(Team $team, array $data): Season
+    public function createSeason(School $school, array $data): Season
     {
         $season = new Season();
-        $season->setTeamId($team->getId());
+        $season->setSchoolId($school->getId());
         $season->setName($data['name']);
         $season->setStartAt($data['startAt']);
         $season->setEndAt($data['endAt']);
@@ -35,12 +35,12 @@ class SeasonService
             $season->setClosures($data['closures']);
         }
 
-        $this->em->wrapInTransaction(function () use ($team, $season): void {
+        $this->em->wrapInTransaction(function () use ($school, $season): void {
             $this->em->persist($season);
 
-            if ($team->getCurrentSeasonId() === null) {
-                $team->setCurrentSeasonId($season->getId());
-                $this->em->persist($team);
+            if ($school->getCurrentSeasonId() === null) {
+                $school->setCurrentSeasonId($season->getId());
+                $this->em->persist($school);
             }
         });
 
@@ -49,13 +49,13 @@ class SeasonService
 
     public function copySeason(
         Season $sourceSeason,
-        Team $team,
+        School $school,
         string $newName,
         \DateTimeImmutable $start,
         \DateTimeImmutable $end,
     ): Season {
         $newSeason = new Season();
-        $newSeason->setTeamId($team->getId());
+        $newSeason->setSchoolId($school->getId());
         $newSeason->setName($newName);
         $newSeason->setStartAt($start);
         $newSeason->setEndAt($end);
@@ -72,7 +72,7 @@ class SeasonService
         $this->em->wrapInTransaction(function () use (
             $sourceSeason,
             $newSeason,
-            $team,
+            $school,
             &$priceModifierMap,
         ): void {
             $this->em->persist($newSeason);
@@ -80,7 +80,7 @@ class SeasonService
             // --- Rooms ---
             foreach ($sourceSeason->getRooms() as $sourceRoom) {
                 $room = new Room();
-                $room->setTeamId($team->getId());
+                $room->setSchoolId($school->getId());
                 $room->setSeasonId($newSeason->getId());
                 $room->setName($sourceRoom->getName());
                 $this->em->persist($room);
@@ -89,7 +89,7 @@ class SeasonService
             // --- Age groups ---
             foreach ($sourceSeason->getAgeGroups() as $sourceAgeGroup) {
                 $ageGroup = new AgeGroup();
-                $ageGroup->setTeamId($team->getId());
+                $ageGroup->setSchoolId($school->getId());
                 $ageGroup->setSeasonId($newSeason->getId());
                 $ageGroup->setName($sourceAgeGroup->getName());
                 $ageGroup->setMinAge($sourceAgeGroup->getMinAge());
@@ -100,7 +100,7 @@ class SeasonService
             // --- Levels ---
             foreach ($sourceSeason->getLevels() as $sourceLevel) {
                 $level = new Level();
-                $level->setTeamId($team->getId());
+                $level->setSchoolId($school->getId());
                 $level->setSeasonId($newSeason->getId());
                 $level->setName($sourceLevel->getName());
                 $this->em->persist($level);
@@ -112,7 +112,7 @@ class SeasonService
             ]);
             foreach ($sourceModifiers as $sourceMod) {
                 $mod = new PriceModifier();
-                $mod->setTeamId($team->getId());
+                $mod->setSchoolId($school->getId());
                 $mod->setSeasonId($newSeason->getId());
                 $mod->setName($sourceMod->getName());
                 $mod->setValue($sourceMod->getValue());
@@ -130,7 +130,7 @@ class SeasonService
             ]);
             foreach ($sourceTemplates as $sourceTpl) {
                 $tpl = new PaymentScheduleTemplate();
-                $tpl->setTeamId($team->getId());
+                $tpl->setSchoolId($school->getId());
                 $tpl->setSeasonId($newSeason->getId());
                 $tpl->setName($sourceTpl->getName());
                 $tpl->setType($sourceTpl->getType());
@@ -146,7 +146,7 @@ class SeasonService
             // --- Events ---
             foreach ($sourceSeason->getEvents() as $sourceEvent) {
                 $event = new Event();
-                $event->setTeamId($team->getId());
+                $event->setSchoolId($school->getId());
                 $event->setSeasonId($newSeason->getId());
                 $event->setName($sourceEvent->getName());
                 $event->setType($sourceEvent->getType());
@@ -164,7 +164,7 @@ class SeasonService
             // --- Packages ---
             foreach ($sourceSeason->getPackages() as $sourcePkg) {
                 $pkg = new Package();
-                $pkg->setTeamId($team->getId());
+                $pkg->setSchoolId($school->getId());
                 $pkg->setSeasonId($newSeason->getId());
                 $pkg->setName($sourcePkg->getName());
                 $pkg->setType($sourcePkg->getType());
@@ -182,7 +182,7 @@ class SeasonService
             // --- Activities ---
             foreach ($sourceSeason->getActivities() as $sourceActivity) {
                 $activity = new Activity();
-                $activity->setTeamId($team->getId());
+                $activity->setSchoolId($school->getId());
                 $activity->setSeasonId($newSeason->getId());
                 $activity->setName($sourceActivity->getName());
                 $this->em->persist($activity);
@@ -199,10 +199,10 @@ class SeasonService
         return $newSeason;
     }
 
-    public function setCurrentSeason(Team $team, Season $season): void
+    public function setCurrentSeason(School $school, Season $season): void
     {
-        $team->setCurrentSeasonId($season->getId());
-        $this->em->persist($team);
+        $school->setCurrentSeasonId($season->getId());
+        $this->em->persist($school);
         $this->em->flush();
     }
 }

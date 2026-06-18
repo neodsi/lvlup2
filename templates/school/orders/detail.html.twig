@@ -1,13 +1,13 @@
-﻿{% extends 'layout/school.html.twig' %}
+{% extends 'layout/school.html.twig' %}
 
-{% block title %}Commande — {{ team.name }}{% endblock %}
+{% block title %}Commande — {{ school.name }}{% endblock %}
 
 {% block school_content %}
 <div class="py-8">
 
     {# Breadcrumb #}
     <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <a href="{{ path('school_home') }}" class="hover:text-indigo-600 transition">{{ team.name }}</a>
+        <a href="{{ path('school_home') }}" class="hover:text-indigo-600 transition">{{ school.name }}</a>
         <span>/</span>
         <a href="{{ path('school_orders_list') }}" class="hover:text-indigo-600 transition">Commandes</a>
         <span>/</span>
@@ -39,8 +39,8 @@
             <div>
                 <dt class="text-gray-500">Membre</dt>
                 <dd class="mt-1 font-medium text-gray-900">
-                    {% if order.teamProfile is defined and order.teamProfile.profile is defined %}
-                        {{ order.teamProfile.profile.firstName }} {{ order.teamProfile.profile.lastName }}
+                    {% if order.schoolProfile is defined and order.schoolProfile.profile is defined %}
+                        {{ order.schoolProfile.profile.firstName }} {{ order.schoolProfile.profile.lastName }}
                     {% else %}—{% endif %}
                 </dd>
             </div>

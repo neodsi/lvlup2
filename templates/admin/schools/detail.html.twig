@@ -1,40 +1,41 @@
 {% extends 'layout/admin.html.twig' %}
 
-{% block title %}{{ team.name }} — Administration{% endblock %}
+{% block title %}{{ school.name }} — Administration{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('app_admin') }}" class="hover:text-gray-700 transition">Tableau de bord</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('app_admin_schools') }}" class="hover:text-gray-700 transition">Écoles</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">{{ school.name }}</span>
+{% endblock %}
 
 {% block admin_content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-    {# Breadcrumb #}
-    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <a href="{{ path('app_admin') }}" class="hover:text-indigo-600 transition">Admin</a>
-        <span>/</span>
-        <a href="{{ path('app_admin_schools') }}" class="hover:text-indigo-600 transition">Écoles</a>
-        <span>/</span>
-        <span class="text-gray-700 font-medium">{{ team.name }}</span>
-    </div>
+<div class="py-8">
 
     {# School header card #}
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-5">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 border-b border-gray-100">
             <div class="flex items-center gap-4">
                 <div class="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-2xl shrink-0">
-                    {{ team.name|first|upper }}
+                    {{ school.name|first|upper }}
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-gray-900">{{ team.name }}</h1>
-                    <p class="text-xs text-gray-400 font-mono">{{ team.id }}</p>
+                    <h1 class="text-xl font-bold text-gray-900">{{ school.name }}</h1>
+                    <p class="text-xs text-gray-400 font-mono">{{ school.id }}</p>
                 </div>
             </div>
-            {% set s = team.status.value ?? team.status ?? 'unknown' %}
+            {% set s = school.status.value ?? school.status ?? 'unknown' %}
             <span class="self-start sm:self-auto inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold
-                {% if s == 'active' %}bg-green-50 text-green-700
+                {% if s == 'accepted' %}bg-green-50 text-green-700
                 {% elseif s == 'waiting' %}bg-amber-50 text-amber-700
                 {% elseif s == 'refused' %}bg-red-50 text-red-700
+                {% elseif s == 'disabled' %}bg-gray-100 text-gray-500
                 {% else %}bg-gray-100 text-gray-600{% endif %}">
-                {% if s == 'active' %}Actif
+                {% if s == 'accepted' %}Actif
                 {% elseif s == 'waiting' %}En attente
                 {% elseif s == 'refused' %}Refusé
+                {% elseif s == 'disabled' %}Désactivé
                 {% else %}{{ s }}{% endif %}
             </span>
         </div>
@@ -42,26 +43,64 @@
         <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 px-6 py-5 text-sm">
             <div>
                 <dt class="text-gray-500">Type</dt>
-                <dd class="mt-1 font-medium text-gray-900">{{ team.type ?? '—' }}</dd>
+                <dd class="mt-1 font-medium text-gray-900">
+                    {% set t = school.type ?? '' %}
+                    {% if t == 'school' %}École
+                    {% elseif t == 'independent_teacher' %}Prof. indépendant
+                    {% elseif t == 'association' %}Association
+                    {% elseif t != '' %}{{ t }}
+                    {% else %}—{% endif %}
+                </dd>
             </div>
             <div>
                 <dt class="text-gray-500">Créée le</dt>
-                <dd class="mt-1 font-medium text-gray-900">{{ team.createdAt|date('d/m/Y') }}</dd>
+                <dd class="mt-1 font-medium text-gray-900">{{ school.createdAt|date('d/m/Y') }}</dd>
             </div>
-            {% if team.invoicePrefix %}
+            {% if school.invoicePrefix %}
                 <div>
                     <dt class="text-gray-500">Préfixe facture</dt>
-                    <dd class="mt-1 font-medium text-gray-900 font-mono">{{ team.invoicePrefix }}</dd>
+                    <dd class="mt-1 font-medium text-gray-900 font-mono">{{ school.invoicePrefix }}</dd>
                 </div>
             {% endif %}
-            {% if team.invoiceAddress %}
+            {% if school.invoiceAddress %}
                 <div class="col-span-2 sm:col-span-3">
                     <dt class="text-gray-500">Adresse de facturation</dt>
-                    <dd class="mt-1 text-gray-900 whitespace-pre-line">{{ team.invoiceAddress }}</dd>
+                    <dd class="mt-1 text-gray-900 whitespace-pre-line">{{ school.invoiceAddress }}</dd>
                 </div>
             {% endif %}
         </dl>
     </div>
+
+    {# Owner #}
+    {% if ownerProfile %}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-5">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Propriétaire</h2>
+        </div>
+        <div class="px-6 py-5 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                {% if ownerProfile.profile.avatarPath %}
+                    <img src="{{ ownerProfile.profile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-10 w-10 rounded-full object-cover shrink-0">
+                {% else %}
+                    <span class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
+                        {{ ownerProfile.profile.user.email|first|upper }}
+                    </span>
+                {% endif %}
+                <div>
+                    <p class="text-sm font-semibold text-gray-900">{{ ownerProfile.profile.firstName }} {{ ownerProfile.profile.lastName }}</p>
+                    <p class="text-xs text-gray-400">{{ ownerProfile.profile.user.email }}</p>
+                </div>
+            </div>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a href="{{ path('app_admin_impersonate', {userId: ownerProfile.profile.user.id}) }}"
+                   class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-800 border border-amber-200 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    Impersonner
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
     {# Status change #}
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-5">
@@ -69,7 +108,7 @@
             <h2 class="text-base font-semibold text-gray-900">Changer le statut</h2>
         </div>
         <div class="px-6 py-5">
-            <form method="post" action="{{ path('app_admin_school_detail', {id: team.id}) }}" class="flex flex-wrap gap-3">
+            {{ form_start(form, {attr: {class: 'flex flex-wrap gap-3'}}) }}
                 {% for status in statuses %}
                     {% set sv = status.value %}
                     <button
@@ -77,38 +116,33 @@
                         name="status"
                         value="{{ sv }}"
                         class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition focus:outline-none
-                            {% if sv == (team.status.value ?? '') %}
-                                {% if sv == 'active' %}bg-green-600 text-white border-green-600 cursor-default
+                            {% if sv == (school.status.value ?? '') %}
+                                {% if sv == 'accepted' %}bg-green-600 text-white border-green-600 cursor-default
                                 {% elseif sv == 'waiting' %}bg-amber-500 text-white border-amber-500 cursor-default
                                 {% elseif sv == 'refused' %}bg-red-600 text-white border-red-600 cursor-default
+                                {% elseif sv == 'disabled' %}bg-gray-500 text-white border-gray-500 cursor-default
                                 {% else %}bg-indigo-600 text-white border-indigo-600 cursor-default{% endif %}
                             {% else %}
-                                {% if sv == 'active' %}border-green-300 text-green-700 hover:bg-green-50
+                                {% if sv == 'accepted' %}border-green-300 text-green-700 hover:bg-green-50
                                 {% elseif sv == 'waiting' %}border-amber-300 text-amber-700 hover:bg-amber-50
                                 {% elseif sv == 'refused' %}border-red-300 text-red-700 hover:bg-red-50
+                                {% elseif sv == 'disabled' %}border-gray-300 text-gray-600 hover:bg-gray-50
                                 {% else %}border-gray-300 text-gray-700 hover:bg-gray-50{% endif %}
                             {% endif %}"
-                        {% if sv == (team.status.value ?? '') %}disabled{% endif %}
+                        {% if sv == (school.status.value ?? '') %}disabled{% endif %}
                     >
-                        {% if sv == 'active' %}Activer
+                        {% if sv == 'accepted' %}Activer
                         {% elseif sv == 'waiting' %}Mettre en attente
                         {% elseif sv == 'refused' %}Refuser
+                        {% elseif sv == 'disabled' %}Désactiver
                         {% else %}{{ sv }}{% endif %}
-                        {% if sv == (team.status.value ?? '') %}
+                        {% if sv == (school.status.value ?? '') %}
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         {% endif %}
                     </button>
                 {% endfor %}
-            </form>
+            {{ form_end(form) }}
         </div>
-    </div>
-
-    {# Danger zone / back #}
-    <div class="flex justify-start">
-        <a href="{{ path('app_admin_schools') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 font-medium transition">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            Retour à la liste
-        </a>
     </div>
 
 </div>

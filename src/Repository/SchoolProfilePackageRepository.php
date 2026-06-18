@@ -4,32 +4,32 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\TeamProfile;
-use App\Entity\TeamProfilePackage;
+use App\Entity\SchoolProfile;
+use App\Entity\SchoolProfilePackage;
 use App\Entity\Season;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<TeamProfilePackage>
+ * @extends ServiceEntityRepository<SchoolProfilePackage>
  */
-class TeamProfilePackageRepository extends ServiceEntityRepository
+class SchoolProfilePackageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, TeamProfilePackage::class);
+        parent::__construct($registry, SchoolProfilePackage::class);
     }
 
     /**
-     * @return TeamProfilePackage[]
+     * @return SchoolProfilePackage[]
      */
-    public function findByTeamProfileAndSeason(TeamProfile $teamProfile, Season $season): array
+    public function findBySchoolProfileAndSeason(SchoolProfile $schoolProfile, Season $season): array
     {
         return $this->createQueryBuilder('tpp')
-            ->where('tpp.teamProfile = :teamProfile')
+            ->where('tpp.schoolProfile = :schoolProfile')
             ->andWhere('tpp.season = :season')
             ->andWhere('tpp.deletedAt IS NULL')
-            ->setParameter('teamProfile', $teamProfile)
+            ->setParameter('schoolProfile', $schoolProfile)
             ->setParameter('season', $season)
             ->getQuery()
             ->getResult();

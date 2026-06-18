@@ -1,6 +1,6 @@
 {% extends 'layout/public.html.twig' %}
 
-{% block title %}{{ team.name }}{% endblock %}
+{% block title %}{{ school.name }}{% endblock %}
 
 {% block body %}
 <div class="shop">
@@ -9,27 +9,27 @@
     <header class="shop__header">
         <div class="shop__header-inner">
 
-            {% if team.avatarPath %}
+            {% if school.avatarPath %}
             <div class="shop__avatar">
                 <img
-                    src="{{ team.avatarPath | imagine_filter('team_avatar') }}"
-                    alt="{{ team.name }}"
+                    src="{{ school.avatarPath | imagine_filter('team_avatar') }}"
+                    alt="{{ school.name }}"
                     class="shop__avatar-img"
                 >
             </div>
             {% endif %}
 
-            <h1 class="shop__school-name">{{ team.name }}</h1>
+            <h1 class="shop__school-name">{{ school.name }}</h1>
 
         </div>
 
-        {% if team.carouselPaths and team.carouselPaths|length > 0 %}
+        {% if school.carouselPaths and school.carouselPaths|length > 0 %}
         <div class="shop__carousel">
-            {% for path in team.carouselPaths %}
+            {% for path in school.carouselPaths %}
             <div class="shop__carousel-slide{% if loop.first %} shop__carousel-slide--active{% endif %}">
                 <img
                     src="{{ path | imagine_filter('team_carousel') }}"
-                    alt="{{ team.name }} - photo {{ loop.index }}"
+                    alt="{{ school.name }} - photo {{ loop.index }}"
                     class="shop__carousel-img"
                 >
             </div>
@@ -61,11 +61,11 @@
         {% endif %}
 
         {# ── Authenticated member: registration status ── #}
-        {% if app.user and teamProfile %}
+        {% if app.user and schoolProfile %}
         <section class="shop__registration-status">
             <h2 class="shop__section-title">Mon inscription</h2>
-            {% if teamProfileSeason %}
-                {% set status = teamProfileSeason.registrationStatus.value %}
+            {% if schoolProfileSeason %}
+                {% set status = schoolProfileSeason.registrationStatus.value %}
                 <div class="shop__status shop__status--{{ status }}">
                     {% if status == 'registered' %}
                         Inscrit(e) pour cette saison.
@@ -83,7 +83,7 @@
                 </p>
             {% endif %}
 
-            {% if not teamProfileSeason or teamProfileSeason.registrationStatus.value == 'not_registered' or teamProfileSeason.registrationStatus.value == 'withdrawn' %}
+            {% if not schoolProfileSeason or schoolProfileSeason.registrationStatus.value == 'not_registered' or schoolProfileSeason.registrationStatus.value == 'withdrawn' %}
             <a href="{{ path('app_login') }}" class="shop__cta-btn shop__cta-btn--primary">
                 S'inscrire
             </a>
@@ -172,7 +172,7 @@
         {% if not app.user %}
         <section class="shop__cta shop__cta--bottom">
             <a href="{{ path('app_login') }}" class="shop__cta-btn shop__cta-btn--primary shop__cta-btn--large">
-                Rejoindre {{ team.name }}
+                Rejoindre {{ school.name }}
             </a>
         </section>
         {% endif %}

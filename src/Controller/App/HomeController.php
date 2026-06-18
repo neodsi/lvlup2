@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Controller\App;
 
 use App\Entity\Profile;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
 use App\Enum\Gender;
-use App\Enum\TeamRole;
-use App\Enum\TeamStatus;
+use App\Enum\SchoolRole;
+use App\Enum\SchoolStatus;
+use App\Form\App\CreateSchoolType;
+use App\Form\App\SetupProfileType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +30,7 @@ class HomeController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function home(Request $request): Response
     {
-        if ($this->isGranted('ROLE_SCHOOL')) {
+        if ($this->isGranted('ROLE_ADMIN')) {
             return $this->redirectToRoute('app_admin');
         }
 
@@ -41,33 +43,32 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('app_setup_you');
         }
 
-        $profileIds = array_map(fn (Profile $p) => $p->getId(), $profiles);
+        if ($this->isGranted('ROLE_SCHOOL')) {
+            $profileIds = array_map(fn (Profile $p) => $p->getId(), $profiles);
 
-        /** @var TeamProfile[] $teamProfiles */
-        $teamProfiles = $this->em->createQueryBuilder()
-            ->select('tp', 't')
-            ->from(TeamProfile::class, 'tp')
-            ->join('tp.team', 't')
-            ->where('tp.profile IN (:profileIds)')
-            ->andWhere('tp.deletedAt IS NULL')
-            ->setParameter('profileIds', $profileIds)
-            ->getQuery()
-            ->getResult();
+            /** @var SchoolProfile|null $schoolProfile */
+            $schoolProfile = $this->em->createQueryBuilder()
+                ->select('tp', 't')
+                ->from(SchoolProfile::class, 'tp')
+                ->join('tp.school', 't')
+                ->where('tp.profile IN (:profileIds)')
+                ->andWhere('tp.deletedAt IS NULL')
+                ->setParameter('profileIds', $profileIds)
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
 
-        $teams = array_unique(
-            array_map(fn (TeamProfile $tp) => $tp->getTeam(), $teamProfiles),
-            SORT_REGULAR
-        );
+            if ($schoolProfile === null) {
+                return $this->redirectToRoute('app_create_school');
+            }
 
-        if (count($teams) === 1) {
-            $team = $teams[0];
-            $request->getSession()->set('currentTeamId', $team->getId());
+            $request->getSession()->set('currentSchoolId', (string) $schoolProfile->getSchool()->getId());
 
             return $this->redirectToRoute('school_home');
         }
 
         return $this->render('app/home.html.twig', [
-            'teams' => $teams,
+            'schools' => [],
         ]);
     }
 
@@ -83,11 +84,11 @@ class HomeController extends AbstractController
 
         $tp = $this->em->createQueryBuilder()
             ->select('tp')
-            ->from(TeamProfile::class, 'tp')
-            ->where('tp.team = :teamId')
+            ->from(SchoolProfile::class, 'tp')
+            ->where('tp.school = :schoolId')
             ->andWhere('tp.profile IN (:profileIds)')
             ->andWhere('tp.deletedAt IS NULL')
-            ->setParameter('teamId', $id)
+            ->setParameter('schoolId', $id)
             ->setParameter('profileIds', $profileIds)
             ->setMaxResults(1)
             ->getQuery()
@@ -97,7 +98,7 @@ class HomeController extends AbstractController
             throw $this->createAccessDeniedException('Not a member of this school.');
         }
 
-        $request->getSession()->set('currentTeamId', $id);
+        $request->getSession()->set('currentSchoolId', $id);
 
         return $this->redirectToRoute('school_home');
     }
@@ -130,123 +131,94 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('app_home');
         }
 
-        $errors = [];
-        $formData = [
-            'first_name' => '',
-            'last_name'  => '',
-            'dob'        => '',
-            'gender'     => '',
-            'phone'      => '',
-        ];
+        $form = $this->createForm(SetupProfileType::class);
+        $form->handleRequest($request);
 
-        if ($request->isMethod('POST')) {
-            $formData['first_name'] = trim((string) $request->request->get('first_name', ''));
-            $formData['last_name']  = trim((string) $request->request->get('last_name', ''));
-            $formData['dob']        = trim((string) $request->request->get('dob', ''));
-            $formData['gender']     = trim((string) $request->request->get('gender', ''));
-            $formData['phone']      = trim((string) $request->request->get('phone', ''));
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
 
-            if ($formData['first_name'] === '') {
-                $errors['first_name'] = 'Le prénom est obligatoire.';
-            }
-            if ($formData['last_name'] === '') {
-                $errors['last_name'] = 'Le nom est obligatoire.';
+            $profile = new Profile();
+            $profile->setUser($user);
+            $profile->setFirstName($data['firstName']);
+            $profile->setLastName($data['lastName']);
+            $profile->setIsPrimary(true);
+
+            if ($data['dob'] !== null) {
+                $profile->setDob($data['dob']);
             }
 
-            if (empty($errors)) {
-                $profile = new Profile();
-                $profile->setUser($user);
-                $profile->setFirstName($formData['first_name']);
-                $profile->setLastName($formData['last_name']);
-                $profile->setIsPrimary(true);
-
-                if ($formData['dob'] !== '') {
-                    $dob = \DateTimeImmutable::createFromFormat('Y-m-d', $formData['dob']);
-                    if ($dob !== false) {
-                        $profile->setDob($dob);
-                    }
+            if ($data['gender'] !== null && $data['gender'] !== '') {
+                $gender = Gender::tryFrom($data['gender']);
+                if ($gender !== null) {
+                    $profile->setGender($gender);
                 }
-
-                if ($formData['gender'] !== '') {
-                    $gender = Gender::tryFrom($formData['gender']);
-                    if ($gender !== null) {
-                        $profile->setGender($gender);
-                    }
-                }
-
-                if ($formData['phone'] !== '') {
-                    $profile->setPhone($formData['phone']);
-                }
-
-                $this->em->persist($profile);
-                $this->em->flush();
-
-                return $this->redirectToRoute('app_home');
             }
+
+            if ($data['phone'] !== null && $data['phone'] !== '') {
+                $profile->setPhone($data['phone']);
+            }
+
+            $this->em->persist($profile);
+            $this->em->flush();
+
+            return $this->redirectToRoute('app_home');
         }
 
         return $this->render('app/setup/profile.html.twig', [
-            'formData' => $formData,
-            'errors'   => $errors,
-            'genders'  => Gender::cases(),
+            'form' => $form->createView(),
         ]);
     }
 
     #[Route('/setup/create-school', name: 'app_create_school', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_USER')]
     public function createSchool(Request $request): Response
     {
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        $errors = [];
-        $formData = [
-            'name' => '',
-            'type' => '',
-        ];
+        $form = $this->createForm(CreateSchoolType::class);
+        $form->handleRequest($request);
 
-        if ($request->isMethod('POST')) {
-            $formData['name'] = trim((string) $request->request->get('name', ''));
-            $formData['type'] = trim((string) $request->request->get('type', ''));
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
 
-            if ($formData['name'] === '') {
-                $errors['name'] = 'Le nom de l\'école est obligatoire.';
+            $school = new School();
+            $school->setName($data['name']);
+
+            if ($data['type'] !== null && $data['type'] !== '') {
+                $school->setType($data['type']);
             }
 
-            if (empty($errors)) {
-                $team = new Team();
-                $team->setName($formData['name']);
+            $school->setStatus(SchoolStatus::Accepted);
 
-                if ($formData['type'] !== '') {
-                    $team->setType($formData['type']);
-                }
+            $primaryProfile = $user->getProfiles()->filter(
+                fn (Profile $p) => $p->isPrimary() && $p->getDeletedAt() === null
+            )->first();
 
-                $team->setStatus(TeamStatus::Waiting);
-
-                $primaryProfile = $user->getProfiles()->filter(
-                    fn (Profile $p) => $p->isPrimary() && $p->getDeletedAt() === null
-                )->first();
-
-                if ($primaryProfile !== false) {
-                    $teamProfile = new TeamProfile();
-                    $teamProfile->setTeam($team);
-                    $teamProfile->setProfile($primaryProfile);
-                    $teamProfile->setRole(TeamRole::Admin);
-                    $this->em->persist($teamProfile);
-                }
-
-                $this->em->persist($team);
-                $this->em->flush();
-
-                $request->getSession()->set('currentTeamId', $team->getId());
-
-                return $this->redirectToRoute('app_home');
+            if ($primaryProfile !== false) {
+                $schoolProfile = new SchoolProfile();
+                $schoolProfile->setSchool($school);
+                $schoolProfile->setProfile($primaryProfile);
+                $schoolProfile->setRole(SchoolRole::Owner);
+                $this->em->persist($schoolProfile);
             }
+
+            if (!in_array('ROLE_SCHOOL', $user->getRoles(), true)) {
+                $roles   = array_values(array_diff($user->getRoles(), ['ROLE_USER']));
+                $roles[] = 'ROLE_SCHOOL';
+                $user->setRoles(array_values(array_unique($roles)));
+            }
+
+            $this->em->persist($school);
+            $this->em->flush();
+
+            $request->getSession()->set('currentSchoolId', $school->getId());
+
+            return $this->redirectToRoute('school_home');
         }
 
         return $this->render('app/setup/create_school.html.twig', [
-            'formData' => $formData,
-            'errors'   => $errors,
+            'form' => $form->createView(),
         ]);
     }
 }

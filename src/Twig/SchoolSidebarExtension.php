@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Entity\Season;
-use App\Service\TeamContextService;
+use App\Service\SchoolContextService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
@@ -14,7 +14,7 @@ use Twig\TwigFunction;
 class SchoolSidebarExtension extends AbstractExtension
 {
     public function __construct(
-        private readonly TeamContextService $teamContext,
+        private readonly SchoolContextService $schoolContext,
         private readonly EntityManagerInterface $em,
         private readonly Security $security,
     ) {
@@ -33,19 +33,19 @@ class SchoolSidebarExtension extends AbstractExtension
             return ['seasons' => [], 'currentSeasonId' => null];
         }
 
-        $team = $this->teamContext->getCurrentTeam();
-        if ($team === null) {
+        $school = $this->schoolContext->getCurrentSchool();
+        if ($school === null) {
             return ['seasons' => [], 'currentSeasonId' => null];
         }
 
         $seasons = $this->em->getRepository(Season::class)->findBy(
-            ['teamId' => $team->getId()],
+            ['schoolId' => $school->getId()],
             ['createdAt' => 'DESC'],
         );
 
         return [
             'seasons'         => $seasons,
-            'currentSeasonId' => $team->getCurrentSeasonId(),
+            'currentSeasonId' => $school->getCurrentSeasonId(),
         ];
     }
 }

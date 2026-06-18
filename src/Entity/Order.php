@@ -18,7 +18,7 @@ class Order
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamId;
+    private string $schoolId;
 
     #[ORM\Column(type: 'string', length: 36)]
     private string $seasonId;
@@ -27,7 +27,7 @@ class Order
     private string $profileId;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamProfileId;
+    private string $schoolProfileId;
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $packageType = null;
@@ -68,14 +68,14 @@ class Order
         return $this->id;
     }
 
-    public function getTeamId(): string
+    public function getSchoolId(): string
     {
-        return $this->teamId;
+        return $this->schoolId;
     }
 
-    public function setTeamId(string $teamId): static
+    public function setSchoolId(string $schoolId): static
     {
-        $this->teamId = $teamId;
+        $this->schoolId = $schoolId;
 
         return $this;
     }
@@ -104,14 +104,14 @@ class Order
         return $this;
     }
 
-    public function getTeamProfileId(): string
+    public function getSchoolProfileId(): string
     {
-        return $this->teamProfileId;
+        return $this->schoolProfileId;
     }
 
-    public function setTeamProfileId(string $teamProfileId): static
+    public function setSchoolProfileId(string $schoolProfileId): static
     {
-        $this->teamProfileId = $teamProfileId;
+        $this->schoolProfileId = $schoolProfileId;
 
         return $this;
     }

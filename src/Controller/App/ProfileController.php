@@ -6,6 +6,7 @@ namespace App\Controller\App;
 
 use App\Entity\Profile;
 use App\Enum\Gender;
+use App\Form\App\ProfileEditType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -48,78 +49,67 @@ class ProfileController extends AbstractController
             return $this->redirectToRoute('app_setup_profile');
         }
 
-        $errors = [];
-        $formData = [
-            'first_name' => $primaryProfile->getFirstName(),
-            'last_name'  => $primaryProfile->getLastName(),
-            'dob'        => $primaryProfile->getDob()?->format('Y-m-d') ?? '',
-            'gender'     => $primaryProfile->getGender()?->value ?? '',
-            'phone'      => $primaryProfile->getPhone() ?? '',
+        $initialData = [
+            'firstName' => $primaryProfile->getFirstName(),
+            'lastName'  => $primaryProfile->getLastName(),
+            'phone'     => $primaryProfile->getPhone() ?? '',
+            'dob'       => $primaryProfile->getDob()?->format('Y-m-d') ?? '',
+            'gender'    => $primaryProfile->getGender()?->value ?? '',
         ];
 
-        if ($request->isMethod('POST')) {
-            $formData['first_name'] = trim((string) $request->request->get('first_name', ''));
-            $formData['last_name']  = trim((string) $request->request->get('last_name', ''));
-            $formData['dob']        = trim((string) $request->request->get('dob', ''));
-            $formData['gender']     = trim((string) $request->request->get('gender', ''));
-            $formData['phone']      = trim((string) $request->request->get('phone', ''));
+        $form = $this->createForm(ProfileEditType::class, $initialData);
+        $form->handleRequest($request);
 
-            if ($formData['first_name'] === '') {
-                $errors['first_name'] = 'Le prénom est obligatoire.';
-            }
-            if ($formData['last_name'] === '') {
-                $errors['last_name'] = 'Le nom est obligatoire.';
-            }
-            if ($formData['phone'] === '') {
-                $errors['phone'] = 'Le numéro de téléphone est obligatoire.';
-            }
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
 
-            if (empty($errors)) {
-                $primaryProfile->setFirstName($formData['first_name']);
-                $primaryProfile->setLastName($formData['last_name']);
+            $primaryProfile->setFirstName($data['firstName']);
+            $primaryProfile->setLastName($data['lastName']);
 
-                if ($formData['dob'] !== '') {
-                    $dob = \DateTimeImmutable::createFromFormat('Y-m-d', $formData['dob']);
-                    if ($dob !== false) {
-                        $primaryProfile->setDob($dob);
-                    }
-                } else {
-                    $primaryProfile->setDob(null);
+            $dob = $data['dob'] ?? '';
+            if ($dob !== '' && $dob !== null) {
+                $dobDate = \DateTimeImmutable::createFromFormat('Y-m-d', $dob);
+                if ($dobDate !== false) {
+                    $primaryProfile->setDob($dobDate);
                 }
+            } else {
+                $primaryProfile->setDob(null);
+            }
 
-                if ($formData['gender'] !== '') {
-                    $gender = Gender::tryFrom($formData['gender']);
-                    $primaryProfile->setGender($gender);
-                } else {
-                    $primaryProfile->setGender(null);
-                }
+            $genderValue = $data['gender'] ?? '';
+            if ($genderValue !== '' && $genderValue !== null) {
+                $primaryProfile->setGender(Gender::tryFrom($genderValue));
+            } else {
+                $primaryProfile->setGender(null);
+            }
 
-                $primaryProfile->setPhone($formData['phone'] !== '' ? $formData['phone'] : null);
+            $phone = $data['phone'] ?? '';
+            $primaryProfile->setPhone($phone !== '' ? $phone : null);
 
-                // Avatar upload
-                /** @var UploadedFile|null $avatar */
-                $avatar = $request->files->get('avatar');
-                if ($avatar !== null && $avatar->isValid()) {
-                    $avatarError = $this->processAvatarUpload($avatar, $primaryProfile);
-                    if ($avatarError !== null) {
-                        $errors['avatar'] = $avatarError;
-                    }
-                }
+            // Avatar upload
+            /** @var UploadedFile|null $avatar */
+            $avatar = $form->get('avatar')->getData();
+            if ($avatar !== null && $avatar->isValid()) {
+                $avatarError = $this->processAvatarUpload($avatar, $primaryProfile);
+                if ($avatarError !== null) {
+                    $this->addFlash('error', $avatarError);
 
-                if (empty($errors)) {
-                    $this->em->flush();
-                    $this->addFlash('success', 'Profil mis à jour avec succès.');
-
-                    return $this->redirectToRoute('app_profile_edit');
+                    return $this->render('app/profile/edit.html.twig', [
+                        'profile' => $primaryProfile,
+                        'form'    => $form->createView(),
+                    ]);
                 }
             }
+
+            $this->em->flush();
+            $this->addFlash('success', 'Profil mis à jour avec succès.');
+
+            return $this->redirectToRoute('app_profile_edit');
         }
 
         return $this->render('app/profile/edit.html.twig', [
-            'profile'  => $primaryProfile,
-            'formData' => $formData,
-            'errors'   => $errors,
-            'genders'  => Gender::cases(),
+            'profile' => $primaryProfile,
+            'form'    => $form->createView(),
         ]);
     }
 

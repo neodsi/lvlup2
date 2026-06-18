@@ -6,7 +6,7 @@ namespace App\Controller\Cron;
 
 use App\Entity\Payment;
 use App\Entity\PaymentSchedule;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Enum\ScheduleStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -33,8 +33,8 @@ class ReconcileCronController extends CronController
 
     /**
      * GET /crons/reconcile-stripe-payments
-     * For each team with a Stripe account, fetch recent checkout sessions from Stripe,
-     * compare with the DB, and update statuses. Processes max 10 teams at a time.
+     * For each school with a Stripe account, fetch recent checkout sessions from Stripe,
+     * compare with the DB, and update statuses. Processes max 10 schools at a time.
      */
     #[Route('/crons/reconcile-stripe-payments', name: 'cron_reconcile_stripe_payments', methods: ['GET'])]
     public function __invoke(Request $request): JsonResponse
@@ -45,11 +45,11 @@ class ReconcileCronController extends CronController
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 401);
         }
 
-        // Load teams with a connected Stripe account, max MAX_CONCURRENT_TEAMS
-        /** @var Team[] $teams */
-        $teams = $this->em->createQueryBuilder()
+        // Load schools with a connected Stripe account, max MAX_CONCURRENT_TEAMS
+        /** @var School[] $schools */
+        $schools = $this->em->createQueryBuilder()
             ->select('t')
-            ->from(Team::class, 't')
+            ->from(School::class, 't')
             ->where('t.stripeAccountId IS NOT NULL')
             ->setMaxResults(self::MAX_CONCURRENT_TEAMS)
             ->getQuery()
@@ -59,37 +59,37 @@ class ReconcileCronController extends CronController
         $updated    = 0;
         $errors     = [];
 
-        foreach ($teams as $team) {
+        foreach ($schools as $school) {
             try {
-                $teamUpdated = $this->reconcileTeam($team);
-                $updated    += $teamUpdated;
+                $schoolUpdated = $this->reconcileSchool($school);
+                $updated    += $schoolUpdated;
                 ++$reconciled;
             } catch (\Throwable $e) {
-                $errors[] = sprintf('Team "%s": %s', $team->getId(), $e->getMessage());
-                $this->logger->error('ReconcileCron: failed to reconcile team', [
-                    'team_id' => $team->getId(),
+                $errors[] = sprintf('School "%s": %s', $school->getId(), $e->getMessage());
+                $this->logger->error('ReconcileCron: failed to reconcile school', [
+                    'team_id' => $school->getId(),
                     'error'   => $e->getMessage(),
                 ]);
             }
         }
 
         $this->logger->info('ReconcileCron: completed', [
-            'teams_processed' => $reconciled,
+            'schools_processed' => $reconciled,
             'payments_updated' => $updated,
             'errors'          => count($errors),
         ]);
 
         return new JsonResponse([
             'success'          => true,
-            'teams_processed'  => $reconciled,
+            'schools_processed'  => $reconciled,
             'payments_updated' => $updated,
             'errors'           => $errors,
         ]);
     }
 
-    private function reconcileTeam(Team $team): int
+    private function reconcileSchool(School $school): int
     {
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
         $updated   = 0;
 
         // Fetch the last 100 completed checkout sessions from Stripe for this connected account

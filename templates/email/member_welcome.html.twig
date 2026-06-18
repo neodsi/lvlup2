@@ -1,12 +1,12 @@
 {% extends 'email/base.html.twig' %}
 
 {% block title %}
-  {% if is_new_account %}Votre compte sur {{ team.name }} – LVL UP{% else %}Vous avez été ajouté(e) à {{ team.name }} – LVL UP{% endif %}
+  {% if is_new_account %}Votre compte sur {{ school.name }} – LVL UP{% else %}Vous avez été ajouté(e) à {{ school.name }} – LVL UP{% endif %}
 {% endblock %}
 
 {% block extra_styles %}
-  .team-card { background: #eef2ff; border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
-  .team-card .team-name { font-size: 18px; font-weight: 700; color: #3730a3; }
+  .school-card { background: #eef2ff; border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
+  .school-card .school-name { font-size: 18px; font-weight: 700; color: #3730a3; }
 {% endblock %}
 
 {% block body %}
@@ -15,8 +15,8 @@
     <h1>Votre compte a été créé !</h1>
     <p>Bonjour,</p>
     <p>Un compte a été créé pour vous sur <strong>LVL UP</strong> par :</p>
-    <div class="team-card">
-      <div class="team-name">{{ team.name }}</div>
+    <div class="school-card">
+      <div class="school-name">{{ school.name }}</div>
     </div>
     <p>Votre adresse e-mail de connexion est : <strong>{{ user.email }}</strong></p>
     <p>Pour accéder à votre espace, commencez par définir votre mot de passe en cliquant sur le bouton ci-dessous :</p>
@@ -33,8 +33,8 @@
     <h1>Vous avez été ajouté(e) à une école !</h1>
     <p>Bonjour,</p>
     <p>Votre profil a été ajouté à l'école suivante sur <strong>LVL UP</strong> :</p>
-    <div class="team-card">
-      <div class="team-name">{{ team.name }}</div>
+    <div class="school-card">
+      <div class="school-name">{{ school.name }}</div>
     </div>
     <p>Vous pouvez vous connecter avec votre adresse e-mail habituelle : <strong>{{ user.email }}</strong></p>
     <p style="font-size:13px; color:#71717a;">Si vous ne vous attendiez pas à recevoir cet e-mail, vous pouvez l'ignorer.</p>

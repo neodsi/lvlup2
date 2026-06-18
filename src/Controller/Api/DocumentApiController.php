@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,18 +23,18 @@ class DocumentApiController extends AbstractController
      * @param object|null $imagineCacheManager Liip\ImagineBundle\Imagine\Cache\CacheManager (optional — injected when LiipImagineBundle is registered)
      */
     public function __construct(
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
         private readonly string $projectDir,
         private readonly ?object $imagineCacheManager = null,
     ) {
     }
 
     /**
-     * POST /api/v1/teams/documents
+     * POST /api/v1/schools/documents
      * Upload a document (image). UUID-renamed, MIME-checked, max 50 MB, JPEG/PNG/WebP only.
-     * Saves to var/uploads/{teamId}/{type}/ and invalidates LiipImagine cache.
+     * Saves to var/uploads/{schoolId}/{type}/ and invalidates LiipImagine cache.
      */
-    #[Route('/api/v1/teams/documents', name: 'api_v1_teams_documents', methods: ['POST'])]
+    #[Route('/api/v1/schools/documents', name: 'api_v1_teams_documents', methods: ['POST'])]
     public function upload(Request $request): JsonResponse
     {
         /** @var User|null $user */
@@ -44,17 +44,17 @@ class DocumentApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        $teamId = $request->request->get('teamId') ?? $request->query->get('teamId');
+        $schoolId = $request->request->get('schoolId') ?? $request->query->get('schoolId');
         $type   = $request->request->get('type') ?? $request->query->get('type') ?? 'misc';
 
-        if ($teamId === null) {
-            return new JsonResponse(['success' => false, 'error' => 'teamId is required.'], 422);
+        if ($schoolId === null) {
+            return new JsonResponse(['success' => false, 'error' => 'schoolId is required.'], 422);
         }
 
-        // Verify team membership
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, (string) $teamId);
+        // Verify school membership
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, (string) $schoolId);
 
-        if ($teamProfile === null) {
+        if ($schoolProfile === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
@@ -102,7 +102,7 @@ class DocumentApiController extends AbstractController
         // Build destination path
         $uuid     = Uuid::v4()->toRfc4122();
         $filename = $uuid . '.' . $originalExtension;
-        $destDir  = sprintf('%s/var/uploads/%s/%s', $this->projectDir, $teamId, $type);
+        $destDir  = sprintf('%s/var/uploads/%s/%s', $this->projectDir, $schoolId, $type);
 
         if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
             return new JsonResponse(['success' => false, 'error' => 'Failed to create upload directory.'], 500);
@@ -114,7 +114,7 @@ class DocumentApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'File move failed: ' . $e->getMessage()], 500);
         }
 
-        $relativePath = sprintf('uploads/%s/%s/%s', $teamId, $type, $filename);
+        $relativePath = sprintf('uploads/%s/%s/%s', $schoolId, $type, $filename);
 
         // Invalidate LiipImagine cache for this path (all filters) when the bundle is available
         if ($this->imagineCacheManager !== null && method_exists($this->imagineCacheManager, 'remove')) {

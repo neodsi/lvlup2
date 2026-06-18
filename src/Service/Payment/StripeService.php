@@ -7,7 +7,7 @@ namespace App\Service\Payment;
 use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\Profile;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Enum\StripeAccountStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\Account;
@@ -33,38 +33,38 @@ class StripeService
     // -------------------------------------------------------------------------
 
     /**
-     * Create a Stripe Connect Express account for the team and persist the account ID.
+     * Create a Stripe Connect Express account for the school and persist the account ID.
      */
-    public function createConnectedAccount(Team $team): string
+    public function createConnectedAccount(School $school): string
     {
         $account = Account::create([
             'type'  => 'express',
             'email' => null,
             'metadata' => [
-                'team_id'   => $team->getId(),
-                'team_name' => $team->getName(),
+                'team_id'   => $school->getId(),
+                'team_name' => $school->getName(),
             ],
         ]);
 
-        $team->setStripeAccountId($account->id);
-        $team->setStripeAccountStatus(StripeAccountStatus::Pending);
+        $school->setStripeAccountId($account->id);
+        $school->setStripeAccountStatus(StripeAccountStatus::Pending);
         $this->em->flush();
 
         return $account->id;
     }
 
     /**
-     * Return the Stripe Connect onboarding URL for the team.
+     * Return the Stripe Connect onboarding URL for the school.
      * Creates the connected account first if it does not exist yet.
      */
-    public function getOnboardingLink(Team $team): string
+    public function getOnboardingLink(School $school): string
     {
-        if ($team->getStripeAccountId() === null) {
-            $this->createConnectedAccount($team);
+        if ($school->getStripeAccountId() === null) {
+            $this->createConnectedAccount($school);
         }
 
         $link = \Stripe\AccountLink::create([
-            'account'     => $team->getStripeAccountId(),
+            'account'     => $school->getStripeAccountId(),
             'refresh_url' => $this->buildAbsoluteUrl('/stripe/onboarding/refresh'),
             'return_url'  => $this->buildAbsoluteUrl('/stripe/onboarding/return'),
             'type'        => 'account_onboarding',
@@ -74,12 +74,12 @@ class StripeService
     }
 
     /**
-     * Fetch the connected account from Stripe and synchronise the team's status
+     * Fetch the connected account from Stripe and synchronise the school's status
      * and payment capabilities in the database.
      */
-    public function updateAccountStatus(Team $team): void
+    public function updateAccountStatus(School $school): void
     {
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
 
         if ($accountId === null) {
             return;
@@ -88,26 +88,26 @@ class StripeService
         $account = Account::retrieve($accountId);
 
         $status = $this->resolveAccountStatus($account);
-        $team->setStripeAccountStatus($status);
+        $school->setStripeAccountStatus($status);
 
         // Persist capabilities
         $capabilities = [];
         foreach ($account->capabilities->toArray() as $capName => $capStatus) {
             $capabilities[$capName] = $capStatus;
         }
-        $team->setStripePaymentCapabilities($capabilities);
+        $school->setStripePaymentCapabilities($capabilities);
 
         $this->em->flush();
     }
 
     /**
-     * Return the list of currently missing/pending Stripe requirements for the team.
+     * Return the list of currently missing/pending Stripe requirements for the school.
      *
      * @return string[]
      */
-    public function getRequirements(Team $team): array
+    public function getRequirements(School $school): array
     {
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
 
         if ($accountId === null) {
             return ['stripe_account_not_created'];
@@ -133,27 +133,27 @@ class StripeService
     // -------------------------------------------------------------------------
 
     /**
-     * Create a Stripe Checkout Session on the team's connected account.
+     * Create a Stripe Checkout Session on the school's connected account.
      *
      * @param array<int, array{amount: int, dueAt: \DateTimeImmutable}> $scheduleEntries
      */
     public function createCheckoutSession(
         Order $order,
-        Team $team,
+        School $school,
         Profile $profile,
         array $scheduleEntries,
         bool $isAutoPay,
     ): string {
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
 
         if ($accountId === null) {
             throw new \LogicException(sprintf(
-                'Team "%s" has no Stripe connected account.',
-                $team->getId(),
+                'School "%s" has no Stripe connected account.',
+                $school->getId(),
             ));
         }
 
-        $currency   = strtolower($team->getCurrency());
+        $currency   = strtolower($school->getCurrency());
         $lineItems  = [];
 
         foreach ($scheduleEntries as $entry) {
@@ -185,7 +185,7 @@ class StripeService
             'metadata' => [
                 'order_id'   => $order->getId(),
                 'profile_id' => $profile->getId(),
-                'team_id'    => $team->getId(),
+                'team_id'    => $school->getId(),
             ],
         ];
 
@@ -210,15 +210,15 @@ class StripeService
      */
     public function getPaymentLinkForSchedules(
         array $scheduleIds,
-        Team $team,
+        School $school,
         Profile $profile,
     ): string {
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
 
         if ($accountId === null) {
             throw new \LogicException(sprintf(
-                'Team "%s" has no Stripe connected account.',
-                $team->getId(),
+                'School "%s" has no Stripe connected account.',
+                $school->getId(),
             ));
         }
 
@@ -230,7 +230,7 @@ class StripeService
             throw new \InvalidArgumentException('No payment schedules found for the provided IDs.');
         }
 
-        $currency  = strtolower($team->getCurrency());
+        $currency  = strtolower($school->getCurrency());
         $lineItems = [];
 
         foreach ($schedules as $schedule) {
@@ -259,7 +259,7 @@ class StripeService
                 'line_items' => $lineItems,
                 'metadata'   => [
                     'profile_id' => $profile->getId(),
-                    'team_id'    => $team->getId(),
+                    'team_id'    => $school->getId(),
                 ],
             ],
             ['stripe_account' => $accountId],
@@ -273,16 +273,16 @@ class StripeService
     // -------------------------------------------------------------------------
 
     /**
-     * Refund a payment (partially or fully) via the team's connected Stripe account.
+     * Refund a payment (partially or fully) via the school's connected Stripe account.
      */
-    public function refundPayment(Payment $payment, int $amount, Team $team): void
+    public function refundPayment(Payment $payment, int $amount, School $school): void
     {
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
 
         if ($accountId === null) {
             throw new \LogicException(sprintf(
-                'Team "%s" has no Stripe connected account.',
-                $team->getId(),
+                'School "%s" has no Stripe connected account.',
+                $school->getId(),
             ));
         }
 

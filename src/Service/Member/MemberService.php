@@ -6,14 +6,14 @@ namespace App\Service\Member;
 
 use App\Entity\Profile;
 use App\Entity\Season;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
-use App\Entity\TeamProfilePackage;
-use App\Entity\TeamProfileSeason;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
+use App\Entity\SchoolProfilePackage;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\PackageStatus;
-use App\Enum\TeamProfileStatus;
-use App\Enum\TeamRole;
+use App\Enum\SchoolProfileStatus;
+use App\Enum\SchoolRole;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -28,11 +28,11 @@ class MemberService
     ) {
     }
 
-    public function createMember(Team $team, ?Season $season, array $data): TeamProfile
+    public function createMember(School $school, ?Season $season, array $data): SchoolProfile
     {
-        $teamProfile = null;
+        $schoolProfile = null;
 
-        $this->em->wrapInTransaction(function () use ($team, $season, $data, &$teamProfile): void {
+        $this->em->wrapInTransaction(function () use ($school, $season, $data, &$schoolProfile): void {
             // Create or reuse Profile
             $profile = null;
 
@@ -67,34 +67,34 @@ class MemberService
                 $this->em->flush();
             }
 
-            // Create TeamProfile
-            $teamProfile = new TeamProfile();
-            $teamProfile->setTeam($team);
-            $teamProfile->setProfile($profile);
-            $teamProfile->setStatus(TeamProfileStatus::Accepted);
+            // Create SchoolProfile
+            $schoolProfile = new SchoolProfile();
+            $schoolProfile->setSchool($school);
+            $schoolProfile->setProfile($profile);
+            $schoolProfile->setStatus(SchoolProfileStatus::Accepted);
 
-            $role = $data['role'] ?? TeamRole::TeamStudent;
-            $teamProfile->setRole($role instanceof TeamRole ? $role : TeamRole::from($role));
+            $role = $data['role'] ?? SchoolRole::Student;
+            $schoolProfile->setRole($role instanceof SchoolRole ? $role : SchoolRole::from($role));
 
             if (isset($data['status'])) {
-                $teamProfile->setStatus($data['status']);
+                $schoolProfile->setStatus($data['status']);
             }
             if (isset($data['note'])) {
-                $teamProfile->setNote($data['note'] ?: null);
+                $schoolProfile->setNote($data['note'] ?: null);
             }
 
-            $this->em->persist($teamProfile);
+            $this->em->persist($schoolProfile);
             $this->em->flush();
 
             if ($season === null) {
                 return;
             }
 
-            // Create TeamProfileSeason for current season
-            $tps = new TeamProfileSeason();
-            $tps->setTeamProfileId($teamProfile->getId());
+            // Create SchoolProfileSeason for current season
+            $tps = new SchoolProfileSeason();
+            $tps->setSchoolProfileId($schoolProfile->getId());
             $tps->setSeasonId($season->getId());
-            $tps->setTeamId($team->getId());
+            $tps->setSchoolId($school->getId());
 
             if (isset($data['registrationStatus'])) {
                 $tps->setRegistrationStatus($data['registrationStatus']);
@@ -121,22 +121,22 @@ class MemberService
             $this->em->persist($tps);
         });
 
-        return $teamProfile;
+        return $schoolProfile;
     }
 
-    public function exportCsv(Team $team, Season $season): string
+    public function exportCsv(School $school, Season $season): string
     {
         /** @var array<array<string, mixed>> $rows */
         $rows = $this->em->createQuery(
             'SELECT tp, p, tps
-             FROM App\Entity\TeamProfile tp
+             FROM App\Entity\SchoolProfile tp
              JOIN tp.profile p
-             LEFT JOIN App\Entity\TeamProfileSeason tps
-                 WITH tps.teamProfileId = tp.id AND tps.seasonId = :seasonId
-             WHERE tp.team = :team
+             LEFT JOIN App\Entity\SchoolProfileSeason tps
+                 WITH tps.schoolProfileId = tp.id AND tps.seasonId = :seasonId
+             WHERE tp.school = :school
                AND tp.deletedAt IS NULL'
         )
-            ->setParameter('team', $team)
+            ->setParameter('school', $school)
             ->setParameter('seasonId', $season->getId())
             ->getResult();
 
@@ -162,14 +162,14 @@ class MemberService
             'injury_warning',
         ]);
 
-        /** @var TeamProfile $tp */
+        /** @var SchoolProfile $tp */
         foreach ($rows as $tp) {
             $profile = $tp->getProfile();
 
-            // Fetch associated TeamProfileSeason (may be null if member has no season entry)
-            /** @var TeamProfileSeason|null $tps */
-            $tps = $this->em->getRepository(TeamProfileSeason::class)->findOneBy([
-                'teamProfileId' => $tp->getId(),
+            // Fetch associated SchoolProfileSeason (may be null if member has no season entry)
+            /** @var SchoolProfileSeason|null $tps */
+            $tps = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                'schoolProfileId' => $tp->getId(),
                 'seasonId'      => $season->getId(),
             ]);
 
@@ -212,7 +212,7 @@ class MemberService
         return $csv !== false ? $csv : '';
     }
 
-    public function fastCount(TeamProfilePackage $package, User $actor, string $action): TeamProfilePackage
+    public function fastCount(SchoolProfilePackage $package, User $actor, string $action): SchoolProfilePackage
     {
         $session    = $this->requestStack->getSession();
         $sessionKey = self::CANCEL_WINDOW_SESSION_KEY . '_' . $package->getId();
@@ -239,7 +239,7 @@ class MemberService
         return $package;
     }
 
-    private function recalculatePackageStatus(TeamProfilePackage $package): void
+    private function recalculatePackageStatus(SchoolProfilePackage $package): void
     {
         $now = new \DateTimeImmutable();
 

@@ -7,7 +7,7 @@ namespace App\Controller\Cron;
 use App\Entity\Payment;
 use App\Entity\PaymentSchedule;
 use App\Entity\Profile;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Enum\PaymentMethod;
 use App\Enum\ScheduleStatus;
 use Doctrine\ORM\EntityManagerInterface;
@@ -45,11 +45,11 @@ class SettleCronController extends CronController
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 401);
         }
 
-        // Load all teams with a connected Stripe account
-        /** @var Team[] $teams */
-        $teams = $this->em->createQueryBuilder()
+        // Load all schools with a connected Stripe account
+        /** @var School[] $schools */
+        $schools = $this->em->createQueryBuilder()
             ->select('t')
-            ->from(Team::class, 't')
+            ->from(School::class, 't')
             ->where('t.stripeAccountId IS NOT NULL')
             ->getQuery()
             ->getResult();
@@ -57,14 +57,14 @@ class SettleCronController extends CronController
         $settled = 0;
         $errors  = [];
 
-        foreach ($teams as $team) {
+        foreach ($schools as $school) {
             try {
-                $teamSettled = $this->settleTeamBalances($team);
-                $settled    += $teamSettled;
+                $schoolSettled = $this->settleSchoolBalances($school);
+                $settled    += $schoolSettled;
             } catch (\Throwable $e) {
-                $errors[] = sprintf('Team "%s": %s', $team->getId(), $e->getMessage());
-                $this->logger->error('SettleCron: failed to settle balances for team', [
-                    'team_id' => $team->getId(),
+                $errors[] = sprintf('School "%s": %s', $school->getId(), $e->getMessage());
+                $this->logger->error('SettleCron: failed to settle balances for school', [
+                    'team_id' => $school->getId(),
                     'error'   => $e->getMessage(),
                 ]);
             }
@@ -79,9 +79,9 @@ class SettleCronController extends CronController
         ]);
     }
 
-    private function settleTeamBalances(Team $team): int
+    private function settleSchoolBalances(School $school): int
     {
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
         $settled   = 0;
 
         // Fetch all Stripe customers for this connected account
@@ -119,11 +119,11 @@ class SettleCronController extends CronController
                 ->select('ps')
                 ->from(PaymentSchedule::class, 'ps')
                 ->where('ps.profileId = :profileId')
-                ->andWhere('ps.teamId = :teamId')
+                ->andWhere('ps.schoolId = :schoolId')
                 ->andWhere('ps.status = :status')
                 ->orderBy('ps.dueAt', 'ASC')
                 ->setParameter('profileId', $profileId)
-                ->setParameter('teamId', $team->getId())
+                ->setParameter('schoolId', $school->getId())
                 ->setParameter('status', ScheduleStatus::Pending->value)
                 ->getQuery()
                 ->getResult();
@@ -142,14 +142,14 @@ class SettleCronController extends CronController
                     $paymentIntent = PaymentIntent::create(
                         [
                             'amount'               => $amountToSettle,
-                            'currency'             => strtolower($team->getCurrency()),
+                            'currency'             => strtolower($school->getCurrency()),
                             'customer'             => $customer->id,
                             'payment_method_types' => ['customer_balance'],
                             'payment_method_data'  => ['type' => 'customer_balance'],
                             'confirm'              => true,
                             'metadata'             => [
                                 'schedule_id' => $schedule->getId(),
-                                'team_id'     => $team->getId(),
+                                'team_id'     => $school->getId(),
                                 'profile_id'  => $profileId,
                             ],
                         ],
@@ -159,7 +159,7 @@ class SettleCronController extends CronController
                     // Record the payment
                     $payment = new Payment();
                     $payment->setOrderId($schedule->getOrderId());
-                    $payment->setTeamId($team->getId());
+                    $payment->setSchoolId($school->getId());
                     $payment->setProfileId($profileId);
                     $payment->setAmount($amountToSettle);
                     $payment->setMethod(PaymentMethod::OnlineStripeCustomerBalance);

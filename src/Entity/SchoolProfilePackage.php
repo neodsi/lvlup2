@@ -9,22 +9,22 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'team_profile_packages')]
+#[ORM\Table(name: 'school_profile_packages')]
 #[ORM\HasLifecycleCallbacks]
-class TeamProfilePackage
+class SchoolProfilePackage
 {
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36)]
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamProfileId;
+    private string $schoolProfileId;
 
     #[ORM\Column(type: 'string', length: 36)]
     private string $packageId;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamId;
+    private string $schoolId;
 
     #[ORM\Column(type: 'string', length: 36)]
     private string $seasonId;
@@ -83,14 +83,14 @@ class TeamProfilePackage
         return $this->id;
     }
 
-    public function getTeamProfileId(): string
+    public function getSchoolProfileId(): string
     {
-        return $this->teamProfileId;
+        return $this->schoolProfileId;
     }
 
-    public function setTeamProfileId(string $teamProfileId): static
+    public function setSchoolProfileId(string $schoolProfileId): static
     {
-        $this->teamProfileId = $teamProfileId;
+        $this->schoolProfileId = $schoolProfileId;
 
         return $this;
     }
@@ -107,14 +107,14 @@ class TeamProfilePackage
         return $this;
     }
 
-    public function getTeamId(): string
+    public function getSchoolId(): string
     {
-        return $this->teamId;
+        return $this->schoolId;
     }
 
-    public function setTeamId(string $teamId): static
+    public function setSchoolId(string $schoolId): static
     {
-        $this->teamId = $teamId;
+        $this->schoolId = $schoolId;
 
         return $this;
     }

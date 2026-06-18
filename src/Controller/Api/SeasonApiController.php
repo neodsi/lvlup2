@@ -11,7 +11,7 @@ use App\Entity\Level;
 use App\Entity\Package;
 use App\Entity\Room;
 use App\Entity\Season;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Entity\User;
 use App\Service\Season\SeasonService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -48,10 +48,10 @@ class SeasonApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Season not found.'], 404);
         }
 
-        $team = $this->em->getRepository(Team::class)->find($season->getTeam()->getId());
+        $school = $this->em->getRepository(School::class)->find($season->getSchool()->getId());
 
-        if ($team === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Team not found.'], 404);
+        if ($school === null) {
+            return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
         $data    = json_decode($request->getContent(), true) ?? [];
@@ -65,7 +65,7 @@ class SeasonApiController extends AbstractController
         }
 
         try {
-            $newSeason = $this->seasonService->copySeason($season, $team, $newName, $start, $end);
+            $newSeason = $this->seasonService->copySeason($season, $school, $newName, $start, $end);
         } catch (\Throwable $e) {
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 400);
         }

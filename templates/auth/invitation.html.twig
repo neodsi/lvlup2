@@ -1,6 +1,6 @@
 {% extends 'layout/auth.html.twig' %}
 
-{% block title %}Invitation — LvlUp{% endblock %}
+{% block title %}Invitation — LVL UP{% endblock %}
 
 {% block heading %}
     <h2 class="mt-6 text-center text-2xl font-bold tracking-tight text-slate-900">
@@ -11,9 +11,9 @@
 {% block content %}
     {# Invitation card #}
     <div class="mb-6 rounded-lg bg-indigo-50 border border-indigo-200 p-5 text-center">
-        {% if team %}
+        {% if school %}
             <p class="text-sm text-slate-600 mb-1">Vous avez été invité(e) à rejoindre</p>
-            <p class="text-xl font-bold text-slate-900">{{ team.name }}</p>
+            <p class="text-xl font-bold text-slate-900">{{ school.name }}</p>
         {% endif %}
         {% if invite.role is defined %}
             <span class="mt-2 inline-block rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1">

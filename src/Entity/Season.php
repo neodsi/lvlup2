@@ -16,7 +16,7 @@ class Season
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamId;
+    private string $schoolId;
 
     #[ORM\Column(type: 'string', length: 255)]
     private string $name;
@@ -60,8 +60,8 @@ class Season
 
     public function getId(): string { return $this->id; }
 
-    public function getTeamId(): string { return $this->teamId; }
-    public function setTeamId(string $teamId): static { $this->teamId = $teamId; return $this; }
+    public function getSchoolId(): string { return $this->schoolId; }
+    public function setSchoolId(string $schoolId): static { $this->schoolId = $schoolId; return $this; }
 
     public function getName(): string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }

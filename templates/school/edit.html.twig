@@ -1,6 +1,6 @@
 {% extends 'layout/school.html.twig' %}
 
-{% block title %}Paramètres de l'école — {{ team.name }}{% endblock %}
+{% block title %}Paramètres de l'école — {{ school.name }}{% endblock %}
 
 {% block school_content %}
 <div class="max-w-2xl mx-auto">
@@ -23,7 +23,7 @@
                         type="text"
                         id="name"
                         name="name"
-                        value="{{ team.name }}"
+                        value="{{ school.name }}"
                         required
                         class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
                     >
@@ -35,7 +35,7 @@
                         type="text"
                         id="type"
                         name="type"
-                        value="{{ team.type ?? '' }}"
+                        value="{{ school.type ?? '' }}"
                         placeholder="Danse, Musique, Sport…"
                         class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
                     >
@@ -47,7 +47,7 @@
                         type="text"
                         id="invoicePrefix"
                         name="invoicePrefix"
-                        value="{{ team.invoicePrefix ?? '' }}"
+                        value="{{ school.invoicePrefix ?? '' }}"
                         maxlength="20"
                         placeholder="FAC-"
                         class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
@@ -60,7 +60,7 @@
                         type="number"
                         id="invoiceNumberingStart"
                         name="invoiceNumberingStart"
-                        value="{{ team.invoiceNumberingStart }}"
+                        value="{{ school.invoiceNumberingStart }}"
                         min="1"
                         class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
                     >
@@ -73,7 +73,7 @@
                         name="invoiceAddress"
                         rows="3"
                         class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
-                    >{{ team.invoiceAddress ?? '' }}</textarea>
+                    >{{ school.invoiceAddress ?? '' }}</textarea>
                 </div>
 
             </div>

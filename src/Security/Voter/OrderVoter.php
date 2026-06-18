@@ -6,18 +6,18 @@ namespace App\Security\Voter;
 
 use App\Entity\Order;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
-use App\Security\TeamRoleHierarchy;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
+use App\Security\SchoolRoleHierarchy;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
  * Permissions:
- *   orders:view   – team member who owns the order OR team_teacher+
- *   orders:create – any authenticated user who is a team member
- *   orders:update – team_admin+
- *   orders:delete – team_admin+
+ *   orders:view   – school member who owns the order OR teacher+
+ *   orders:create – any authenticated user who is a school member
+ *   orders:update – admin+
+ *   orders:delete – admin+
  */
 final class OrderVoter extends Voter
 {
@@ -34,7 +34,7 @@ final class OrderVoter extends Voter
     ];
 
     public function __construct(
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
     ) {
     }
 
@@ -55,38 +55,38 @@ final class OrderVoter extends Voter
         /** @var Order $order */
         $order = $subject;
 
-        $teamRole = $this->resolveTeamRole($user, $order->getTeamId());
+        $schoolRole = $this->resolveSchoolRole($user, $order->getSchoolId());
 
-        if ($teamRole === null) {
+        if ($schoolRole === null) {
             return false;
         }
 
         return match ($attribute) {
-            self::VIEW   => $this->canView($user, $order, $teamRole),
+            self::VIEW   => $this->canView($user, $order, $schoolRole),
             self::CREATE => true,
-            self::UPDATE => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
-            self::DELETE => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
+            self::UPDATE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::DELETE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
             default      => false,
         };
     }
 
-    private function canView(User $user, Order $order, TeamRole $teamRole): bool
+    private function canView(User $user, Order $order, SchoolRole $schoolRole): bool
     {
-        // Teacher+ can view any order in their team.
-        if (TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamTeacher)) {
+        // Teacher+ can view any order in their school.
+        if (SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Teacher)) {
             return true;
         }
 
         // Otherwise the member may only view their own order.
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $order->getTeamId());
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $order->getSchoolId());
 
-        return $teamProfile !== null && $teamProfile->getId() === $order->getTeamProfileId();
+        return $schoolProfile !== null && $schoolProfile->getId() === $order->getSchoolProfileId();
     }
 
-    private function resolveTeamRole(User $user, string $teamId): ?TeamRole
+    private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $teamId);
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
 
-        return $teamProfile?->getRole();
+        return $schoolProfile?->getRole();
     }
 }

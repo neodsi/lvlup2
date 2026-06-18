@@ -1,4 +1,4 @@
-﻿{% extends 'layout/school.html.twig' %}
+{% extends 'layout/school.html.twig' %}
 
 {% block title %}Participants — {{ lesson.name }}{% endblock %}
 
@@ -27,7 +27,7 @@
                         {% for participant in participants %}
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4">
-                                    <span class="text-sm font-mono text-gray-600">{{ participant.teamProfileId|slice(0, 8) }}…</span>
+                                    <span class="text-sm font-mono text-gray-600">{{ participant.schoolProfileId|slice(0, 8) }}…</span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="text-sm font-mono text-gray-400">{{ participant.occurenceId|slice(0, 8) }}…</span>

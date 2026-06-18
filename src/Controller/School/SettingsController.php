@@ -6,14 +6,14 @@ namespace App\Controller\School;
 
 use App\Entity\Room;
 use App\Entity\Season;
-use App\Entity\Team;
-use App\Entity\TeamProfileSeason;
+use App\Entity\School;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\FeePaidBy;
 use App\Security\Voter\SeasonVoter;
-use App\Security\Voter\TeamVoter;
+use App\Security\Voter\SchoolVoter;
 use App\Service\Season\SeasonService;
-use App\Service\TeamContextService;
+use App\Service\SchoolContextService;
 use Doctrine\ORM\EntityManagerInterface;
 use Stripe\StripeClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,7 +29,7 @@ use Symfony\Component\String\Slugger\AsciiSlugger;
 final class SettingsController extends AbstractController
 {
     public function __construct(
-        private readonly TeamContextService $teamContext,
+        private readonly SchoolContextService $schoolContext,
         private readonly EntityManagerInterface $em,
         private readonly SeasonService $seasonService,
     ) {
@@ -40,38 +40,38 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
         $slugger       = new AsciiSlugger();
-        $suggestedSlug = strtolower($slugger->slug($team->getName())->toString());
+        $suggestedSlug = strtolower($slugger->slug($school->getName())->toString());
 
         if ($request->isMethod('POST')) {
-            $team->setName((string) $request->request->get('name', $team->getName()));
-            $team->setWebsiteUrl($request->request->get('websiteUrl') ?: null);
-            $team->setContactEmail($request->request->get('contactEmail') ?: null);
-            $team->setPhone($request->request->get('phone') ?: null);
-            $team->setDescription($request->request->get('description') ?: null);
-            $team->setSchedule($request->request->get('schedule') ?: null);
-            $team->setPricing($request->request->get('pricing') ?: null);
-            $team->setReadAndCheck($request->request->get('readAndCheck') ?: null);
+            $school->setName((string) $request->request->get('name', $school->getName()));
+            $school->setWebsiteUrl($request->request->get('websiteUrl') ?: null);
+            $school->setContactEmail($request->request->get('contactEmail') ?: null);
+            $school->setPhone($request->request->get('phone') ?: null);
+            $school->setDescription($request->request->get('description') ?: null);
+            $school->setSchedule($request->request->get('schedule') ?: null);
+            $school->setPricing($request->request->get('pricing') ?: null);
+            $school->setReadAndCheck($request->request->get('readAndCheck') ?: null);
 
             $slugRaw = $request->request->get('slug') ?: null;
             if ($slugRaw) {
                 $slug = strtolower($slugger->slug($slugRaw)->toString());
-                if ($slug !== $team->getCurrentSlug()) {
+                if ($slug !== $school->getCurrentSlug()) {
                     $conflict = $this->em->createQueryBuilder()
                         ->select('COUNT(t.id)')
-                        ->from(Team::class, 't')
+                        ->from(School::class, 't')
                         ->where('t.currentSlug = :slug')
                         ->andWhere('t.id != :id')
                         ->setParameter('slug', $slug)
-                        ->setParameter('id', $team->getId())
+                        ->setParameter('id', $school->getId())
                         ->getQuery()->getSingleScalarResult();
 
                     if ($conflict > 0) {
@@ -79,16 +79,16 @@ final class SettingsController extends AbstractController
                         return $this->redirectToRoute('school_settings');
                     }
 
-                    $prev = $team->getPreviousSlugs() ?? [];
-                    if ($team->getCurrentSlug()) {
-                        $prev[] = $team->getCurrentSlug();
+                    $prev = $school->getPreviousSlugs() ?? [];
+                    if ($school->getCurrentSlug()) {
+                        $prev[] = $school->getCurrentSlug();
                     }
-                    $team->setPreviousSlugs(array_values(array_unique($prev)));
-                    $team->setCurrentSlug($slug);
+                    $school->setPreviousSlugs(array_values(array_unique($prev)));
+                    $school->setCurrentSlug($slug);
                 }
             }
 
-            $uploadDir = $this->getParameter('kernel.project_dir') . '/public/media/teams/' . $team->getId();
+            $uploadDir = $this->getParameter('kernel.project_dir') . '/public/media/schools/' . $school->getId();
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0775, true);
             }
@@ -98,7 +98,7 @@ final class SettingsController extends AbstractController
             if ($photo instanceof UploadedFile) {
                 $filename = 'photo.' . $photo->guessExtension();
                 $photo->move($uploadDir, $filename);
-                $team->setAvatarPath('media/teams/' . $team->getId() . '/' . $filename);
+                $school->setAvatarPath('media/schools/' . $school->getId() . '/' . $filename);
             }
 
             /** @var UploadedFile|null $logo */
@@ -106,10 +106,10 @@ final class SettingsController extends AbstractController
             if ($logo instanceof UploadedFile) {
                 $filename = 'logo.' . $logo->guessExtension();
                 $logo->move($uploadDir, $filename);
-                $team->setLogoPath('media/teams/' . $team->getId() . '/' . $filename);
+                $school->setLogoPath('media/schools/' . $school->getId() . '/' . $filename);
             }
 
-            $team->setUpdatedAt(new \DateTimeImmutable());
+            $school->setUpdatedAt(new \DateTimeImmutable());
             $this->em->flush();
             $this->addFlash('success', 'Paramètres généraux mis à jour.');
 
@@ -117,7 +117,7 @@ final class SettingsController extends AbstractController
         }
 
         return $this->render('school/settings/index.html.twig', [
-            'team'          => $team,
+            'school'          => $school,
             'suggestedSlug' => $suggestedSlug,
         ]);
     }
@@ -127,30 +127,30 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
         if ($request->isMethod('POST')) {
-            $team->setCurrency($request->request->get('currency', 'EUR'));
-            $team->setCompanyName($request->request->get('companyName') ?: null);
-            $team->setSiret($request->request->get('siret') ?: null);
-            $team->setIban($request->request->get('iban') ?: null);
-            $team->setApeNaf($request->request->get('apeNaf') ?: null);
-            $team->setIsCollectingVat((bool) $request->request->get('isCollectingVat'));
-            $team->setVatNumber($request->request->get('vatNumber') ?: null);
-            $team->setInvoiceAddress($request->request->get('invoiceAddress') ?: null);
-            $team->setAddressText($request->request->get('addressText') ?: null);
-            $team->setAddressLat($request->request->get('addressLat') ?: null);
-            $team->setAddressLng($request->request->get('addressLng') ?: null);
+            $school->setCurrency($request->request->get('currency', 'EUR'));
+            $school->setCompanyName($request->request->get('companyName') ?: null);
+            $school->setSiret($request->request->get('siret') ?: null);
+            $school->setIban($request->request->get('iban') ?: null);
+            $school->setApeNaf($request->request->get('apeNaf') ?: null);
+            $school->setIsCollectingVat((bool) $request->request->get('isCollectingVat'));
+            $school->setVatNumber($request->request->get('vatNumber') ?: null);
+            $school->setInvoiceAddress($request->request->get('invoiceAddress') ?: null);
+            $school->setAddressText($request->request->get('addressText') ?: null);
+            $school->setAddressLat($request->request->get('addressLat') ?: null);
+            $school->setAddressLng($request->request->get('addressLng') ?: null);
 
             $feePaidBy = FeePaidBy::tryFrom($request->request->get('feePaidBy', 'student'));
             if ($feePaidBy) {
-                $team->setFeePaidBy($feePaidBy);
+                $school->setFeePaidBy($feePaidBy);
             }
 
             $rawMethods = $request->request->all('methods') ?: [];
@@ -162,16 +162,16 @@ final class SettingsController extends AbstractController
                     'allowed_for_multiple_payments' => !empty($dims['multiple']),
                 ];
             }
-            $team->setPaymentMethods($paymentMethods);
+            $school->setPaymentMethods($paymentMethods);
 
-            $team->setUpdatedAt(new \DateTimeImmutable());
+            $school->setUpdatedAt(new \DateTimeImmutable());
             $this->em->flush();
             $this->addFlash('success', 'Informations légales mises à jour.');
 
             return $this->redirectToRoute('school_settings_legal');
         }
 
-        return $this->render('school/settings/legal.html.twig', ['team' => $team]);
+        return $this->render('school/settings/legal.html.twig', ['school' => $school]);
     }
 
     #[Route('/stripe', name: 'school_settings_stripe', methods: ['GET'])]
@@ -179,15 +179,15 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::CONFIGURE_STRIPE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::CONFIGURE_STRIPE, $school);
 
-        return $this->render('school/settings/stripe.html.twig', ['team' => $team]);
+        return $this->render('school/settings/stripe.html.twig', ['school' => $school]);
     }
 
     #[Route('/stripe/portal', name: 'school_settings_stripe_portal', methods: ['GET'])]
@@ -195,15 +195,15 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::CONFIGURE_STRIPE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::CONFIGURE_STRIPE, $school);
 
-        $accountId = $team->getStripeAccountId();
+        $accountId = $school->getStripeAccountId();
         if ($accountId === null) {
             $this->addFlash('error', 'Aucun compte Stripe associé à cette école.');
             return $this->redirectToRoute('school_settings_stripe');
@@ -234,7 +234,7 @@ final class SettingsController extends AbstractController
         ]);
 
         // Prefer login link when account is active and has no pending requirements
-        $hasRequirements = $team->getStripeAccountStatus()->value !== 'active';
+        $hasRequirements = $school->getStripeAccountStatus()->value !== 'active';
         $redirectUrl     = ($loginUrl && !$hasRequirements) ? $loginUrl : $accountLink->url;
 
         return $this->redirect($redirectUrl);
@@ -245,21 +245,21 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
         $seasons = $this->em->getRepository(Season::class)->findBy(
-            ['teamId' => $team->getId()],
+            ['schoolId' => $school->getId()],
             ['createdAt' => 'DESC'],
         );
 
         return $this->render('school/settings/seasons.html.twig', [
-            'team'    => $team,
+            'school'    => $school,
             'seasons' => $seasons,
         ]);
     }
@@ -269,15 +269,15 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $seasonId = $team->getCurrentSeasonId();
+        $seasonId = $school->getCurrentSeasonId();
         $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
 
         if ($season !== null && $request->isMethod('POST')) {
@@ -287,13 +287,13 @@ final class SettingsController extends AbstractController
                 $roomId = $request->request->get('roomId');
                 $room   = $this->em->getRepository(Room::class)->find($roomId);
 
-                if ($room !== null && $room->getTeamId() === $team->getId()) {
+                if ($room !== null && $room->getSchoolId() === $school->getId()) {
                     $this->em->remove($room);
                     $this->em->flush();
                 }
             } else {
                 $room = new Room();
-                $room->setTeamId($team->getId());
+                $room->setSchoolId($school->getId());
                 $room->setSeasonId($season->getId());
                 $room->setName((string) $request->request->get('name'));
                 $this->em->persist($room);
@@ -309,7 +309,7 @@ final class SettingsController extends AbstractController
             : [];
 
         return $this->render('school/settings/rooms.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
             'rooms'  => $rooms,
         ]);
@@ -320,13 +320,13 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::CONFIGURE_STRIPE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::CONFIGURE_STRIPE, $school);
 
         // Stripe checkout sessions are fetched directly via the Stripe SDK.
         // Delegate listing to the service when that method is available,
@@ -334,7 +334,7 @@ final class SettingsController extends AbstractController
         $sessions = [];
 
         return $this->render('school/settings/stripe_payments.html.twig', [
-            'team'     => $team,
+            'school'     => $school,
             'sessions' => $sessions,
         ]);
     }
@@ -344,15 +344,15 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $seasonId = $team->getCurrentSeasonId();
+        $seasonId = $school->getCurrentSeasonId();
 
         if ($seasonId === null) {
             return $this->redirectToRoute('school_settings_season_create');
@@ -366,16 +366,16 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
         if ($request->isMethod('POST')) {
-            $season = $this->seasonService->createSeason($team, [
+            $season = $this->seasonService->createSeason($school, [
                 'name'    => $request->request->get('name'),
                 'startAt' => new \DateTimeImmutable((string) $request->request->get('startAt')),
                 'endAt'   => new \DateTimeImmutable((string) $request->request->get('endAt')),
@@ -386,7 +386,7 @@ final class SettingsController extends AbstractController
             return $this->redirectToRoute('school_settings_season', ['id' => $season->getId()]);
         }
 
-        return $this->render('school/settings/season_create.html.twig', ['team' => $team]);
+        return $this->render('school/settings/season_create.html.twig', ['school' => $school]);
     }
 
     #[Route('/season/{id}', name: 'school_settings_season', methods: ['GET', 'POST'])]
@@ -394,14 +394,14 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user   = $this->getUser();
-        $team   = $this->teamContext->getCurrentTeam();
+        $school   = $this->schoolContext->getCurrentSchool();
         $season = $this->em->getRepository(Season::class)->find($id);
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        if ($season === null || $season->getTeamId() !== $team->getId()) {
+        if ($season === null || $season->getSchoolId() !== $school->getId()) {
             throw $this->createNotFoundException('Season not found.');
         }
 
@@ -430,7 +430,7 @@ final class SettingsController extends AbstractController
         }
 
         return $this->render('school/settings/season.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
         ]);
     }
@@ -440,26 +440,26 @@ final class SettingsController extends AbstractController
     {
         /** @var User $user */
         $user   = $this->getUser();
-        $team   = $this->teamContext->getCurrentTeam();
+        $school   = $this->schoolContext->getCurrentSchool();
         $season = $this->em->getRepository(Season::class)->find($id);
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        if ($season === null || $season->getTeamId() !== $team->getId()) {
+        if ($season === null || $season->getSchoolId() !== $school->getId()) {
             throw $this->createNotFoundException('Season not found.');
         }
 
         $this->denyAccessUnlessGranted(SeasonVoter::VIEW, $season);
 
-        $registrations = $this->em->getRepository(TeamProfileSeason::class)->findBy([
+        $registrations = $this->em->getRepository(SchoolProfileSeason::class)->findBy([
             'seasonId' => $season->getId(),
-            'teamId'   => $team->getId(),
+            'schoolId'   => $school->getId(),
         ]);
 
         return $this->render('school/settings/season_stats.html.twig', [
-            'team'          => $team,
+            'school'          => $school,
             'season'        => $season,
             'registrations' => $registrations,
         ]);

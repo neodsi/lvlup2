@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ team.name }}</title>
+    <title>{{ school.name }}</title>
 </head>
 <body class="shop-iframe">
 
@@ -11,14 +11,14 @@
 
     {# ── School header (compact) ── #}
     <header class="shop__header shop__header--compact">
-        {% if team.avatarPath %}
+        {% if school.avatarPath %}
         <img
-            src="{{ team.avatarPath | imagine_filter('team_avatar') }}"
-            alt="{{ team.name }}"
+            src="{{ school.avatarPath | imagine_filter('team_avatar') }}"
+            alt="{{ school.name }}"
             class="shop__avatar-img shop__avatar-img--small"
         >
         {% endif %}
-        <h1 class="shop__school-name">{{ team.name }}</h1>
+        <h1 class="shop__school-name">{{ school.name }}</h1>
     </header>
 
     <main class="shop__content">
@@ -71,11 +71,11 @@
 
         {# ── CTA ── #}
         <section class="shop__cta">
-            {% if app.user and teamProfileSeason and teamProfileSeason.registrationStatus.value == 'registered' %}
+            {% if app.user and schoolProfileSeason and schoolProfileSeason.registrationStatus.value == 'registered' %}
                 <p class="shop__status shop__status--registered">Deja inscrit(e).</p>
             {% else %}
                 <a
-                    href="{{ url('app_shop', { teamSlug: team.currentSlug }) }}"
+                    href="{{ url('app_shop', { schoolSlug: school.currentSlug }) }}"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="shop__cta-btn shop__cta-btn--primary"

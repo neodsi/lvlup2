@@ -7,7 +7,7 @@ namespace App\Service\Pdf;
 use App\Entity\Invoice;
 use App\Entity\Order;
 use App\Entity\Profile;
-use App\Entity\Team;
+use App\Entity\School;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -27,7 +27,7 @@ class PdfService
      *
      * Returns the absolute file path.
      */
-    public function generateInvoice(Order $order, Team $team, Profile $profile): string
+    public function generateInvoice(Order $order, School $school, Profile $profile): string
     {
         // Fetch the invoice associated with the order
         /** @var Invoice|null $invoice */
@@ -38,7 +38,7 @@ class PdfService
 
         $html = $this->twig->render('pdf/invoice.html.twig', [
             'order'   => $order,
-            'team'    => $team,
+            'school'    => $school,
             'profile' => $profile,
         ]);
 
@@ -57,7 +57,7 @@ class PdfService
         $invoiceDir = sprintf(
             '%s/var/uploads/%s/invoices',
             $this->projectDir,
-            $team->getId(),
+            $school->getId(),
         );
 
         if (!is_dir($invoiceDir)) {
@@ -76,12 +76,12 @@ class PdfService
      *
      * Returns the absolute file path.
      */
-    public function generateInvoiceFromInvoice(Invoice $invoice, Order $order, Team $team, Profile $profile): string
+    public function generateInvoiceFromInvoice(Invoice $invoice, Order $order, School $school, Profile $profile): string
     {
         $html = $this->twig->render('pdf/invoice.html.twig', [
             'invoice' => $invoice,
             'order'   => $order,
-            'team'    => $team,
+            'school'    => $school,
             'profile' => $profile,
         ]);
 
@@ -99,7 +99,7 @@ class PdfService
         $invoiceDir = sprintf(
             '%s/var/uploads/%s/invoices',
             $this->projectDir,
-            $team->getId(),
+            $school->getId(),
         );
 
         if (!is_dir($invoiceDir)) {

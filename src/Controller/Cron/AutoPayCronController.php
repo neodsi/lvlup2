@@ -7,7 +7,7 @@ namespace App\Controller\Cron;
 use App\Entity\Payment;
 use App\Entity\PaymentSchedule;
 use App\Entity\Profile;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Enum\PaymentMethod;
 use App\Enum\ScheduleStatus;
 use Doctrine\ORM\EntityManagerInterface;
@@ -51,8 +51,8 @@ class AutoPayCronController extends CronController
         $end   = new \DateTimeImmutable('today 23:59:59');
 
         // Load all pending payment schedules due today.
-        // Auto-pay eligibility (SEPA / customer balance) is determined per-team
-        // at charge time via the team's Stripe setup — not stored on PaymentSchedule.
+        // Auto-pay eligibility (SEPA / customer balance) is determined per-school
+        // at charge time via the school's Stripe setup — not stored on PaymentSchedule.
         $schedules = $this->em->createQueryBuilder()
             ->select('ps')
             ->from(PaymentSchedule::class, 'ps')
@@ -100,10 +100,10 @@ class AutoPayCronController extends CronController
 
     private function chargeSchedule(PaymentSchedule $schedule): void
     {
-        $team = $this->em->getRepository(Team::class)->find($schedule->getTeamId());
+        $school = $this->em->getRepository(School::class)->find($schedule->getSchoolId());
 
-        if ($team === null || $team->getStripeAccountId() === null) {
-            throw new \RuntimeException(sprintf('Team or Stripe account not found for schedule "%s".', $schedule->getId()));
+        if ($school === null || $school->getStripeAccountId() === null) {
+            throw new \RuntimeException(sprintf('School or Stripe account not found for schedule "%s".', $schedule->getId()));
         }
 
         $profile = $this->em->getRepository(Profile::class)->find($schedule->getProfileId());
@@ -116,22 +116,22 @@ class AutoPayCronController extends CronController
         $paymentIntent = PaymentIntent::create(
             [
                 'amount'               => $schedule->getAmount(),
-                'currency'             => strtolower($team->getCurrency()),
+                'currency'             => strtolower($school->getCurrency()),
                 'payment_method_types' => ['sepa_debit'],
                 'confirm'              => true,
                 'metadata'             => [
                     'schedule_id' => $schedule->getId(),
-                    'team_id'     => $team->getId(),
+                    'team_id'     => $school->getId(),
                     'profile_id'  => $profile->getId(),
                 ],
             ],
-            ['stripe_account' => $team->getStripeAccountId()],
+            ['stripe_account' => $school->getStripeAccountId()],
         );
 
         // Create a Payment record
         $payment = new Payment();
         $payment->setOrderId($schedule->getOrderId());
-        $payment->setTeamId($schedule->getTeamId());
+        $payment->setSchoolId($schedule->getSchoolId());
         $payment->setProfileId($schedule->getProfileId());
         $payment->setAmount($schedule->getAmount());
         $payment->setMethod(PaymentMethod::OnlineStripeSepaDebit);

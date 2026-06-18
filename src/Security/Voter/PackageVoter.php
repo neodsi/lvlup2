@@ -6,18 +6,18 @@ namespace App\Security\Voter;
 
 use App\Entity\Package;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
-use App\Security\TeamRoleHierarchy;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
+use App\Security\SchoolRoleHierarchy;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
  * Permissions:
- *   packages:view   – any team member
- *   packages:create – team_admin+
- *   packages:update – team_admin+
- *   packages:delete – team_admin+
+ *   packages:view   – any school member
+ *   packages:create – admin+
+ *   packages:update – admin+
+ *   packages:delete – admin+
  */
 final class PackageVoter extends Voter
 {
@@ -34,7 +34,7 @@ final class PackageVoter extends Voter
     ];
 
     public function __construct(
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
     ) {
     }
 
@@ -55,25 +55,25 @@ final class PackageVoter extends Voter
         /** @var Package $package */
         $package = $subject;
 
-        $teamRole = $this->resolveTeamRole($user, $package->getTeamId());
+        $schoolRole = $this->resolveSchoolRole($user, $package->getSchoolId());
 
-        if ($teamRole === null) {
+        if ($schoolRole === null) {
             return false;
         }
 
         return match ($attribute) {
             self::VIEW   => true,
-            self::CREATE => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
-            self::UPDATE => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
-            self::DELETE => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
+            self::CREATE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::UPDATE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::DELETE => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
             default      => false,
         };
     }
 
-    private function resolveTeamRole(User $user, string $teamId): ?TeamRole
+    private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $teamId);
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
 
-        return $teamProfile?->getRole();
+        return $schoolProfile?->getRole();
     }
 }

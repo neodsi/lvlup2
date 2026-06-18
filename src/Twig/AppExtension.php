@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Entity\Profile;
-use App\Entity\TeamProfile;
-use App\Enum\TeamRole;
-use App\Service\TeamContextService;
+use App\Entity\SchoolProfile;
+use App\Enum\SchoolRole;
+use App\Service\SchoolContextService;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -16,7 +16,7 @@ use Twig\TwigFunction;
 class AppExtension extends AbstractExtension
 {
     public function __construct(
-        private readonly TeamContextService $teamContextService,
+        private readonly SchoolContextService $schoolContextService,
         private readonly TokenStorageInterface $tokenStorage,
     ) {
     }
@@ -31,8 +31,8 @@ class AppExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('is_team_admin', $this->isTeamAdmin(...)),
-            new TwigFunction('current_team_profile', $this->currentTeamProfile(...)),
+            new TwigFunction('is_school_admin', $this->isSchoolAdmin(...)),
+            new TwigFunction('current_school_profile', $this->currentSchoolProfile(...)),
             new TwigFunction('primary_profile', $this->primaryProfile(...)),
         ];
     }
@@ -56,11 +56,11 @@ class AppExtension extends AbstractExtension
     }
 
     /**
-     * Returns true if the given TeamProfile has role team_admin or team_owner.
+     * Returns true if the given SchoolProfile has role admin or owner.
      */
-    public function isTeamAdmin(TeamProfile $teamProfile): bool
+    public function isSchoolAdmin(SchoolProfile $schoolProfile): bool
     {
-        return in_array($teamProfile->getRole(), [TeamRole::TeamAdmin, TeamRole::TeamOwner], true);
+        return in_array($schoolProfile->getRole(), [SchoolRole::Admin, SchoolRole::Owner], true);
     }
 
     /**
@@ -88,9 +88,9 @@ class AppExtension extends AbstractExtension
     }
 
     /**
-     * Returns the current user's TeamProfile for the current team (reads from session).
+     * Returns the current user's SchoolProfile for the current school (reads from session).
      */
-    public function currentTeamProfile(): ?TeamProfile
+    public function currentSchoolProfile(): ?SchoolProfile
     {
         $token = $this->tokenStorage->getToken();
         if ($token === null) {
@@ -102,6 +102,6 @@ class AppExtension extends AbstractExtension
             return null;
         }
 
-        return $this->teamContextService->getCurrentTeamProfile($user);
+        return $this->schoolContextService->getCurrentSchoolProfile($user);
     }
 }

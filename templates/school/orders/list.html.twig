@@ -1,9 +1,9 @@
-﻿{% extends 'layout/school.html.twig' %}
+{% extends 'layout/school.html.twig' %}
 
-{% block title %}Commandes — {{ team.name }}{% endblock %}
+{% block title %}Commandes — {{ school.name }}{% endblock %}
 
 {% block breadcrumb %}
-<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <span class="text-gray-700 font-medium">Commandes{% if season %} · {{ season.name }}{% endif %}</span>
 {% endblock %}
@@ -41,8 +41,8 @@
                                     <span class="font-mono text-xs text-gray-600">{{ order.invoiceNumber ?? order.id|slice(0, 8) }}</span>
                                 </td>
                                 <td class="px-3 py-4 text-sm text-gray-900">
-                                    {% if order.teamProfile is defined and order.teamProfile.profile is defined %}
-                                        {{ order.teamProfile.profile.firstName }} {{ order.teamProfile.profile.lastName }}
+                                    {% if order.schoolProfile is defined and order.schoolProfile.profile is defined %}
+                                        {{ order.schoolProfile.profile.firstName }} {{ order.schoolProfile.profile.lastName }}
                                     {% else %}
                                         —
                                     {% endif %}

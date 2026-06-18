@@ -1,9 +1,9 @@
 {% extends 'layout/school.html.twig' %}
 
-{% block title %}Saisons — Paramètres — {{ team.name }}{% endblock %}
+{% block title %}Saisons — Paramètres — {{ school.name }}{% endblock %}
 
 {% block breadcrumb %}
-<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <span class="text-gray-700 font-medium">Saisons</span>
 {% endblock %}
@@ -54,7 +54,7 @@
                             <div>
                                 <p class="text-sm font-semibold text-gray-900">
                                     {{ season.name }}
-                                    {% if season.id == team.currentSeasonId %}
+                                    {% if season.id == school.currentSeasonId %}
                                         <span class="ml-2 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Courante</span>
                                     {% endif %}
                                 </p>

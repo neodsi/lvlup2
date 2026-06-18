@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\Auth;
 
 use App\Entity\GroupInvite;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
 use App\Enum\InviteStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -39,15 +39,15 @@ class InvitationController extends AbstractController
             throw $this->createNotFoundException('Cette invitation a expiré.');
         }
 
-        /** @var Team|null $team */
-        $team = $this->entityManager
-            ->getRepository(Team::class)
-            ->find($invite->getTeamId());
+        /** @var School|null $school */
+        $school = $this->entityManager
+            ->getRepository(School::class)
+            ->find($invite->getSchoolId());
 
         if ($request->isMethod('GET')) {
             return $this->render('auth/invitation.html.twig', [
                 'invite' => $invite,
-                'team'   => $team,
+                'school'   => $school,
             ]);
         }
 
@@ -63,7 +63,7 @@ class InvitationController extends AbstractController
 
             return $this->render('auth/invitation.html.twig', [
                 'invite' => $invite,
-                'team'   => $team,
+                'school'   => $school,
             ]);
         }
 
@@ -78,12 +78,12 @@ class InvitationController extends AbstractController
             }
         }
 
-        $teamProfile = new TeamProfile();
-        $teamProfile->setTeam($team);
-        $teamProfile->setProfile($profile);
-        $teamProfile->setRole($invite->getRole());
+        $schoolProfile = new SchoolProfile();
+        $schoolProfile->setSchool($school);
+        $schoolProfile->setProfile($profile);
+        $schoolProfile->setRole($invite->getRole());
 
-        $this->entityManager->persist($teamProfile);
+        $this->entityManager->persist($schoolProfile);
 
         $invite->setStatus(InviteStatus::Accepted);
 

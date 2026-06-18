@@ -1,9 +1,9 @@
 {% extends 'layout/school.html.twig' %}
 
-{% block title %}Stripe — Paramètres — {{ team.name }}{% endblock %}
+{% block title %}Stripe — Paramètres — {{ school.name }}{% endblock %}
 
 {% block breadcrumb %}
-<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_settings') }}" class="hover:text-gray-700 transition">Paramètres</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -29,7 +29,7 @@
         'active':      'bg-green-100 text-green-700',
         'restricted':  'bg-red-100 text-red-700',
     } %}
-    {% set status = team.stripeAccountStatus.value %}
+    {% set status = school.stripeAccountStatus.value %}
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
         <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
@@ -44,12 +44,12 @@
 
         <div class="px-6 py-6 flex flex-col sm:flex-row sm:items-center gap-4">
 
-            {% if team.stripeAccountId %}
+            {% if school.stripeAccountId %}
 
                 <div class="flex-1">
                     <p class="text-sm text-gray-700">
                         ID du compte&nbsp;:
-                        <span class="font-mono text-gray-500 text-xs">{{ team.stripeAccountId }}</span>
+                        <span class="font-mono text-gray-500 text-xs">{{ school.stripeAccountId }}</span>
                     </p>
                     {% if status == 'active' %}
                         <p class="text-xs text-green-600 mt-1">Votre compte est actif. Les paiements en ligne sont opérationnels.</p>

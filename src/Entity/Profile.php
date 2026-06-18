@@ -55,15 +55,15 @@ class Profile
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
-    #[ORM\OneToMany(mappedBy: 'profile', targetEntity: TeamProfile::class)]
-    private Collection $teamProfiles;
+    #[ORM\OneToMany(mappedBy: 'profile', targetEntity: SchoolProfile::class)]
+    private Collection $schoolProfiles;
 
     public function __construct()
     {
         $this->id           = Uuid::v4()->toRfc4122();
         $this->createdAt    = new \DateTimeImmutable();
         $this->updatedAt    = new \DateTimeImmutable();
-        $this->teamProfiles = new ArrayCollection();
+        $this->schoolProfiles = new ArrayCollection();
     }
 
     public function getId(): string
@@ -221,28 +221,28 @@ class Profile
     }
 
     /**
-     * @return Collection<int, TeamProfile>
+     * @return Collection<int, SchoolProfile>
      */
-    public function getTeamProfiles(): Collection
+    public function getSchoolProfiles(): Collection
     {
-        return $this->teamProfiles;
+        return $this->schoolProfiles;
     }
 
-    public function addTeamProfile(TeamProfile $teamProfile): static
+    public function addSchoolProfile(SchoolProfile $schoolProfile): static
     {
-        if (!$this->teamProfiles->contains($teamProfile)) {
-            $this->teamProfiles->add($teamProfile);
-            $teamProfile->setProfile($this);
+        if (!$this->schoolProfiles->contains($schoolProfile)) {
+            $this->schoolProfiles->add($schoolProfile);
+            $schoolProfile->setProfile($this);
         }
 
         return $this;
     }
 
-    public function removeTeamProfile(TeamProfile $teamProfile): static
+    public function removeSchoolProfile(SchoolProfile $schoolProfile): static
     {
-        if ($this->teamProfiles->removeElement($teamProfile)) {
-            if ($teamProfile->getProfile() === $this) {
-                $teamProfile->setProfile(null);
+        if ($this->schoolProfiles->removeElement($schoolProfile)) {
+            if ($schoolProfile->getProfile() === $this) {
+                $schoolProfile->setProfile(null);
             }
         }
 

@@ -11,19 +11,20 @@ use App\Entity\Package;
 use App\Entity\PaymentSchedule;
 use App\Entity\PriceModifier;
 use App\Entity\Season;
-use App\Entity\TeamProfile;
-use App\Entity\TeamProfilePackage;
-use App\Entity\TeamProfileSeason;
+use App\Entity\SchoolProfile;
+use App\Entity\SchoolProfilePackage;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\Gender;
 use App\Enum\PackageStatus;
 use App\Enum\RegistrationStatus;
 use App\Enum\ScheduleStatus;
-use App\Enum\TeamRole;
-use App\Security\Voter\TeamVoter;
+use App\Enum\SchoolRole;
+use App\Form\School\MemberType;
+use App\Security\Voter\SchoolVoter;
 use App\Service\Email\EmailService;
 use App\Service\Member\MemberService;
-use App\Service\TeamContextService;
+use App\Service\SchoolContextService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +39,7 @@ use Symfony\Component\Uid\Uuid;
 final class MemberController extends AbstractController
 {
     public function __construct(
-        private readonly TeamContextService $teamContext,
+        private readonly SchoolContextService $schoolContext,
         private readonly EntityManagerInterface $em,
         private readonly MemberService $memberService,
         private readonly UserPasswordHasherInterface $passwordHasher,
@@ -52,13 +53,13 @@ final class MemberController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
         // Season resolution
         $session  = $request->getSession();
@@ -66,7 +67,7 @@ final class MemberController extends AbstractController
 
         if ($seasonId !== null) {
             $season = $this->em->getRepository(Season::class)->find($seasonId);
-            if ($season !== null && $season->getTeamId() !== $team->getId()) {
+            if ($season !== null && $season->getSchoolId() !== $school->getId()) {
                 $season = null;
             }
             if ($season !== null) {
@@ -81,9 +82,9 @@ final class MemberController extends AbstractController
         }
 
         $roleMap = [
-            'students' => TeamRole::TeamStudent,
-            'teachers' => TeamRole::TeamTeacher,
-            'admins'   => TeamRole::TeamAdmin,
+            'students' => SchoolRole::Student,
+            'teachers' => SchoolRole::Teacher,
+            'admins'   => SchoolRole::Admin,
         ];
 
         // Filters
@@ -104,14 +105,14 @@ final class MemberController extends AbstractController
         // Build member query (eager-load profile + user to avoid N+1)
         $qb = $this->em->createQueryBuilder()
             ->select('tp', 'p', 'u')
-            ->from(TeamProfile::class, 'tp')
+            ->from(SchoolProfile::class, 'tp')
             ->join('tp.profile', 'p')
             ->leftJoin('p.user', 'u')
-            ->where('tp.team = :team')
+            ->where('tp.school = :school')
             ->andWhere('tp.deletedAt IS NULL')
             ->orderBy('p.lastName', 'ASC')
             ->addOrderBy('p.firstName', 'ASC')
-            ->setParameter('team', $team);
+            ->setParameter('school', $school);
 
         if ($type !== 'all') {
             $qb->andWhere('tp.role = :role')->setParameter('role', $roleMap[$type]);
@@ -128,18 +129,18 @@ final class MemberController extends AbstractController
             $qb->andWhere('u IS NULL');
         }
 
-        /** @var TeamProfile[] $members */
+        /** @var SchoolProfile[] $members */
         $members   = $qb->getQuery()->getResult();
-        $memberIds = array_map(static fn(TeamProfile $m): string => $m->getId(), $members);
+        $memberIds = array_map(static fn(SchoolProfile $m): string => $m->getId(), $members);
 
         // TPS map for the current season
         $tpsMap = [];
         if ($season !== null && count($memberIds) > 0) {
-            $tpsList = $this->em->getRepository(TeamProfileSeason::class)->findBy([
+            $tpsList = $this->em->getRepository(SchoolProfileSeason::class)->findBy([
                 'seasonId' => $season->getId(),
             ]);
             foreach ($tpsList as $tps) {
-                $tpsMap[$tps->getTeamProfileId()] = $tps;
+                $tpsMap[$tps->getSchoolProfileId()] = $tps;
             }
         }
 
@@ -147,16 +148,16 @@ final class MemberController extends AbstractController
         if ($type === 'students' && $season !== null) {
             $members = array_values(array_filter(
                 $members,
-                static fn(TeamProfile $m): bool => isset($tpsMap[$m->getId()])
+                static fn(SchoolProfile $m): bool => isset($tpsMap[$m->getId()])
             ));
-            $memberIds = array_map(static fn(TeamProfile $m): string => $m->getId(), $members);
+            $memberIds = array_map(static fn(SchoolProfile $m): string => $m->getId(), $members);
         }
 
         // PHP-side TPS filters (registration status, injury, age group, activity)
         if ($filterStatus !== '' || $filterHasInjury !== '' || $filterAgeGroup !== '' || $filterActivity !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($tpsMap, $filterStatus, $filterHasInjury, $filterAgeGroup, $filterActivity): bool {
+                static function (SchoolProfile $m) use ($tpsMap, $filterStatus, $filterHasInjury, $filterAgeGroup, $filterActivity): bool {
                     $tps = $tpsMap[$m->getId()] ?? null;
 
                     if ($filterStatus !== '' && ($tps === null || $tps->getRegistrationStatus()->value !== $filterStatus)) {
@@ -178,7 +179,7 @@ final class MemberController extends AbstractController
                     return true;
                 }
             ));
-            $memberIds = array_map(static fn(TeamProfile $m): string => $m->getId(), $members);
+            $memberIds = array_map(static fn(SchoolProfile $m): string => $m->getId(), $members);
         }
 
         // Financial data, packages, activities
@@ -204,15 +205,15 @@ final class MemberController extends AbstractController
 
             // Order aggregates (total/paid/count per member)
             $orderAgg = $this->em->createQuery(
-                'SELECT o.teamProfileId, SUM(o.totalAmount) as total, SUM(o.paidAmount) as paid, COUNT(o.id) as ordersCount
+                'SELECT o.schoolProfileId, SUM(o.totalAmount) as total, SUM(o.paidAmount) as paid, COUNT(o.id) as ordersCount
                  FROM App\Entity\Order o
-                 WHERE o.teamId = :teamId
+                 WHERE o.schoolId = :schoolId
                    AND o.seasonId = :seasonId
                    AND o.deletedAt IS NULL
-                   AND o.teamProfileId IN (:ids)
-                 GROUP BY o.teamProfileId'
+                   AND o.schoolProfileId IN (:ids)
+                 GROUP BY o.schoolProfileId'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->setParameter('ids', $memberIds)
             ->getArrayResult();
@@ -234,7 +235,7 @@ final class MemberController extends AbstractController
                     $payStatus = 'partially_paid';
                 }
 
-                $financialMap[$row['teamProfileId']] = [
+                $financialMap[$row['schoolProfileId']] = [
                     'total'       => $total,
                     'paid'        => $paid,
                     'left'        => max(0, $left),
@@ -245,14 +246,14 @@ final class MemberController extends AbstractController
 
             // Order IDs + buyer profileIds for downstream queries
             $orderIdRows = $this->em->createQuery(
-                'SELECT o.id, o.teamProfileId, o.profileId
+                'SELECT o.id, o.schoolProfileId, o.profileId
                  FROM App\Entity\Order o
-                 WHERE o.teamId = :teamId
+                 WHERE o.schoolId = :schoolId
                    AND o.seasonId = :seasonId
                    AND o.deletedAt IS NULL
-                   AND o.teamProfileId IN (:ids)'
+                   AND o.schoolProfileId IN (:ids)'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->setParameter('ids', $memberIds)
             ->getArrayResult();
@@ -261,7 +262,7 @@ final class MemberController extends AbstractController
             $orderIds            = [];
             $orderBuyerProfileId = [];
             foreach ($orderIdRows as $row) {
-                $orderToProfile[$row['id']]      = $row['teamProfileId'];
+                $orderToProfile[$row['id']]      = $row['schoolProfileId'];
                 $orderIds[]                      = $row['id'];
                 $orderBuyerProfileId[$row['id']] = $row['profileId'];
             }
@@ -414,42 +415,42 @@ final class MemberController extends AbstractController
 
             // Active packages count per member
             $pkgRows = $this->em->createQuery(
-                'SELECT pkg.teamProfileId, COUNT(pkg.id) as cnt
-                 FROM App\Entity\TeamProfilePackage pkg
-                 WHERE pkg.teamId = :teamId
+                'SELECT pkg.schoolProfileId, COUNT(pkg.id) as cnt
+                 FROM App\Entity\SchoolProfilePackage pkg
+                 WHERE pkg.schoolId = :schoolId
                    AND pkg.seasonId = :seasonId
-                   AND pkg.teamProfileId IN (:ids)
+                   AND pkg.schoolProfileId IN (:ids)
                    AND pkg.deletedAt IS NULL
                    AND pkg.status = :status
-                 GROUP BY pkg.teamProfileId'
+                 GROUP BY pkg.schoolProfileId'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->setParameter('ids', $memberIds)
             ->setParameter('status', PackageStatus::Active)
             ->getArrayResult();
 
             foreach ($pkgRows as $row) {
-                $packagesMap[$row['teamProfileId']] = (int) $row['cnt'];
+                $packagesMap[$row['schoolProfileId']] = (int) $row['cnt'];
             }
 
             // Package types per member
             $pkgTypeRows = $this->em->createQuery(
-                'SELECT pkg.teamProfileId, pkg.type
-                 FROM App\Entity\TeamProfilePackage pkg
-                 WHERE pkg.teamId = :teamId
+                'SELECT pkg.schoolProfileId, pkg.type
+                 FROM App\Entity\SchoolProfilePackage pkg
+                 WHERE pkg.schoolId = :schoolId
                    AND pkg.seasonId = :seasonId
-                   AND pkg.teamProfileId IN (:ids)
+                   AND pkg.schoolProfileId IN (:ids)
                    AND pkg.deletedAt IS NULL'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->setParameter('ids', $memberIds)
             ->getArrayResult();
 
             $seenPkgTypes = [];
             foreach ($pkgTypeRows as $row) {
-                $pkgTypesMap[$row['teamProfileId']][] = $row['type'];
+                $pkgTypesMap[$row['schoolProfileId']][] = $row['type'];
                 $seenPkgTypes[$row['type']]            = true;
             }
             $usedPkgTypes = array_keys($seenPkgTypes);
@@ -472,10 +473,10 @@ final class MemberController extends AbstractController
             // Packages for the season (for specific package filter)
             $allPackages = $this->em->createQuery(
                 'SELECT pkg FROM App\Entity\Package pkg
-                 WHERE pkg.teamId = :teamId AND pkg.seasonId = :seasonId
+                 WHERE pkg.schoolId = :schoolId AND pkg.seasonId = :seasonId
                  ORDER BY pkg.name ASC'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->getResult();
         }
@@ -486,7 +487,7 @@ final class MemberController extends AbstractController
         if ($filterPayStatus !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($financialMap, $filterPayStatus): bool {
+                static function (SchoolProfile $m) use ($financialMap, $filterPayStatus): bool {
                     $fin = $financialMap[$m->getId()] ?? null;
 
                     return $fin === null ? $filterPayStatus === 'unpaid' : $fin['status'] === $filterPayStatus;
@@ -497,7 +498,7 @@ final class MemberController extends AbstractController
         if ($filterPayLoc !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($paymentMethodMap, $filterPayLoc): bool {
+                static function (SchoolProfile $m) use ($paymentMethodMap, $filterPayLoc): bool {
                     foreach ($paymentMethodMap[$m->getId()] ?? [] as $method) {
                         $isOnline = str_starts_with((string) $method, 'online_');
                         if ($filterPayLoc === 'online' && $isOnline) {
@@ -516,7 +517,7 @@ final class MemberController extends AbstractController
         if ($filterPkgType !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($pkgTypesMap, $filterPkgType): bool {
+                static function (SchoolProfile $m) use ($pkgTypesMap, $filterPkgType): bool {
                     return in_array($filterPkgType, $pkgTypesMap[$m->getId()] ?? [], true);
                 }
             ));
@@ -525,7 +526,7 @@ final class MemberController extends AbstractController
         if ($filterPastDue === 'yes') {
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($nextScheduleMap, $now): bool {
+                static function (SchoolProfile $m) use ($nextScheduleMap, $now): bool {
                     $due = $nextScheduleMap[$m->getId()] ?? null;
 
                     return $due instanceof \DateTimeImmutable && $due < $now;
@@ -536,7 +537,7 @@ final class MemberController extends AbstractController
         if ($filterOnsiteMethod !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($paymentMethodMap, $filterOnsiteMethod): bool {
+                static function (SchoolProfile $m) use ($paymentMethodMap, $filterOnsiteMethod): bool {
                     return in_array($filterOnsiteMethod, $paymentMethodMap[$m->getId()] ?? [], true);
                 }
             ));
@@ -545,7 +546,7 @@ final class MemberController extends AbstractController
         if ($filterOnlineMethod !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($paymentMethodMap, $filterOnlineMethod): bool {
+                static function (SchoolProfile $m) use ($paymentMethodMap, $filterOnlineMethod): bool {
                     return in_array($filterOnlineMethod, $paymentMethodMap[$m->getId()] ?? [], true);
                 }
             ));
@@ -554,17 +555,17 @@ final class MemberController extends AbstractController
         if ($filterPackageId !== '' && $season !== null) {
             $pkgMemberIds = array_column(
                 $this->em->createQuery(
-                    'SELECT tpp.teamProfileId FROM App\Entity\TeamProfilePackage tpp
+                    'SELECT tpp.schoolProfileId FROM App\Entity\SchoolProfilePackage tpp
                      WHERE tpp.packageId = :pkgId AND tpp.seasonId = :seasonId AND tpp.deletedAt IS NULL'
                 )
                 ->setParameter('pkgId', $filterPackageId)
                 ->setParameter('seasonId', $season->getId())
                 ->getArrayResult(),
-                'teamProfileId'
+                'schoolProfileId'
             );
             $members = array_values(array_filter(
                 $members,
-                static function (TeamProfile $m) use ($pkgMemberIds): bool {
+                static function (SchoolProfile $m) use ($pkgMemberIds): bool {
                     return in_array($m->getId(), $pkgMemberIds, true);
                 }
             ));
@@ -574,10 +575,10 @@ final class MemberController extends AbstractController
         if ($season !== null) {
             $actList = $this->em->createQuery(
                 'SELECT a FROM App\Entity\Activity a
-                 WHERE a.teamId = :teamId AND a.seasonId = :seasonId AND a.deletedAt IS NULL
+                 WHERE a.schoolId = :schoolId AND a.seasonId = :seasonId AND a.deletedAt IS NULL
                  ORDER BY a.name ASC'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->getResult();
 
@@ -588,21 +589,21 @@ final class MemberController extends AbstractController
 
             $allAgeGroups = $this->em->createQuery(
                 'SELECT ag FROM App\Entity\AgeGroup ag
-                 WHERE ag.teamId = :teamId AND ag.seasonId = :seasonId AND ag.deletedAt IS NULL
+                 WHERE ag.schoolId = :schoolId AND ag.seasonId = :seasonId AND ag.deletedAt IS NULL
                  ORDER BY ag.name ASC'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->getResult();
 
             $priceModifiers = $this->em->createQuery(
                 'SELECT pm FROM App\Entity\PriceModifier pm
-                 WHERE pm.teamId = :teamId
+                 WHERE pm.schoolId = :schoolId
                    AND (pm.seasonId = :seasonId OR pm.seasonId IS NULL)
                    AND pm.deletedAt IS NULL
                  ORDER BY pm.name ASC'
             )
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
             ->getResult();
 
@@ -623,7 +624,7 @@ final class MemberController extends AbstractController
         ]));
 
         return $this->render('school/members/list.html.twig', [
-            'team'                => $team,
+            'school'                => $school,
             'type'                => $type,
             'members'             => $members,
             'season'              => $season,
@@ -669,127 +670,165 @@ final class MemberController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $member = $this->em->getRepository(TeamProfile::class)->find($id);
+        $member = $this->em->getRepository(SchoolProfile::class)->find($id);
 
-        if ($member === null || $member->getTeam()?->getId() !== $team->getId() || $member->getDeletedAt() !== null) {
+        if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
             throw $this->createNotFoundException('Member not found.');
         }
 
         // Fetch TPS for current season
-        $seasonId = $team->getCurrentSeasonId();
+        $seasonId = $school->getCurrentSeasonId();
         $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
         $tps      = null;
         if ($season !== null) {
-            $tps = $this->em->getRepository(TeamProfileSeason::class)->findOneBy([
-                'teamProfileId' => $member->getId(),
+            $tps = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                'schoolProfileId' => $member->getId(),
                 'seasonId'      => $season->getId(),
             ]);
         }
 
         return $this->render('school/members/detail.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'member' => $member,
             'season' => $season,
             'tps'    => $tps,
         ]);
     }
 
-    #[Route('/detail/{id}/edit', name: 'school_member_edit', methods: ['POST'])]
+    #[Route('/detail/{id}/edit', name: 'school_member_edit', methods: ['GET', 'POST'])]
     public function edit(string $id, Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $member = $this->em->getRepository(TeamProfile::class)->find($id);
+        $member = $this->em->getRepository(SchoolProfile::class)->find($id);
 
-        if ($member === null || $member->getTeam()?->getId() !== $team->getId() || $member->getDeletedAt() !== null) {
+        if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
             throw $this->createNotFoundException('Member not found.');
         }
 
-        $f = $request->request;
-
-        // Update Profile
         $profile = $member->getProfile();
-        if ($profile !== null) {
-            $profile->setFirstName(trim((string) $f->get('first_name', $profile->getFirstName())));
-            $profile->setLastName(trim((string) $f->get('last_name', $profile->getLastName())));
-            $profile->setPhone($f->get('phone') ?: null);
-            $profile->setAddressText($f->get('address_text') ?: null);
 
-            $genderVal = $f->get('gender');
-            $profile->setGender($genderVal ? Gender::from($genderVal) : null);
-
-            $dobVal = $f->get('dob');
-            if ($dobVal) {
-                $dob = \DateTimeImmutable::createFromFormat('Y-m-d', $dobVal);
-                if ($dob !== false) {
-                    $profile->setDob($dob);
-                }
-            } else {
-                $profile->setDob(null);
-            }
-        }
-
-        // Update note
-        $member->setNote($f->get('note') ?: null);
-
-        // Update or create TeamProfileSeason
-        $seasonId = $team->getCurrentSeasonId();
+        // Fetch TPS for current season
+        $seasonId = $school->getCurrentSeasonId();
         $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
-
+        $tps      = null;
         if ($season !== null) {
-            $tps = $this->em->getRepository(TeamProfileSeason::class)->findOneBy([
-                'teamProfileId' => $member->getId(),
+            $tps = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                'schoolProfileId' => $member->getId(),
                 'seasonId'      => $season->getId(),
             ]);
-
-            if ($tps === null) {
-                $tps = new TeamProfileSeason();
-                $tps->setTeamProfileId($member->getId());
-                $tps->setSeasonId($season->getId());
-                $tps->setTeamId($team->getId());
-                $this->em->persist($tps);
-            }
-
-            $regStatus = $f->get('registration_status');
-            if ($regStatus) {
-                $tps->setRegistrationStatus(RegistrationStatus::from($regStatus));
-            }
-            $tps->setInjuryWarning($f->get('injury_warning') ?: null);
-
-            $accepted = $f->all('accepted');
-            $tps->setAccepted($accepted ?: null);
-
-            $ecName = $f->get('emergency_name');
-            if ($ecName || $f->get('emergency_phone')) {
-                $tps->setEmergencyContact([
-                    'name'         => $f->get('emergency_name', ''),
-                    'relationship' => $f->get('emergency_relationship', ''),
-                    'email'        => $f->get('emergency_email', ''),
-                    'phone'        => $f->get('emergency_phone', ''),
-                ]);
-            }
         }
 
-        $this->em->flush();
-        $this->addFlash('success', 'Fiche mise à jour.');
+        // Build initial data from existing member
+        $emergencyContact = $tps?->getEmergencyContact();
+        $initialData = [
+            'firstName'          => $profile?->getFirstName(),
+            'lastName'           => $profile?->getLastName(),
+            'dob'                => $profile?->getDob(),
+            'phone'              => $profile?->getPhone(),
+            'addressText'        => $profile?->getAddressText(),
+            'gender'             => $profile?->getGender()?->value,
+            'note'               => $member->getNote(),
+            'registrationStatus' => $tps?->getRegistrationStatus()?->value,
+            'injuryWarning'      => $tps?->getInjuryWarning(),
+        ];
 
-        return $this->redirectToRoute('school_member_detail', ['id' => $id]);
+        $form = $this->createForm(MemberType::class, $initialData);
+
+        // Pre-fill unmapped fields from existing data
+        $form->get('email')->setData($profile?->getUser()?->getEmail());
+        $form->get('emergencyName')->setData($emergencyContact['name'] ?? null);
+        $form->get('emergencyRelationship')->setData($emergencyContact['relationship'] ?? null);
+        $form->get('emergencyEmail')->setData($emergencyContact['email'] ?? null);
+        $form->get('emergencyPhone')->setData($emergencyContact['phone'] ?? null);
+        $form->get('accepted')->setData($tps?->getAccepted() ?? []);
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
+
+            // Update Profile
+            if ($profile !== null) {
+                $profile->setFirstName((string) ($data['firstName'] ?? ''));
+                $profile->setLastName((string) ($data['lastName'] ?? ''));
+                $profile->setPhone($data['phone'] ?: null);
+                $profile->setAddressText($data['addressText'] ?: null);
+
+                $genderVal = $data['gender'] ?? null;
+                $profile->setGender($genderVal ? Gender::from($genderVal) : null);
+
+                $dobVal = $data['dob'] ?? null;
+                if ($dobVal instanceof \DateTimeInterface) {
+                    $profile->setDob(\DateTimeImmutable::createFromInterface($dobVal));
+                } else {
+                    $profile->setDob(null);
+                }
+            }
+
+            // Update note
+            $member->setNote($data['note'] ?: null);
+
+            // Update or create SchoolProfileSeason
+            if ($season !== null) {
+                if ($tps === null) {
+                    $tps = new SchoolProfileSeason();
+                    $tps->setSchoolProfileId($member->getId());
+                    $tps->setSeasonId($season->getId());
+                    $tps->setSchoolId($school->getId());
+                    $this->em->persist($tps);
+                }
+
+                $regStatus = $data['registrationStatus'] ?? null;
+                if ($regStatus) {
+                    $tps->setRegistrationStatus(RegistrationStatus::from($regStatus));
+                }
+                $tps->setInjuryWarning($data['injuryWarning'] ?: null);
+
+                $accepted = $form->get('accepted')->getData();
+                $tps->setAccepted($accepted ?: null);
+
+                $ecName = $form->get('emergencyName')->getData();
+                $ecPhone = $form->get('emergencyPhone')->getData();
+                if ($ecName || $ecPhone) {
+                    $tps->setEmergencyContact([
+                        'name'         => $form->get('emergencyName')->getData() ?? '',
+                        'relationship' => $form->get('emergencyRelationship')->getData() ?? '',
+                        'email'        => $form->get('emergencyEmail')->getData() ?? '',
+                        'phone'        => $form->get('emergencyPhone')->getData() ?? '',
+                    ]);
+                }
+            }
+
+            $this->em->flush();
+            $this->addFlash('success', 'Fiche mise à jour.');
+
+            return $this->redirectToRoute('school_member_detail', ['id' => $id]);
+        }
+
+        return $this->render('school/members/detail.html.twig', [
+            'school'   => $school,
+            'member' => $member,
+            'season' => $season,
+            'tps'    => $tps,
+            'form'   => $form->createView(),
+        ]);
     }
 
     #[Route('/detail/{id}/delete', name: 'school_member_delete', methods: ['POST'])]
@@ -797,39 +836,39 @@ final class MemberController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
         if (!$this->isCsrfTokenValid('delete_member_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $member = $this->em->getRepository(TeamProfile::class)->find($id);
+        $member = $this->em->getRepository(SchoolProfile::class)->find($id);
 
-        if ($member === null || $member->getTeam()?->getId() !== $team->getId() || $member->getDeletedAt() !== null) {
+        if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
             throw $this->createNotFoundException('Member not found.');
         }
 
         $type = match ($member->getRole()) {
-            \App\Enum\TeamRole::TeamTeacher => 'teachers',
-            \App\Enum\TeamRole::TeamAdmin   => 'admins',
+            \App\Enum\SchoolRole::Teacher => 'teachers',
+            \App\Enum\SchoolRole::Admin   => 'admins',
             default                         => 'students',
         };
 
         $memberId = $member->getId();
 
-        $this->em->createQuery('DELETE FROM App\Entity\TeamProfileSeason tps WHERE tps.teamProfileId = :id')
+        $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileSeason tps WHERE tps.schoolProfileId = :id')
             ->setParameter('id', $memberId)->execute();
-        $this->em->createQuery('DELETE FROM App\Entity\TeamProfilePackage tpp WHERE tpp.teamProfileId = :id')
+        $this->em->createQuery('DELETE FROM App\Entity\SchoolProfilePackage tpp WHERE tpp.schoolProfileId = :id')
             ->setParameter('id', $memberId)->execute();
-        $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.teamProfileId = :id')
+        $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.schoolProfileId = :id')
             ->setParameter('id', $memberId)->execute();
-        $this->em->createQuery('DELETE FROM App\Entity\TeamProfileGalaParticipation tpgp WHERE tpgp.teamProfileId = :id')
+        $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileGalaParticipation tpgp WHERE tpgp.schoolProfileId = :id')
             ->setParameter('id', $memberId)->execute();
 
         $this->em->remove($member);
@@ -846,21 +885,20 @@ final class MemberController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $team        = $this->teamContext->getCurrentTeam();
-        $teamProfile = $this->teamContext->getCurrentTeamProfile($user);
+        $school        = $this->schoolContext->getCurrentSchool();
+        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
-        if ($team === null || $teamProfile === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $schoolProfile === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        if ($request->isMethod('POST')) {
-            if (!$this->isCsrfTokenValid('create_member_' . $type, (string) $request->request->get('_token'))) {
-                throw $this->createAccessDeniedException('Invalid CSRF token.');
-            }
+        $form = $this->createForm(MemberType::class, []);
+        $form->handleRequest($request);
 
-            $seasonId = $team->getCurrentSeasonId();
+        if ($form->isSubmitted() && $form->isValid()) {
+            $seasonId = $school->getCurrentSeasonId();
             $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
 
             if ($season === null) {
@@ -868,65 +906,42 @@ final class MemberController extends AbstractController
             }
 
             $roleMap = [
-                'students' => TeamRole::TeamStudent,
-                'teachers' => TeamRole::TeamTeacher,
-                'admins'   => TeamRole::TeamAdmin,
+                'students' => SchoolRole::Student,
+                'teachers' => SchoolRole::Teacher,
+                'admins'   => SchoolRole::Admin,
             ];
 
-            $f = $request->request;
+            $data = $form->getData();
 
-            // Required field validation
-            $errors = [];
-            if (!trim((string) $f->get('first_name', ''))) {
-                $errors[] = 'Le prénom est obligatoire.';
-            }
-            if (!trim((string) $f->get('last_name', ''))) {
-                $errors[] = 'Le nom est obligatoire.';
-            }
-            if (!$f->get('dob')) {
-                $errors[] = 'La date de naissance est obligatoire.';
-            }
-            if (!$f->get('phone')) {
-                $errors[] = 'Le téléphone est obligatoire.';
-            }
-            if (!$f->get('email')) {
-                $errors[] = 'L\'email est obligatoire.';
-            }
-            if (!$f->get('address_text')) {
-                $errors[] = 'L\'adresse est obligatoire.';
-            }
-            if (!empty($errors)) {
-                foreach ($errors as $error) {
-                    $this->addFlash('error', $error);
-                }
-                return $this->render('school/members/create.html.twig', ['team' => $team, 'type' => $type]);
-            }
-
-            $dobVal = $f->get('dob');
-            $dob    = null;
-            if ($dobVal) {
-                $d = \DateTimeImmutable::createFromFormat('Y-m-d', $dobVal);
-                if ($d !== false) {
-                    $dob = $d;
-                }
-            }
-
-            $genderVal = $f->get('gender');
+            // Resolve Gender enum from string value
+            $genderVal = $data['gender'] ?? null;
             $gender    = $genderVal ? Gender::tryFrom($genderVal) : null;
 
-            $regStatus    = $f->get('registration_status');
+            // Resolve RegistrationStatus enum from string value
+            $regStatus    = $data['registrationStatus'] ?? null;
             $regStatusVal = $regStatus ? RegistrationStatus::tryFrom($regStatus) : null;
 
-            $accepted = $f->all('accepted');
+            // Resolve dob: DateType returns a DateTimeInterface or null
+            $dobVal = $data['dob'] ?? null;
+            $dob    = null;
+            if ($dobVal instanceof \DateTimeInterface) {
+                $dob = \DateTimeImmutable::createFromInterface($dobVal);
+            }
 
-            $ecName           = $f->get('emergency_name');
+            // Unmapped fields
+            $memberEmail = trim((string) ($form->get('email')->getData() ?? ''));
+
+            $accepted = $form->get('accepted')->getData() ?? [];
+
+            $ecName  = $form->get('emergencyName')->getData();
+            $ecPhone = $form->get('emergencyPhone')->getData();
             $emergencyContact = null;
-            if ($ecName || $f->get('emergency_phone')) {
+            if ($ecName || $ecPhone) {
                 $emergencyContact = [
-                    'name'         => $f->get('emergency_name', ''),
-                    'relationship' => $f->get('emergency_relationship', ''),
-                    'email'        => $f->get('emergency_email', ''),
-                    'phone'        => $f->get('emergency_phone', ''),
+                    'name'         => $form->get('emergencyName')->getData() ?? '',
+                    'relationship' => $form->get('emergencyRelationship')->getData() ?? '',
+                    'email'        => $form->get('emergencyEmail')->getData() ?? '',
+                    'phone'        => $form->get('emergencyPhone')->getData() ?? '',
                 ];
             }
 
@@ -937,27 +952,31 @@ final class MemberController extends AbstractController
                 'admins'   => 'ROLE_SCHOOL',
             ];
 
-            $memberEmail  = trim((string) $f->get('email', ''));
             $userAccount  = $this->em->getRepository(User::class)->findOneBy(['email' => $memberEmail]);
             $isNewAccount = false;
 
-            // Check for duplicate TeamProfile in this team
+            // Check for duplicate SchoolProfile in this school
             if ($userAccount !== null) {
                 $existingMember = $this->em->createQueryBuilder()
                     ->select('COUNT(tp.id)')
-                    ->from(TeamProfile::class, 'tp')
+                    ->from(SchoolProfile::class, 'tp')
                     ->join('tp.profile', 'p')
-                    ->where('tp.team = :team')
+                    ->where('tp.school = :school')
                     ->andWhere('p.user = :user')
                     ->andWhere('tp.deletedAt IS NULL')
-                    ->setParameter('team', $team)
+                    ->setParameter('school', $school)
                     ->setParameter('user', $userAccount)
                     ->getQuery()
                     ->getSingleScalarResult();
 
                 if ((int) $existingMember > 0) {
                     $this->addFlash('error', 'Un membre avec cet e-mail est déjà inscrit dans cette école.');
-                    return $this->render('school/members/create.html.twig', ['team' => $team, 'type' => $type]);
+
+                    return $this->render('school/members/create.html.twig', [
+                        'school' => $school,
+                        'type' => $type,
+                        'form' => $form->createView(),
+                    ]);
                 }
             }
 
@@ -979,16 +998,16 @@ final class MemberController extends AbstractController
                 $isNewAccount = true;
             }
 
-            $this->memberService->createMember($team, $season, [
-                'firstName'          => trim((string) $f->get('first_name', '')),
-                'lastName'           => trim((string) $f->get('last_name', '')),
+            $this->memberService->createMember($school, $season, [
+                'firstName'          => (string) ($data['firstName'] ?? ''),
+                'lastName'           => (string) ($data['lastName'] ?? ''),
                 'dob'                => $dob,
-                'phone'              => $f->get('phone') ?: null,
+                'phone'              => $data['phone'] ?: null,
                 'gender'             => $gender,
-                'addressText'        => $f->get('address_text') ?: null,
-                'note'               => $f->get('note') ?: null,
+                'addressText'        => $data['addressText'] ?: null,
+                'note'               => $data['note'] ?: null,
                 'registrationStatus' => $regStatusVal,
-                'injuryWarning'      => $f->get('injury_warning') ?: null,
+                'injuryWarning'      => $data['injuryWarning'] ?: null,
                 'emergencyContact'   => $emergencyContact,
                 'accepted'           => $accepted ?: null,
                 'role'               => $roleMap[$type],
@@ -996,7 +1015,7 @@ final class MemberController extends AbstractController
             ]);
 
             try {
-                $this->emailService->sendMemberWelcome($userAccount, $team, $isNewAccount);
+                $this->emailService->sendMemberWelcome($userAccount, $school, $isNewAccount);
             } catch (\Throwable) {
                 // Email failure is non-blocking
             }
@@ -1007,8 +1026,9 @@ final class MemberController extends AbstractController
         }
 
         return $this->render('school/members/create.html.twig', [
-            'team' => $team,
+            'school' => $school,
             'type' => $type,
+            'form' => $form->createView(),
         ]);
     }
 }

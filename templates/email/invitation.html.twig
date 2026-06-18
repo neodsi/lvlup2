@@ -1,18 +1,18 @@
 {% extends 'email/base.html.twig' %}
 
-{% block title %}Invitation à rejoindre {{ team.name }} – LVL UP{% endblock %}
+{% block title %}Invitation à rejoindre {{ school.name }} – LVL UP{% endblock %}
 
 {% block extra_styles %}
-  .team-card { background: #eef2ff; border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
-  .team-card .team-name { font-size: 18px; font-weight: 700; color: #3730a3; }
+  .school-card { background: #eef2ff; border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
+  .school-card .school-name { font-size: 18px; font-weight: 700; color: #3730a3; }
 {% endblock %}
 
 {% block body %}
   <h1>Vous avez été invité(e) !</h1>
   <p>Bonjour,</p>
   <p>Vous avez reçu une invitation à rejoindre l'équipe suivante sur <strong>LVL UP</strong> :</p>
-  <div class="team-card">
-    <div class="team-name">{{ team.name }}</div>
+  <div class="school-card">
+    <div class="school-name">{{ school.name }}</div>
   </div>
   <p>Acceptez l'invitation en cliquant sur le bouton ci-dessous. Si vous n'avez pas encore de compte, vous serez invité(e) à en créer un lors de l'acceptation.</p>
   <div class="btn-wrap">

@@ -17,14 +17,14 @@ class CookieController extends AbstractController
     {
         $data = json_decode($request->getContent(), true) ?? [];
 
-        $currentTeamId = $data['currentTeamId'] ?? null;
+        $currentSchoolId = $data['currentSchoolId'] ?? null;
 
-        if ($currentTeamId !== null) {
+        if ($currentSchoolId !== null) {
             $session = $request->getSession();
-            $session->set('currentTeamId', $currentTeamId);
+            $session->set('currentSchoolId', $currentSchoolId);
 
-            $cookie = Cookie::create('currentTeamId')
-                ->withValue((string) $currentTeamId)
+            $cookie = Cookie::create('currentSchoolId')
+                ->withValue((string) $currentSchoolId)
                 ->withExpires(new \DateTimeImmutable('+30 days'))
                 ->withPath('/')
                 ->withHttpOnly(false)
@@ -32,7 +32,7 @@ class CookieController extends AbstractController
 
             $response = new JsonResponse([
                 'success'       => true,
-                'currentTeamId' => $currentTeamId,
+                'currentSchoolId' => $currentSchoolId,
             ]);
 
             $response->headers->setCookie($cookie);
@@ -41,12 +41,12 @@ class CookieController extends AbstractController
         }
 
         // Read mode: return current value from session or cookie
-        $teamId = $request->getSession()->get('currentTeamId')
-                  ?? $request->cookies->get('currentTeamId');
+        $schoolId = $request->getSession()->get('currentSchoolId')
+                  ?? $request->cookies->get('currentSchoolId');
 
         return new JsonResponse([
             'success'       => true,
-            'currentTeamId' => $teamId,
+            'currentSchoolId' => $schoolId,
         ]);
     }
 }

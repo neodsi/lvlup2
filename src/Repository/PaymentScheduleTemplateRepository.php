@@ -6,7 +6,7 @@ namespace App\Repository;
 
 use App\Entity\PaymentScheduleTemplate;
 use App\Entity\Season;
-use App\Entity\Team;
+use App\Entity\School;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -23,13 +23,13 @@ class PaymentScheduleTemplateRepository extends ServiceEntityRepository
     /**
      * @return PaymentScheduleTemplate[]
      */
-    public function findByTeamAndSeason(Team $team, Season $season): array
+    public function findBySchoolAndSeason(School $school, Season $season): array
     {
         return $this->createQueryBuilder('pst')
-            ->where('pst.team = :team')
+            ->where('pst.school = :school')
             ->andWhere('pst.season = :season')
             ->andWhere('pst.deletedAt IS NULL')
-            ->setParameter('team', $team)
+            ->setParameter('school', $school)
             ->setParameter('season', $season)
             ->getQuery()
             ->getResult();

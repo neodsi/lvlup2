@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Auth;
 
+use App\Form\Auth\ResetPasswordRequestType;
+use App\Form\Auth\SetPasswordType;
 use App\Service\Auth\RegistrationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,23 +21,21 @@ class PasswordController extends AbstractController
     #[Route('/reset-password', name: 'app_reset_password', methods: ['GET', 'POST'])]
     public function resetPassword(Request $request): Response
     {
-        if ($request->isMethod('GET')) {
-            return $this->render('auth/reset_password.html.twig');
+        $form = $this->createForm(ResetPasswordRequestType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $email = $form->get('email')->getData();
+
+            $this->registrationService->requestPasswordReset($email);
+
+            return $this->render('auth/reset_password_confirmation.html.twig', [
+                'email' => $email,
+            ]);
         }
 
-        $submittedToken = (string) $request->request->get('_csrf_token');
-        if (!$this->isCsrfTokenValid('reset_password', $submittedToken)) {
-            $this->addFlash('error', 'Token CSRF invalide.');
-
-            return $this->render('auth/reset_password.html.twig');
-        }
-
-        $email = trim((string) $request->request->get('email', ''));
-
-        $this->registrationService->requestPasswordReset($email);
-
-        return $this->render('auth/reset_password_confirmation.html.twig', [
-            'email' => $email,
+        return $this->render('auth/reset_password.html.twig', [
+            'form' => $form->createView(),
         ]);
     }
 
@@ -44,39 +44,42 @@ class PasswordController extends AbstractController
     {
         $token = (string) $request->query->get('token', '');
 
-        if ($request->isMethod('GET')) {
-            return $this->render('auth/update_password.html.twig', [
-                'token' => $token,
-            ]);
+        $form = $this->createForm(SetPasswordType::class, null, ['data' => ['token' => $token]]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $password   = $form->get('password')->getData();
+            $resetToken = $form->get('token')->getData() ?? $token;
+
+            if (strlen($password) < 8) {
+                $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères.');
+
+                return $this->render('auth/update_password.html.twig', [
+                    'token' => $resetToken,
+                    'form'  => $form->createView(),
+                ]);
+            }
+
+            $success = $this->registrationService->resetPassword($resetToken, $password);
+
+            if (!$success) {
+                $this->addFlash('error', 'Le lien de réinitialisation est invalide ou a expiré.');
+
+                return $this->render('auth/update_password.html.twig', [
+                    'token' => $resetToken,
+                    'form'  => $form->createView(),
+                ]);
+            }
+
+            $this->addFlash('success', 'Votre mot de passe a été mis à jour. Vous pouvez vous connecter.');
+
+            return $this->redirect('/login');
         }
 
-        $submittedToken = (string) $request->request->get('_csrf_token');
-        if (!$this->isCsrfTokenValid('update_password', $submittedToken)) {
-            $this->addFlash('error', 'Token CSRF invalide.');
-
-            return $this->render('auth/update_password.html.twig', ['token' => $token]);
-        }
-
-        $resetToken  = (string) $request->request->get('token', $token);
-        $newPassword = (string) $request->request->get('password', '');
-
-        if (strlen($newPassword) < 8) {
-            $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères.');
-
-            return $this->render('auth/update_password.html.twig', ['token' => $resetToken]);
-        }
-
-        $success = $this->registrationService->resetPassword($resetToken, $newPassword);
-
-        if (!$success) {
-            $this->addFlash('error', 'Le lien de réinitialisation est invalide ou a expiré.');
-
-            return $this->render('auth/update_password.html.twig', ['token' => $resetToken]);
-        }
-
-        $this->addFlash('success', 'Votre mot de passe a été mis à jour. Vous pouvez vous connecter.');
-
-        return $this->redirect('/login');
+        return $this->render('auth/update_password.html.twig', [
+            'token' => $token,
+            'form'  => $form->createView(),
+        ]);
     }
 
     #[Route('/auth/confirm-email/{token}', name: 'app_email_confirm_legacy', methods: ['GET'])]

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\TeamProfilePackage;
+use App\Entity\SchoolProfilePackage;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
 use App\Service\Member\MemberService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,58 +19,58 @@ class FastCountApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
         private readonly MemberService $memberService,
     ) {
     }
 
     /**
-     * POST /api/v1/teams/{teamId}/team-profile-packages/{id}/fast-count/remove-one
-     * Decrement one class from the package count. Requires team_teacher or higher.
+     * POST /api/v1/schools/{schoolId}/school-profile-packages/{id}/fast-count/remove-one
+     * Decrement one class from the package count. Requires teacher or higher.
      */
     #[Route(
-        '/api/v1/teams/{teamId}/team-profile-packages/{id}/fast-count/remove-one',
+        '/api/v1/schools/{schoolId}/school-profile-packages/{id}/fast-count/remove-one',
         name: 'api_v1_fast_count_remove_one',
         methods: ['POST'],
     )]
-    public function removeOne(string $teamId, string $id): JsonResponse
+    public function removeOne(string $schoolId, string $id): JsonResponse
     {
-        $authResponse = $this->requireTeamTeacher($teamId);
+        $authResponse = $this->requireSchoolTeacher($schoolId);
         if ($authResponse !== null) {
             return $authResponse;
         }
 
-        return $this->handleFastCount($teamId, $id, 'remove-one');
+        return $this->handleFastCount($schoolId, $id, 'remove-one');
     }
 
     /**
-     * POST /api/v1/teams/{teamId}/team-profile-packages/{id}/fast-count/cancel-remove
-     * Cancel the last remove-one within the allowed window. Requires team_teacher or higher.
+     * POST /api/v1/schools/{schoolId}/school-profile-packages/{id}/fast-count/cancel-remove
+     * Cancel the last remove-one within the allowed window. Requires teacher or higher.
      */
     #[Route(
-        '/api/v1/teams/{teamId}/team-profile-packages/{id}/fast-count/cancel-remove',
+        '/api/v1/schools/{schoolId}/school-profile-packages/{id}/fast-count/cancel-remove',
         name: 'api_v1_fast_count_cancel_remove',
         methods: ['POST'],
     )]
-    public function cancelRemove(string $teamId, string $id): JsonResponse
+    public function cancelRemove(string $schoolId, string $id): JsonResponse
     {
-        $authResponse = $this->requireTeamTeacher($teamId);
+        $authResponse = $this->requireSchoolTeacher($schoolId);
         if ($authResponse !== null) {
             return $authResponse;
         }
 
-        return $this->handleFastCount($teamId, $id, 'cancel-remove');
+        return $this->handleFastCount($schoolId, $id, 'cancel-remove');
     }
 
-    private function handleFastCount(string $teamId, string $id, string $action): JsonResponse
+    private function handleFastCount(string $schoolId, string $id, string $action): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $package = $this->em->getRepository(TeamProfilePackage::class)->find($id);
+        $package = $this->em->getRepository(SchoolProfilePackage::class)->find($id);
 
-        if ($package === null || $package->getTeamId() !== $teamId) {
-            return new JsonResponse(['success' => false, 'error' => 'TeamProfilePackage not found.'], 404);
+        if ($package === null || $package->getSchoolId() !== $schoolId) {
+            return new JsonResponse(['success' => false, 'error' => 'SchoolProfilePackage not found.'], 404);
         }
 
         try {
@@ -87,7 +87,7 @@ class FastCountApiController extends AbstractController
         ]);
     }
 
-    private function requireTeamTeacher(string $teamId): ?JsonResponse
+    private function requireSchoolTeacher(string $schoolId): ?JsonResponse
     {
         /** @var User|null $user */
         $user = $this->getUser();
@@ -96,16 +96,16 @@ class FastCountApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $teamId);
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
 
-        if ($teamProfile === null) {
+        if ($schoolProfile === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $allowed = [TeamRole::TeamTeacher, TeamRole::TeamAdmin, TeamRole::TeamOwner];
+        $allowed = [SchoolRole::Teacher, SchoolRole::Admin, SchoolRole::Owner];
 
-        if (!\in_array($teamProfile->getRole(), $allowed, true)) {
-            return new JsonResponse(['success' => false, 'error' => 'team_teacher role or higher required.'], 403);
+        if (!\in_array($schoolProfile->getRole(), $allowed, true)) {
+            return new JsonResponse(['success' => false, 'error' => 'teacher role or higher required.'], 403);
         }
 
         return null;

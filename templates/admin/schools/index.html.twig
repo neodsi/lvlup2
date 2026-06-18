@@ -2,22 +2,17 @@
 
 {% block title %}Écoles — Administration{% endblock %}
 
+{% block breadcrumb %}
+<a href="{{ path('app_admin') }}" class="hover:text-gray-700 transition">Tableau de bord</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">Écoles</span>
+{% endblock %}
+
 {% block admin_content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="py-8">
 
     <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-            <a href="{{ path('app_admin') }}" class="text-gray-400 hover:text-gray-600 transition">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            </a>
-            <h1 class="text-2xl font-bold text-gray-900">Écoles</h1>
-        </div>
-        {% if is_granted('ROLE_ADMIN') %}
-            <a href="{{ path('app_create_school') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Créer une école
-            </a>
-        {% endif %}
+        <h1 class="text-2xl font-bold text-gray-900">Écoles</h1>
     </div>
 
     {# Status filter #}
@@ -29,15 +24,16 @@
         {% for status in statuses %}
             <a href="{{ path('app_admin_schools', {status: status.value}) }}" class="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium border transition
                 {{ statusFilter == status.value ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-300' }}">
-                {% if status.value == 'active' %}Actif
+                {% if status.value == 'accepted' %}Actif
                 {% elseif status.value == 'waiting' %}En attente
                 {% elseif status.value == 'refused' %}Refusé
+                {% elseif status.value == 'disabled' %}Désactivé
                 {% else %}{{ status.value }}{% endif %}
             </a>
         {% endfor %}
     </div>
 
-    {% if teams is empty %}
+    {% if schools is empty %}
         <div class="rounded-xl border border-gray-200 bg-white p-12 text-center">
             <p class="text-gray-500 text-sm">Aucune école trouvée.</p>
         </div>
@@ -55,54 +51,47 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        {% for team in teams %}
+                        {% for school in schools %}
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="py-4 pl-6 pr-3">
                                     <div class="flex items-center gap-3">
                                         <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm shrink-0">
-                                            {{ team.name|first|upper }}
+                                            {{ school.name|first|upper }}
                                         </div>
                                         <div>
-                                            <p class="font-medium text-sm text-gray-900">{{ team.name }}</p>
-                                            <p class="text-xs text-gray-400 font-mono">{{ team.id|slice(0, 8) }}</p>
+                                            <p class="font-medium text-sm text-gray-900">{{ school.name }}</p>
+                                            <p class="text-xs text-gray-400 font-mono">{{ school.id|slice(0, 8) }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-3 py-4 text-sm text-gray-600">{{ team.type ?? '—' }}</td>
+                                <td class="px-3 py-4 text-sm text-gray-600">
+                                    {% set t = school.type ?? '' %}
+                                    {% if t == 'school' %}École
+                                    {% elseif t == 'independent_teacher' %}Prof. indépendant
+                                    {% elseif t == 'association' %}Association
+                                    {% elseif t != '' %}{{ t }}
+                                    {% else %}—{% endif %}
+                                </td>
                                 <td class="px-3 py-4">
-                                    {% set s = team.status.value ?? team.status ?? 'unknown' %}
+                                    {% set s = school.status.value ?? school.status ?? 'unknown' %}
                                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                                        {% if s == 'active' %}bg-green-50 text-green-700
+                                        {% if s == 'accepted' %}bg-green-50 text-green-700
                                         {% elseif s == 'waiting' %}bg-amber-50 text-amber-700
                                         {% elseif s == 'refused' %}bg-red-50 text-red-700
+                                        {% elseif s == 'disabled' %}bg-gray-100 text-gray-500
                                         {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                        {% if s == 'active' %}Actif
+                                        {% if s == 'accepted' %}Actif
                                         {% elseif s == 'waiting' %}En attente
                                         {% elseif s == 'refused' %}Refusé
+                                        {% elseif s == 'disabled' %}Désactivé
                                         {% else %}{{ s }}{% endif %}
                                     </span>
                                 </td>
-                                <td class="px-3 py-4 text-sm text-gray-500">{{ team.createdAt|date('d/m/Y') }}</td>
+                                <td class="px-3 py-4 text-sm text-gray-500">{{ school.createdAt|date('d/m/Y') }}</td>
                                 <td class="py-4 pl-3 pr-6 text-right">
-                                    <div class="flex items-center justify-end gap-3">
-                                        <a href="{{ path('app_admin_school_detail', {id: team.id}) }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
-                                            Détail
-                                        </a>
-                                        {% if team.status.value ?? '' == 'waiting' %}
-                                            <form method="post" action="{{ path('app_admin_school_detail', {id: team.id}) }}" class="inline">
-                                                <input type="hidden" name="status" value="active">
-                                                <button type="submit" class="text-xs text-green-600 hover:text-green-800 font-medium transition">
-                                                    Approuver
-                                                </button>
-                                            </form>
-                                            <form method="post" action="{{ path('app_admin_school_detail', {id: team.id}) }}" class="inline">
-                                                <input type="hidden" name="status" value="refused">
-                                                <button type="submit" class="text-xs text-red-600 hover:text-red-800 font-medium transition">
-                                                    Refuser
-                                                </button>
-                                            </form>
-                                        {% endif %}
-                                    </div>
+                                    <a href="{{ path('app_admin_school_detail', {id: school.id}) }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
+                                        Détail
+                                    </a>
                                 </td>
                             </tr>
                         {% endfor %}

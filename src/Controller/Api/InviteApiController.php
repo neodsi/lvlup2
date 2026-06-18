@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\GroupInvite;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
 use App\Entity\User;
 use App\Enum\InviteStatus;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
 use App\Service\Email\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,7 +23,7 @@ class InviteApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
         private readonly EmailService $emailService,
     ) {
     }
@@ -69,10 +69,10 @@ class InviteApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Invitation has expired.'], 410);
         }
 
-        $team = $this->em->getRepository(Team::class)->find($invite->getTeamId());
+        $school = $this->em->getRepository(School::class)->find($invite->getSchoolId());
 
-        if ($team === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Team not found.'], 404);
+        if ($school === null) {
+            return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
         // Retrieve the primary Profile for this user
@@ -86,12 +86,12 @@ class InviteApiController extends AbstractController
             }
         }
 
-        $teamProfile = new TeamProfile();
-        $teamProfile->setTeam($team);
-        $teamProfile->setProfile($profile);
-        $teamProfile->setRole($invite->getRole());
+        $schoolProfile = new SchoolProfile();
+        $schoolProfile->setSchool($school);
+        $schoolProfile->setProfile($profile);
+        $schoolProfile->setRole($invite->getRole());
 
-        $this->em->persist($teamProfile);
+        $this->em->persist($schoolProfile);
 
         $invite->setStatus(InviteStatus::Accepted);
 
@@ -99,13 +99,13 @@ class InviteApiController extends AbstractController
 
         return new JsonResponse([
             'success'       => true,
-            'teamProfileId' => $teamProfile->getId(),
+            'schoolProfileId' => $schoolProfile->getId(),
         ]);
     }
 
     /**
      * POST /api/v1/invites/mails
-     * Send invitation emails to a list of addresses. Requires team_admin.
+     * Send invitation emails to a list of addresses. Requires admin.
      */
     #[Route('/api/v1/invites/mails', name: 'api_v1_invites_mails', methods: ['POST'])]
     public function mails(Request $request): JsonResponse
@@ -118,33 +118,33 @@ class InviteApiController extends AbstractController
         }
 
         $data   = json_decode($request->getContent(), true) ?? [];
-        $teamId = $data['teamId'] ?? null;
+        $schoolId = $data['schoolId'] ?? null;
         $emails = $data['emails'] ?? [];
-        $roleRaw = $data['role'] ?? TeamRole::TeamStudent->value;
+        $roleRaw = $data['role'] ?? SchoolRole::Student->value;
 
-        if ($teamId === null || empty($emails)) {
-            return new JsonResponse(['success' => false, 'error' => 'teamId and emails[] are required.'], 422);
+        if ($schoolId === null || empty($emails)) {
+            return new JsonResponse(['success' => false, 'error' => 'schoolId and emails[] are required.'], 422);
         }
 
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, (string) $teamId);
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, (string) $schoolId);
 
-        if ($teamProfile === null) {
+        if ($schoolProfile === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($teamProfile->getRole(), [TeamRole::TeamAdmin, TeamRole::TeamOwner], true);
+        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::Admin, SchoolRole::Owner], true);
 
         if (!$isAdmin) {
-            return new JsonResponse(['success' => false, 'error' => 'team_admin role required.'], 403);
+            return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);
         }
 
-        $team = $this->em->getRepository(Team::class)->find($teamId);
+        $school = $this->em->getRepository(School::class)->find($schoolId);
 
-        if ($team === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Team not found.'], 404);
+        if ($school === null) {
+            return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
-        $role = $roleRaw instanceof TeamRole ? $roleRaw : TeamRole::from((string) $roleRaw);
+        $role = $roleRaw instanceof SchoolRole ? $roleRaw : SchoolRole::from((string) $roleRaw);
 
         $sent   = [];
         $failed = [];
@@ -154,7 +154,7 @@ class InviteApiController extends AbstractController
 
             // Create a new invite token
             $invite = new GroupInvite();
-            $invite->setTeamId($team->getId());
+            $invite->setSchoolId($school->getId());
             $invite->setEmail($email);
             $invite->setRole($role);
             $invite->setToken(Uuid::v4()->toRfc4122());
@@ -165,7 +165,7 @@ class InviteApiController extends AbstractController
             $this->em->flush();
 
             try {
-                $this->emailService->sendInvitation($email, $team, $invite->getToken());
+                $this->emailService->sendInvitation($email, $school, $invite->getToken());
                 $sent[] = $email;
             } catch (\Throwable) {
                 $failed[] = $email;

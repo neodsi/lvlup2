@@ -4,34 +4,34 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\TeamProfileStatus;
-use App\Enum\TeamRole;
+use App\Enum\SchoolProfileStatus;
+use App\Enum\SchoolRole;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity(repositoryClass: \App\Repository\TeamProfileRepository::class)]
-#[ORM\Table(name: 'team_profiles')]
-#[ORM\UniqueConstraint(name: 'uq_team_profile', columns: ['team_id', 'profile_id'])]
+#[ORM\Entity(repositoryClass: \App\Repository\SchoolProfileRepository::class)]
+#[ORM\Table(name: 'school_profiles')]
+#[ORM\UniqueConstraint(name: 'uq_school_profile', columns: ['school_id', 'profile_id'])]
 #[ORM\HasLifecycleCallbacks]
-class TeamProfile
+class SchoolProfile
 {
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36)]
     private string $id;
 
-    #[ORM\ManyToOne(targetEntity: Team::class)]
-    #[ORM\JoinColumn(name: 'team_id', referencedColumnName: 'id', nullable: false)]
-    private ?Team $team = null;
+    #[ORM\ManyToOne(targetEntity: School::class)]
+    #[ORM\JoinColumn(name: 'school_id', referencedColumnName: 'id', nullable: false)]
+    private ?School $school = null;
 
-    #[ORM\ManyToOne(targetEntity: Profile::class, inversedBy: 'teamProfiles')]
+    #[ORM\ManyToOne(targetEntity: Profile::class, inversedBy: 'schoolProfiles')]
     #[ORM\JoinColumn(name: 'profile_id', referencedColumnName: 'id', nullable: true)]
     private ?Profile $profile = null;
 
-    #[ORM\Column(type: 'string', enumType: TeamRole::class, length: 50)]
-    private TeamRole $role;
+    #[ORM\Column(type: 'string', enumType: SchoolRole::class, length: 50)]
+    private SchoolRole $role;
 
-    #[ORM\Column(type: 'string', enumType: TeamProfileStatus::class, length: 50, options: ['default' => 'waiting'])]
-    private TeamProfileStatus $status = TeamProfileStatus::Waiting;
+    #[ORM\Column(type: 'string', enumType: SchoolProfileStatus::class, length: 50, options: ['default' => 'waiting'])]
+    private SchoolProfileStatus $status = SchoolProfileStatus::Waiting;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $stripeCustomerId = null;
@@ -66,14 +66,14 @@ class TeamProfile
         return $this->id;
     }
 
-    public function getTeam(): ?Team
+    public function getSchool(): ?School
     {
-        return $this->team;
+        return $this->school;
     }
 
-    public function setTeam(?Team $team): static
+    public function setSchool(?School $school): static
     {
-        $this->team = $team;
+        $this->school = $school;
 
         return $this;
     }
@@ -90,24 +90,24 @@ class TeamProfile
         return $this;
     }
 
-    public function getRole(): TeamRole
+    public function getRole(): SchoolRole
     {
         return $this->role;
     }
 
-    public function setRole(TeamRole $role): static
+    public function setRole(SchoolRole $role): static
     {
         $this->role = $role;
 
         return $this;
     }
 
-    public function getStatus(): TeamProfileStatus
+    public function getStatus(): SchoolProfileStatus
     {
         return $this->status;
     }
 
-    public function setStatus(TeamProfileStatus $status): static
+    public function setStatus(SchoolProfileStatus $status): static
     {
         $this->status = $status;
 

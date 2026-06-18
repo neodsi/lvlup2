@@ -9,7 +9,7 @@ use App\Entity\Order;
 use App\Entity\Payment;
 use App\Entity\PaymentSchedule;
 use App\Entity\Profile;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -132,14 +132,14 @@ class EmailService
         );
     }
 
-    public function sendInvitation(string $to, Team $team, string $inviteToken): void
+    public function sendInvitation(string $to, School $school, string $inviteToken): void
     {
         $this->sendTemplated(
             $to,
-            sprintf('Vous avez été invité(e) à rejoindre %s – LVL UP', $team->getName()),
+            sprintf('Vous avez été invité(e) à rejoindre %s – LVL UP', $school->getName()),
             'invitation',
             [
-                'team'         => $team,
+                'school'         => $school,
                 'invite_token' => $inviteToken,
                 'to'           => $to,
             ],
@@ -201,7 +201,7 @@ class EmailService
         );
     }
 
-    public function sendMemberWelcome(User $user, Team $team, bool $isNewAccount = true): void
+    public function sendMemberWelcome(User $user, School $school, bool $isNewAccount = true): void
     {
         $resetUrl = null;
         if ($isNewAccount && $user->getResetToken() !== null) {
@@ -213,8 +213,8 @@ class EmailService
         }
 
         $subject = $isNewAccount
-            ? sprintf('Votre compte sur %s a été créé – LVL UP', $team->getName())
-            : sprintf('Vous avez été ajouté(e) à %s – LVL UP', $team->getName());
+            ? sprintf('Votre compte sur %s a été créé – LVL UP', $school->getName())
+            : sprintf('Vous avez été ajouté(e) à %s – LVL UP', $school->getName());
 
         $this->sendTemplated(
             $user->getEmail(),
@@ -222,7 +222,7 @@ class EmailService
             'member_welcome',
             [
                 'user'           => $user,
-                'team'           => $team,
+                'school'           => $school,
                 'reset_url'      => $resetUrl,
                 'is_new_account' => $isNewAccount,
             ],

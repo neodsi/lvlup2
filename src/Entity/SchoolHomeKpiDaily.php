@@ -8,17 +8,17 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'team_home_kpi_daily')]
-#[ORM\UniqueConstraint(name: 'uq_team_home_kpi_daily_team_date', columns: ['team_id', 'date'])]
+#[ORM\Table(name: 'school_home_kpi_daily')]
+#[ORM\UniqueConstraint(name: 'uq_school_home_kpi_daily_school_date', columns: ['school_id', 'date'])]
 #[ORM\HasLifecycleCallbacks]
-class TeamHomeKpiDaily
+class SchoolHomeKpiDaily
 {
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36)]
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamId;
+    private string $schoolId;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $date;
@@ -50,14 +50,14 @@ class TeamHomeKpiDaily
         return $this->id;
     }
 
-    public function getTeamId(): string
+    public function getSchoolId(): string
     {
-        return $this->teamId;
+        return $this->schoolId;
     }
 
-    public function setTeamId(string $teamId): static
+    public function setSchoolId(string $schoolId): static
     {
-        $this->teamId = $teamId;
+        $this->schoolId = $schoolId;
 
         return $this;
     }

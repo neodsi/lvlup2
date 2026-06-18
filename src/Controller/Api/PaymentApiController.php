@@ -7,10 +7,10 @@ namespace App\Controller\Api;
 use App\Entity\Payment;
 use App\Entity\PaymentSchedule;
 use App\Entity\Profile;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
 use App\Service\Payment\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,7 +22,7 @@ class PaymentApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
         private readonly StripeService $stripeService,
     ) {
     }
@@ -43,17 +43,17 @@ class PaymentApiController extends AbstractController
 
         $data        = json_decode($request->getContent(), true) ?? [];
         $scheduleIds = $data['scheduleIds'] ?? [];
-        $teamId      = $data['teamId'] ?? null;
+        $schoolId      = $data['schoolId'] ?? null;
         $profileId   = $data['profileId'] ?? null;
 
-        if (empty($scheduleIds) || $teamId === null || $profileId === null) {
-            return new JsonResponse(['success' => false, 'error' => 'scheduleIds, teamId and profileId are required.'], 422);
+        if (empty($scheduleIds) || $schoolId === null || $profileId === null) {
+            return new JsonResponse(['success' => false, 'error' => 'scheduleIds, schoolId and profileId are required.'], 422);
         }
 
-        $team = $this->em->getRepository(Team::class)->find($teamId);
+        $school = $this->em->getRepository(School::class)->find($schoolId);
 
-        if ($team === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Team not found.'], 404);
+        if ($school === null) {
+            return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
         $profile = $this->em->getRepository(Profile::class)->find($profileId);
@@ -63,7 +63,7 @@ class PaymentApiController extends AbstractController
         }
 
         try {
-            $url = $this->stripeService->getPaymentLinkForSchedules($scheduleIds, $team, $profile);
+            $url = $this->stripeService->getPaymentLinkForSchedules($scheduleIds, $school, $profile);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 422);
         } catch (\LogicException|\RuntimeException $e) {
@@ -75,7 +75,7 @@ class PaymentApiController extends AbstractController
 
     /**
      * POST /api/v1/payments/stripe/refund/{paymentId}
-     * Refund a payment. Requires team_admin and verifies the payment belongs to the team.
+     * Refund a payment. Requires admin and verifies the payment belongs to the school.
      */
     #[Route('/api/v1/payments/stripe/refund/{paymentId}', name: 'api_v1_payments_stripe_refund', methods: ['POST'])]
     public function refund(string $paymentId, Request $request): JsonResponse
@@ -93,30 +93,30 @@ class PaymentApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Payment not found.'], 404);
         }
 
-        // Verify user is team_admin of the team that owns the payment
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $payment->getTeamId());
+        // Verify user is admin of the school that owns the payment
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $payment->getSchoolId());
 
-        if ($teamProfile === null) {
+        if ($schoolProfile === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($teamProfile->getRole(), [TeamRole::TeamAdmin, TeamRole::TeamOwner], true);
+        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::Admin, SchoolRole::Owner], true);
 
         if (!$isAdmin) {
-            return new JsonResponse(['success' => false, 'error' => 'team_admin role required.'], 403);
+            return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);
         }
 
-        $team = $this->em->getRepository(Team::class)->find($payment->getTeamId());
+        $school = $this->em->getRepository(School::class)->find($payment->getSchoolId());
 
-        if ($team === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Team not found.'], 404);
+        if ($school === null) {
+            return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
         $data   = json_decode($request->getContent(), true) ?? [];
         $amount = isset($data['amount']) ? (int) $data['amount'] : $payment->getAmount();
 
         try {
-            $this->stripeService->refundPayment($payment, $amount, $team);
+            $this->stripeService->refundPayment($payment, $amount, $school);
         } catch (\InvalidArgumentException|\LogicException $e) {
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 422);
         } catch (\RuntimeException $e) {

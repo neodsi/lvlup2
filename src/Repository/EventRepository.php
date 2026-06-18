@@ -6,7 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Event;
 use App\Entity\Season;
-use App\Entity\Team;
+use App\Entity\School;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -23,15 +23,15 @@ class EventRepository extends ServiceEntityRepository
     /**
      * @return Event[]
      */
-    public function findByTeamAndSeason(Team $team, Season $season): array
+    public function findBySchoolAndSeason(School $school, Season $season): array
     {
         return $this->createQueryBuilder('e')
-            ->where('e.team = :team')
+            ->where('e.school = :school')
             ->andWhere('e.season = :season')
             ->andWhere('e.deletedAt IS NULL')
             ->orderBy('e.rruleDayOrder', 'ASC')
             ->addOrderBy('e.startAt', 'ASC')
-            ->setParameter('team', $team)
+            ->setParameter('school', $school)
             ->setParameter('season', $season)
             ->getQuery()
             ->getResult();

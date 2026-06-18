@@ -59,7 +59,7 @@ class OrderApiController extends AbstractController
 
     /**
      * POST /api/v1/orders/update
-     * Update an existing order. Requires team_admin role.
+     * Update an existing order. Requires admin role.
      */
     #[Route('/api/v1/orders/update', name: 'api_v1_orders_update', methods: ['POST'])]
     public function update(Request $request): JsonResponse

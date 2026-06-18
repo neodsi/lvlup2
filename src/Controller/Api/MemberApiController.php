@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\Season;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
 use App\Service\Member\MemberService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,27 +22,27 @@ class MemberApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
         private readonly MemberService $memberService,
     ) {
     }
 
     /**
-     * POST /api/v1/teams/{teamId}/team-profiles/create
-     * Create a team member. Requires team_admin.
+     * POST /api/v1/schools/{schoolId}/school-profiles/create
+     * Create a school member. Requires admin.
      */
-    #[Route('/api/v1/teams/{teamId}/team-profiles/create', name: 'api_v1_teams_team_profiles_create', methods: ['POST'])]
-    public function create(string $teamId, Request $request): JsonResponse
+    #[Route('/api/v1/schools/{schoolId}/school-profiles/create', name: 'api_v1_teams_team_profiles_create', methods: ['POST'])]
+    public function create(string $schoolId, Request $request): JsonResponse
     {
-        $authResponse = $this->requireTeamAdmin($teamId);
+        $authResponse = $this->requireSchoolAdmin($schoolId);
         if ($authResponse !== null) {
             return $authResponse;
         }
 
-        $team = $this->em->getRepository(Team::class)->find($teamId);
+        $school = $this->em->getRepository(School::class)->find($schoolId);
 
-        if ($team === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Team not found.'], 404);
+        if ($school === null) {
+            return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
         $data     = json_decode($request->getContent(), true) ?? [];
@@ -52,16 +52,16 @@ class MemberApiController extends AbstractController
             ? $this->em->getRepository(Season::class)->find($seasonId)
             : null;
 
-        if ($season === null && $team->getCurrentSeasonId() !== null) {
-            $season = $this->em->getRepository(Season::class)->find($team->getCurrentSeasonId());
+        if ($season === null && $school->getCurrentSeasonId() !== null) {
+            $season = $this->em->getRepository(Season::class)->find($school->getCurrentSeasonId());
         }
 
         if ($season === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Season not found or team has no current season.'], 422);
+            return new JsonResponse(['success' => false, 'error' => 'Season not found or school has no current season.'], 422);
         }
 
         try {
-            $teamProfile = $this->memberService->createMember($team, $season, $data);
+            $schoolProfile = $this->memberService->createMember($school, $season, $data);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
@@ -70,36 +70,36 @@ class MemberApiController extends AbstractController
 
         return new JsonResponse([
             'success'       => true,
-            'teamProfileId' => $teamProfile->getId(),
+            'schoolProfileId' => $schoolProfile->getId(),
         ], 201);
     }
 
     /**
-     * POST /api/v1/teams/{teamId}/team-profiles/{id}/update
-     * Update a team member. Requires team_admin.
+     * POST /api/v1/schools/{schoolId}/school-profiles/{id}/update
+     * Update a school member. Requires admin.
      */
-    #[Route('/api/v1/teams/{teamId}/team-profiles/{id}/update', name: 'api_v1_teams_team_profiles_update', methods: ['POST'])]
-    public function update(string $teamId, string $id, Request $request): JsonResponse
+    #[Route('/api/v1/schools/{schoolId}/school-profiles/{id}/update', name: 'api_v1_teams_team_profiles_update', methods: ['POST'])]
+    public function update(string $schoolId, string $id, Request $request): JsonResponse
     {
-        $authResponse = $this->requireTeamAdmin($teamId);
+        $authResponse = $this->requireSchoolAdmin($schoolId);
         if ($authResponse !== null) {
             return $authResponse;
         }
 
-        $teamProfile = $this->em->getRepository(TeamProfile::class)->find($id);
+        $schoolProfile = $this->em->getRepository(SchoolProfile::class)->find($id);
 
-        if ($teamProfile === null) {
-            return new JsonResponse(['success' => false, 'error' => 'TeamProfile not found.'], 404);
+        if ($schoolProfile === null) {
+            return new JsonResponse(['success' => false, 'error' => 'SchoolProfile not found.'], 404);
         }
 
-        $team = $this->em->getRepository(Team::class)->find($teamId);
+        $school = $this->em->getRepository(School::class)->find($schoolId);
 
-        if ($team === null || $teamProfile->getTeam()->getId() !== $teamId) {
-            return new JsonResponse(['success' => false, 'error' => 'TeamProfile does not belong to this team.'], 403);
+        if ($school === null || $schoolProfile->getSchool()->getId() !== $schoolId) {
+            return new JsonResponse(['success' => false, 'error' => 'SchoolProfile does not belong to this school.'], 403);
         }
 
         $data    = json_decode($request->getContent(), true) ?? [];
-        $profile = $teamProfile->getProfile();
+        $profile = $schoolProfile->getProfile();
 
         try {
             if ($profile !== null) {
@@ -126,11 +126,11 @@ class MemberApiController extends AbstractController
             }
 
             if (isset($data['role'])) {
-                $role = $data['role'] instanceof \App\Enum\TeamRole
+                $role = $data['role'] instanceof \App\Enum\SchoolRole
                     ? $data['role']
-                    : \App\Enum\TeamRole::from($data['role']);
-                $teamProfile->setRole($role);
-                $this->em->persist($teamProfile);
+                    : \App\Enum\SchoolRole::from($data['role']);
+                $schoolProfile->setRole($role);
+                $this->em->persist($schoolProfile);
             }
 
             $this->em->flush();
@@ -140,29 +140,29 @@ class MemberApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse(['success' => true, 'teamProfileId' => $teamProfile->getId()]);
+        return new JsonResponse(['success' => true, 'schoolProfileId' => $schoolProfile->getId()]);
     }
 
     /**
-     * POST /api/v1/teams/{teamId}/team-profiles/export
-     * Export team members as CSV. Requires team_admin.
+     * POST /api/v1/schools/{schoolId}/school-profiles/export
+     * Export school members as CSV. Requires admin.
      */
-    #[Route('/api/v1/teams/{teamId}/team-profiles/export', name: 'api_v1_teams_team_profiles_export', methods: ['POST'])]
-    public function export(string $teamId, Request $request): Response
+    #[Route('/api/v1/schools/{schoolId}/school-profiles/export', name: 'api_v1_teams_team_profiles_export', methods: ['POST'])]
+    public function export(string $schoolId, Request $request): Response
     {
-        $authResponse = $this->requireTeamAdmin($teamId);
+        $authResponse = $this->requireSchoolAdmin($schoolId);
         if ($authResponse !== null) {
             return $authResponse;
         }
 
-        $team = $this->em->getRepository(Team::class)->find($teamId);
+        $school = $this->em->getRepository(School::class)->find($schoolId);
 
-        if ($team === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Team not found.'], 404);
+        if ($school === null) {
+            return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
         $data     = json_decode($request->getContent(), true) ?? [];
-        $seasonId = $data['seasonId'] ?? $team->getCurrentSeasonId();
+        $seasonId = $data['seasonId'] ?? $school->getCurrentSeasonId();
 
         $season = $seasonId !== null ? $this->em->getRepository(Season::class)->find($seasonId) : null;
 
@@ -170,15 +170,15 @@ class MemberApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Season not found.'], 422);
         }
 
-        $csv = $this->memberService->exportCsv($team, $season);
+        $csv = $this->memberService->exportCsv($school, $season);
 
         return new Response($csv, 200, [
             'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => sprintf('attachment; filename="members-%s.csv"', $teamId),
+            'Content-Disposition' => sprintf('attachment; filename="members-%s.csv"', $schoolId),
         ]);
     }
 
-    private function requireTeamAdmin(string $teamId): ?JsonResponse
+    private function requireSchoolAdmin(string $schoolId): ?JsonResponse
     {
         /** @var User|null $user */
         $user = $this->getUser();
@@ -187,16 +187,16 @@ class MemberApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $teamId);
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
 
-        if ($teamProfile === null) {
+        if ($schoolProfile === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($teamProfile->getRole(), [TeamRole::TeamAdmin, TeamRole::TeamOwner], true);
+        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::Admin, SchoolRole::Owner], true);
 
         if (!$isAdmin) {
-            return new JsonResponse(['success' => false, 'error' => 'team_admin role required.'], 403);
+            return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);
         }
 
         return null;

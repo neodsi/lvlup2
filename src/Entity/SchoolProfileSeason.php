@@ -9,23 +9,23 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'team_profile_seasons')]
-#[ORM\UniqueConstraint(name: 'uq_team_profile_season', columns: ['team_profile_id', 'season_id'])]
+#[ORM\Table(name: 'school_profile_seasons')]
+#[ORM\UniqueConstraint(name: 'uq_school_profile_season', columns: ['school_profile_id', 'season_id'])]
 #[ORM\HasLifecycleCallbacks]
-class TeamProfileSeason
+class SchoolProfileSeason
 {
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36)]
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamProfileId;
+    private string $schoolProfileId;
 
     #[ORM\Column(type: 'string', length: 36)]
     private string $seasonId;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamId;
+    private string $schoolId;
 
     #[ORM\Column(type: 'string', length: 50, enumType: RegistrationStatus::class, options: ['default' => 'not_registered'])]
     private RegistrationStatus $registrationStatus = RegistrationStatus::NotRegistered;
@@ -72,14 +72,14 @@ class TeamProfileSeason
         return $this->id;
     }
 
-    public function getTeamProfileId(): string
+    public function getSchoolProfileId(): string
     {
-        return $this->teamProfileId;
+        return $this->schoolProfileId;
     }
 
-    public function setTeamProfileId(string $teamProfileId): static
+    public function setSchoolProfileId(string $schoolProfileId): static
     {
-        $this->teamProfileId = $teamProfileId;
+        $this->schoolProfileId = $schoolProfileId;
 
         return $this;
     }
@@ -96,14 +96,14 @@ class TeamProfileSeason
         return $this;
     }
 
-    public function getTeamId(): string
+    public function getSchoolId(): string
     {
-        return $this->teamId;
+        return $this->schoolId;
     }
 
-    public function setTeamId(string $teamId): static
+    public function setSchoolId(string $schoolId): static
     {
-        $this->teamId = $teamId;
+        $this->schoolId = $schoolId;
 
         return $this;
     }
@@ -188,8 +188,22 @@ class TeamProfileSeason
         return $this->createdAt;
     }
 
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
     }
 }

@@ -5,29 +5,29 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Season;
-use App\Entity\TeamProfile;
-use App\Entity\TeamProfileSeason;
+use App\Entity\SchoolProfile;
+use App\Entity\SchoolProfileSeason;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<TeamProfileSeason>
+ * @extends ServiceEntityRepository<SchoolProfileSeason>
  */
-class TeamProfileSeasonRepository extends ServiceEntityRepository
+class SchoolProfileSeasonRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, TeamProfileSeason::class);
+        parent::__construct($registry, SchoolProfileSeason::class);
     }
 
-    public function findOneByTeamProfileAndSeason(
-        TeamProfile $teamProfile,
+    public function findOneBySchoolProfileAndSeason(
+        SchoolProfile $schoolProfile,
         Season $season
-    ): ?TeamProfileSeason {
+    ): ?SchoolProfileSeason {
         return $this->createQueryBuilder('tps')
-            ->where('tps.teamProfile = :teamProfile')
+            ->where('tps.schoolProfile = :schoolProfile')
             ->andWhere('tps.season = :season')
-            ->setParameter('teamProfile', $teamProfile)
+            ->setParameter('schoolProfile', $schoolProfile)
             ->setParameter('season', $season)
             ->setMaxResults(1)
             ->getQuery()
@@ -35,7 +35,7 @@ class TeamProfileSeasonRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return TeamProfileSeason[]
+     * @return SchoolProfileSeason[]
      */
     public function findBySeasonWithRegistered(Season $season): array
     {

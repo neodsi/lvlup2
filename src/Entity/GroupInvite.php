@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\InviteStatus;
-use App\Enum\TeamRole;
+use App\Enum\SchoolRole;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
@@ -19,7 +19,7 @@ class GroupInvite
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $teamId;
+    private string $schoolId;
 
     #[ORM\Column(type: 'string', length: 36, nullable: true)]
     private ?string $seasonId = null;
@@ -27,8 +27,8 @@ class GroupInvite
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $email = null;
 
-    #[ORM\Column(type: 'string', length: 50, enumType: TeamRole::class)]
-    private TeamRole $role;
+    #[ORM\Column(type: 'string', length: 50, enumType: SchoolRole::class)]
+    private SchoolRole $role;
 
     #[ORM\Column(type: 'string', length: 50, enumType: InviteStatus::class, options: ['default' => 'pending'])]
     private InviteStatus $status = InviteStatus::Pending;
@@ -66,14 +66,14 @@ class GroupInvite
         return $this->id;
     }
 
-    public function getTeamId(): string
+    public function getSchoolId(): string
     {
-        return $this->teamId;
+        return $this->schoolId;
     }
 
-    public function setTeamId(string $teamId): static
+    public function setSchoolId(string $schoolId): static
     {
-        $this->teamId = $teamId;
+        $this->schoolId = $schoolId;
 
         return $this;
     }
@@ -102,12 +102,12 @@ class GroupInvite
         return $this;
     }
 
-    public function getRole(): TeamRole
+    public function getRole(): SchoolRole
     {
         return $this->role;
     }
 
-    public function setRole(TeamRole $role): static
+    public function setRole(SchoolRole $role): static
     {
         $this->role = $role;
 

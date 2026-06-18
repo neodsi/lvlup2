@@ -35,6 +35,7 @@ class RegistrationService
 
         $user = new User();
         $user->setEmail($email);
+        $user->setRoles(['ROLE_SCHOOL']);
 
         $hashed = $this->passwordHasher->hashPassword($user, $password);
         $user->setPasswordHash($hashed);

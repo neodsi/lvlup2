@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\Shop;
 
 use App\Entity\Season;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
-use App\Entity\TeamProfileSeason;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,43 +22,43 @@ class ShopController extends AbstractController
     ) {
     }
 
-    #[Route('/shop/{teamSlug}', name: 'app_shop', methods: ['GET'])]
-    public function shop(string $teamSlug, Request $request): Response
+    #[Route('/shop/{schoolSlug}', name: 'app_shop', methods: ['GET'])]
+    public function shop(string $schoolSlug, Request $request): Response
     {
-        return $this->handleShopRequest($teamSlug, $request, 'app_shop', 'shop/shop.html.twig');
+        return $this->handleShopRequest($schoolSlug, $request, 'app_shop', 'shop/shop.html.twig');
     }
 
-    #[Route('/iframes/shop/{teamSlug}', name: 'app_shop_iframe', methods: ['GET'])]
-    public function iframe(string $teamSlug, Request $request): Response
+    #[Route('/iframes/shop/{schoolSlug}', name: 'app_shop_iframe', methods: ['GET'])]
+    public function iframe(string $schoolSlug, Request $request): Response
     {
-        return $this->handleShopRequest($teamSlug, $request, 'app_shop_iframe', 'shop/iframe.html.twig');
+        return $this->handleShopRequest($schoolSlug, $request, 'app_shop_iframe', 'shop/iframe.html.twig');
     }
 
     private function handleShopRequest(
-        string $teamSlug,
+        string $schoolSlug,
         Request $request,
         string $routeName,
         string $template,
     ): Response {
-        // 1. Load team by currentSlug, fall back to previousSlugs for old URLs.
-        $team = $this->em->getRepository(Team::class)->findOneBy(['currentSlug' => $teamSlug]);
+        // 1. Load school by currentSlug, fall back to previousSlugs for old URLs.
+        $school = $this->em->getRepository(School::class)->findOneBy(['currentSlug' => $schoolSlug]);
 
-        if ($team === null) {
-            // Search previousSlugs (JSON column): find any team that contains the slug.
-            $team = $this->em->createQueryBuilder()
+        if ($school === null) {
+            // Search previousSlugs (JSON column): find any school that contains the slug.
+            $school = $this->em->createQueryBuilder()
                 ->select('t')
-                ->from(Team::class, 't')
+                ->from(School::class, 't')
                 ->where('JSON_CONTAINS(t.previousSlugs, :slug) = 1')
-                ->setParameter('slug', json_encode($teamSlug))
+                ->setParameter('slug', json_encode($schoolSlug))
                 ->setMaxResults(1)
                 ->getQuery()
                 ->getOneOrNullResult();
 
-            if ($team !== null) {
+            if ($school !== null) {
                 // Permanent redirect to the current canonical slug.
                 return $this->redirectToRoute(
                     $routeName,
-                    ['teamSlug' => $team->getCurrentSlug()],
+                    ['schoolSlug' => $school->getCurrentSlug()],
                     Response::HTTP_MOVED_PERMANENTLY
                 );
             }
@@ -67,7 +67,7 @@ class ShopController extends AbstractController
         }
 
         // 2. Resolve the season to display.
-        $season = $this->resolveSeason($team, $request->query->get('seasonId'));
+        $season = $this->resolveSeason($school, $request->query->get('seasonId'));
 
         // 3. Load events and packages for the season.
         $events   = [];
@@ -78,59 +78,59 @@ class ShopController extends AbstractController
             $packages = $season->getPackages()->filter(fn ($p) => $p->getDeletedAt() === null)->toArray();
         }
 
-        // 4. If user is logged in: load their TeamProfile and registration info.
+        // 4. If user is logged in: load their SchoolProfile and registration info.
         /** @var User|null $user */
         $user        = $this->getUser();
-        $teamProfile = null;
-        $teamProfileSeason = null;
+        $schoolProfile = null;
+        $schoolProfileSeason = null;
 
         if ($user !== null && $season !== null) {
-            // Load the TeamProfile that belongs to this user for this team.
-            $teamProfile = $this->em->createQueryBuilder()
+            // Load the SchoolProfile that belongs to this user for this school.
+            $schoolProfile = $this->em->createQueryBuilder()
                 ->select('tp')
-                ->from(TeamProfile::class, 'tp')
+                ->from(SchoolProfile::class, 'tp')
                 ->join('tp.profile', 'p')
-                ->where('p.userId = :userId')
-                ->andWhere('tp.team = :team')
+                ->where('p.user = :user')
+                ->andWhere('tp.school = :school')
                 ->andWhere('tp.deletedAt IS NULL')
-                ->setParameter('userId', $user->getId())
-                ->setParameter('team', $team)
+                ->setParameter('user', $user)
+                ->setParameter('school', $school)
                 ->setMaxResults(1)
                 ->getQuery()
                 ->getOneOrNullResult();
 
-            if ($teamProfile !== null) {
-                $teamProfileSeason = $this->em->getRepository(TeamProfileSeason::class)
+            if ($schoolProfile !== null) {
+                $schoolProfileSeason = $this->em->getRepository(SchoolProfileSeason::class)
                     ->findOneBy([
-                        'teamProfileId' => $teamProfile->getId(),
+                        'schoolProfileId' => $schoolProfile->getId(),
                         'seasonId'      => $season->getId(),
                     ]);
             }
         }
 
         return $this->render($template, [
-            'team'               => $team,
+            'school'               => $school,
             'season'             => $season,
             'events'             => $events,
             'packages'           => $packages,
-            'teamProfile'        => $teamProfile,
-            'teamProfileSeason'  => $teamProfileSeason,
+            'schoolProfile'        => $schoolProfile,
+            'schoolProfileSeason'  => $schoolProfileSeason,
         ]);
     }
 
     /**
      * Resolves the season to display:
      * 1. If ?seasonId is provided, use it.
-     * 2. Otherwise use the team's currentSeasonId.
+     * 2. Otherwise use the school's currentSeasonId.
      * 3. If that season is past, fall back to the next open (future) season.
      */
-    private function resolveSeason(Team $team, ?string $seasonId): ?Season
+    private function resolveSeason(School $school, ?string $seasonId): ?Season
     {
         if ($seasonId !== null) {
             return $this->em->getRepository(Season::class)->find($seasonId);
         }
 
-        $currentSeasonId = $team->getCurrentSeasonId();
+        $currentSeasonId = $school->getCurrentSeasonId();
 
         if ($currentSeasonId !== null) {
             /** @var Season|null $season */
@@ -144,12 +144,12 @@ class ShopController extends AbstractController
                     $nextSeason = $this->em->createQueryBuilder()
                         ->select('s')
                         ->from(Season::class, 's')
-                        ->where('s.teamId = :teamId')
+                        ->where('s.schoolId = :schoolId')
                         ->andWhere('s.startAt > :now')
                         ->andWhere('s.deletedAt IS NULL')
                         ->orderBy('s.startAt', 'ASC')
                         ->setMaxResults(1)
-                        ->setParameter('teamId', $team->getId())
+                        ->setParameter('schoolId', $school->getId())
                         ->setParameter('now', $now)
                         ->getQuery()
                         ->getOneOrNullResult();
@@ -161,15 +161,15 @@ class ShopController extends AbstractController
             }
         }
 
-        // No current season configured: return the most recent non-deleted season for the team.
+        // No current season configured: return the most recent non-deleted season for the school.
         return $this->em->createQueryBuilder()
             ->select('s')
             ->from(Season::class, 's')
-            ->where('s.teamId = :teamId')
+            ->where('s.schoolId = :schoolId')
             ->andWhere('s.deletedAt IS NULL')
             ->orderBy('s.startAt', 'DESC')
             ->setMaxResults(1)
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->getQuery()
             ->getOneOrNullResult();
     }

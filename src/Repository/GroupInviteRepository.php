@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\GroupInvite;
-use App\Entity\Team;
+use App\Entity\School;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -27,13 +27,13 @@ class GroupInviteRepository extends ServiceEntityRepository
     /**
      * @return GroupInvite[]
      */
-    public function findPendingByTeam(Team $team): array
+    public function findPendingBySchool(School $school): array
     {
         return $this->createQueryBuilder('gi')
-            ->where('gi.team = :team')
+            ->where('gi.school = :school')
             ->andWhere("gi.status = 'pending'")
             ->orderBy('gi.createdAt', 'DESC')
-            ->setParameter('team', $team)
+            ->setParameter('school', $school)
             ->getQuery()
             ->getResult();
     }

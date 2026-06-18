@@ -104,7 +104,7 @@ class PaymentScheduleService
         foreach ($scheduleEntries as $entry) {
             $schedule = new PaymentSchedule();
             $schedule->setOrderId($order->getId());
-            $schedule->setTeamId($order->getTeamId());
+            $schedule->setSchoolId($order->getSchoolId());
             $schedule->setProfileId($order->getProfileId());
             $schedule->setAmount($entry['amount']);
             $schedule->setDueAt($entry['dueAt']);

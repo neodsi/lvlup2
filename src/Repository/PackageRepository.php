@@ -6,7 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Package;
 use App\Entity\Season;
-use App\Entity\Team;
+use App\Entity\School;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -23,14 +23,14 @@ class PackageRepository extends ServiceEntityRepository
     /**
      * @return Package[]
      */
-    public function findByTeamAndSeason(Team $team, Season $season): array
+    public function findBySchoolAndSeason(School $school, Season $season): array
     {
         return $this->createQueryBuilder('p')
-            ->where('p.team = :team')
+            ->where('p.school = :school')
             ->andWhere('p.season = :season')
             ->andWhere('p.deletedAt IS NULL')
             ->orderBy('p.name', 'ASC')
-            ->setParameter('team', $team)
+            ->setParameter('school', $school)
             ->setParameter('season', $season)
             ->getQuery()
             ->getResult();

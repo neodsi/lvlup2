@@ -6,13 +6,13 @@ namespace App\Entity;
 
 use App\Enum\FeePaidBy;
 use App\Enum\StripeAccountStatus;
-use App\Enum\TeamStatus;
+use App\Enum\SchoolStatus;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'teams')]
-class Team
+#[ORM\Table(name: 'schools')]
+class School
 {
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36)]
@@ -24,8 +24,8 @@ class Team
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $type = null;
 
-    #[ORM\Column(type: 'string', enumType: TeamStatus::class, options: ['default' => 'waiting'])]
-    private TeamStatus $status = TeamStatus::Waiting;
+    #[ORM\Column(type: 'string', enumType: SchoolStatus::class, options: ['default' => 'waiting'])]
+    private SchoolStatus $status = SchoolStatus::Waiting;
 
     #[ORM\Column(type: 'string', length: 3, options: ['default' => 'EUR'])]
     private string $currency = 'EUR';
@@ -165,12 +165,12 @@ class Team
         return $this;
     }
 
-    public function getStatus(): TeamStatus
+    public function getStatus(): SchoolStatus
     {
         return $this->status;
     }
 
-    public function setStatus(TeamStatus $status): static
+    public function setStatus(SchoolStatus $status): static
     {
         $this->status = $status;
 

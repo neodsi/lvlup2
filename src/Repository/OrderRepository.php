@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Order;
-use App\Entity\TeamProfile;
+use App\Entity\SchoolProfile;
 use App\Entity\Season;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -23,14 +23,14 @@ class OrderRepository extends ServiceEntityRepository
     /**
      * @return Order[]
      */
-    public function findByTeamProfileAndSeason(TeamProfile $teamProfile, Season $season): array
+    public function findBySchoolProfileAndSeason(SchoolProfile $schoolProfile, Season $season): array
     {
         return $this->createQueryBuilder('o')
-            ->where('o.teamProfile = :teamProfile')
+            ->where('o.schoolProfile = :schoolProfile')
             ->andWhere('o.season = :season')
             ->andWhere('o.deletedAt IS NULL')
             ->orderBy('o.createdAt', 'DESC')
-            ->setParameter('teamProfile', $teamProfile)
+            ->setParameter('schoolProfile', $schoolProfile)
             ->setParameter('season', $season)
             ->getQuery()
             ->getResult();

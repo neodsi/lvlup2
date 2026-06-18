@@ -1,9 +1,9 @@
-﻿{% extends 'layout/school.html.twig' %}
+{% extends 'layout/school.html.twig' %}
 
 {% block title %}Gala — {{ season.name }}{% endblock %}
 
 {% block breadcrumb %}
-<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ team.name }}</a>
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -40,7 +40,7 @@
                         {% for participation in participations %}
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-6 py-4">
-                                    <span class="text-sm font-mono text-gray-600">{{ participation.teamProfileId|slice(0, 8) }}…</span>
+                                    <span class="text-sm font-mono text-gray-600">{{ participation.schoolProfileId|slice(0, 8) }}…</span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="text-sm font-mono text-gray-400">{{ participation.eventId|slice(0, 8) }}…</span>

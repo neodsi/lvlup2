@@ -4,25 +4,25 @@ declare(strict_types=1);
 
 namespace App\Security\Voter;
 
-use App\Entity\Team;
-use App\Entity\TeamProfile;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
-use App\Security\TeamRoleHierarchy;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
+use App\Security\SchoolRoleHierarchy;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
  * Permissions:
- *   members:view             – team_teacher+
- *   members:create           – team_admin+
- *   members:update           – team_admin+
- *   members:delete           – team_admin+
- *   members:export_csv       – team_admin+
- *   team_profiles:export_csv – team_admin+
+ *   members:view             – teacher+
+ *   members:create           – admin+
+ *   members:update           – admin+
+ *   members:delete           – admin+
+ *   members:export_csv       – admin+
+ *   school_profiles:export_csv – admin+
  *
- * Subject: Team (team-scoped actions) or TeamProfile (member-scoped actions).
+ * Subject: School (school-scoped actions) or SchoolProfile (member-scoped actions).
  */
 final class MemberVoter extends Voter
 {
@@ -31,7 +31,7 @@ final class MemberVoter extends Voter
     public const UPDATE             = 'members:update';
     public const DELETE             = 'members:delete';
     public const EXPORT_CSV         = 'members:export_csv';
-    public const TEAM_PROFILES_EXPORT_CSV = 'team_profiles:export_csv';
+    public const SCHOOL_PROFILES_EXPORT_CSV = 'school_profiles:export_csv';
 
     private const SUPPORTED_ATTRIBUTES = [
         self::VIEW,
@@ -39,11 +39,11 @@ final class MemberVoter extends Voter
         self::UPDATE,
         self::DELETE,
         self::EXPORT_CSV,
-        self::TEAM_PROFILES_EXPORT_CSV,
+        self::SCHOOL_PROFILES_EXPORT_CSV,
     ];
 
     public function __construct(
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
     ) {
     }
 
@@ -53,7 +53,7 @@ final class MemberVoter extends Voter
             return false;
         }
 
-        return $subject instanceof Team || $subject instanceof TeamProfile;
+        return $subject instanceof School || $subject instanceof SchoolProfile;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -64,37 +64,37 @@ final class MemberVoter extends Voter
             return false;
         }
 
-        $teamId = match (true) {
-            $subject instanceof Team        => $subject->getId(),
-            $subject instanceof TeamProfile => $subject->getTeam()?->getId(),
+        $schoolId = match (true) {
+            $subject instanceof School        => $subject->getId(),
+            $subject instanceof SchoolProfile => $subject->getSchool()?->getId(),
             default                         => null,
         };
 
-        if ($teamId === null) {
+        if ($schoolId === null) {
             return false;
         }
 
-        $teamRole = $this->resolveTeamRole($user, $teamId);
+        $schoolRole = $this->resolveSchoolRole($user, $schoolId);
 
-        if ($teamRole === null) {
+        if ($schoolRole === null) {
             return false;
         }
 
         return match ($attribute) {
-            self::VIEW                    => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamTeacher),
-            self::CREATE                  => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
-            self::UPDATE                  => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
-            self::DELETE                  => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
-            self::EXPORT_CSV              => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
-            self::TEAM_PROFILES_EXPORT_CSV => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
+            self::VIEW                    => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Teacher),
+            self::CREATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::UPDATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::DELETE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::EXPORT_CSV              => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
+            self::SCHOOL_PROFILES_EXPORT_CSV => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
             default                       => false,
         };
     }
 
-    private function resolveTeamRole(User $user, string $teamId): ?TeamRole
+    private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $teamId);
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
 
-        return $teamProfile?->getRole();
+        return $schoolProfile?->getRole();
     }
 }

@@ -6,7 +6,7 @@ namespace App\Repository;
 
 use App\Entity\AgeGroup;
 use App\Entity\Season;
-use App\Entity\Team;
+use App\Entity\School;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -23,14 +23,14 @@ class AgeGroupRepository extends ServiceEntityRepository
     /**
      * @return AgeGroup[]
      */
-    public function findByTeamAndSeason(Team $team, Season $season): array
+    public function findBySchoolAndSeason(School $school, Season $season): array
     {
         return $this->createQueryBuilder('ag')
-            ->where('ag.team = :team')
+            ->where('ag.school = :school')
             ->andWhere('ag.season = :season')
             ->andWhere('ag.deletedAt IS NULL')
             ->orderBy('ag.name', 'ASC')
-            ->setParameter('team', $team)
+            ->setParameter('school', $school)
             ->setParameter('season', $season)
             ->getQuery()
             ->getResult();

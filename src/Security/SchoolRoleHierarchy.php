@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Security;
 
-use App\Enum\TeamRole;
+use App\Enum\SchoolRole;
 
-final class TeamRoleHierarchy
+final class SchoolRoleHierarchy
 {
     private static function weights(): array
     {
         return [
-            TeamRole::TeamStudent->value => 1,
-            TeamRole::TeamTeacher->value => 2,
-            TeamRole::TeamAdmin->value   => 3,
-            TeamRole::TeamOwner->value   => 4,
+            SchoolRole::Student->value => 1,
+            SchoolRole::Teacher->value => 2,
+            SchoolRole::Admin->value   => 3,
+            SchoolRole::Owner->value   => 4,
         ];
     }
 
@@ -22,7 +22,7 @@ final class TeamRoleHierarchy
      * Returns true when $userRole satisfies the $requiredRole level.
      * Hierarchy: owner > admin > teacher > student.
      */
-    public static function isGranted(TeamRole $userRole, TeamRole $requiredRole): bool
+    public static function isGranted(SchoolRole $userRole, SchoolRole $requiredRole): bool
     {
         $weights = self::weights();
         return ($weights[$userRole->value] ?? 0) >= ($weights[$requiredRole->value] ?? 0);

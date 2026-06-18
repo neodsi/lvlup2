@@ -7,7 +7,7 @@ namespace App\Service\Event;
 use App\Entity\Event;
 use App\Entity\EventOccurence;
 use App\Entity\Season;
-use App\Entity\Team;
+use App\Entity\School;
 use App\Enum\EventType;
 use Doctrine\ORM\EntityManagerInterface;
 use Recurr\Rule;
@@ -21,10 +21,10 @@ class EventService
     ) {
     }
 
-    public function createEvent(Team $team, Season $season, array $data): Event
+    public function createEvent(School $school, Season $season, array $data): Event
     {
         $event = new Event();
-        $event->setTeamId($team->getId());
+        $event->setSchoolId($school->getId());
         $event->setSeasonId($season->getId());
         $event->setName($data['name']);
         $event->setType($data['type'] instanceof EventType ? $data['type'] : EventType::from($data['type']));
@@ -156,7 +156,7 @@ class EventService
 
                 $occurrence = new EventOccurence();
                 $occurrence->setEventId($event->getId());
-                $occurrence->setTeamId($event->getTeamId());
+                $occurrence->setSchoolId($event->getSchoolId());
                 $occurrence->setOccurenceAt($occurAt);
                 $this->em->persist($occurrence);
             }

@@ -6,19 +6,19 @@ namespace App\Controller\School;
 
 use App\Entity\Event;
 use App\Entity\Season;
-use App\Entity\TeamHomeKpiDaily;
-use App\Entity\TeamProfile;
-use App\Entity\TeamProfilePackage;
-use App\Entity\TeamProfileSeason;
+use App\Entity\SchoolHomeKpiDaily;
+use App\Entity\SchoolProfile;
+use App\Entity\SchoolProfilePackage;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\Order;
 use App\Entity\PaymentSchedule;
-use App\Entity\TeamProfileGalaParticipation;
+use App\Entity\SchoolProfileGalaParticipation;
 use App\Entity\User;
 use App\Enum\EventType;
-use App\Enum\TeamRole;
-use App\Security\Voter\TeamVoter;
+use App\Enum\SchoolRole;
+use App\Security\Voter\SchoolVoter;
 use App\Service\Event\EventService;
-use App\Service\TeamContextService;
+use App\Service\SchoolContextService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +31,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class SchoolController extends AbstractController
 {
     public function __construct(
-        private readonly TeamContextService $teamContext,
+        private readonly SchoolContextService $schoolContext,
         private readonly EntityManagerInterface $em,
     ) {
     }
@@ -47,53 +47,53 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
             return $this->redirectToRoute('app_home');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $kpis = $this->em->getRepository(TeamHomeKpiDaily::class)->findBy(
-            ['teamId' => $team->getId()],
+        $kpis = $this->em->getRepository(SchoolHomeKpiDaily::class)->findBy(
+            ['schoolId' => $school->getId()],
             ['date' => 'DESC'],
             30,
         );
 
-        $countMembers = fn(TeamRole $role) => (int) $this->em->createQueryBuilder()
+        $countMembers = fn(SchoolRole $role) => (int) $this->em->createQueryBuilder()
             ->select('COUNT(tp.id)')
-            ->from(TeamProfile::class, 'tp')
-            ->where('tp.team = :team')
+            ->from(SchoolProfile::class, 'tp')
+            ->where('tp.school = :school')
             ->andWhere('tp.role = :role')
             ->andWhere('tp.deletedAt IS NULL')
-            ->setParameter('team', $team)
+            ->setParameter('school', $school)
             ->setParameter('role', $role)
             ->getQuery()->getSingleScalarResult();
 
         $countOrders = (int) $this->em->createQueryBuilder()
             ->select('COUNT(o.id)')
             ->from(Order::class, 'o')
-            ->where('o.teamId = :teamId')
-            ->setParameter('teamId', $team->getId())
+            ->where('o.schoolId = :schoolId')
+            ->setParameter('schoolId', $school->getId())
             ->getQuery()->getSingleScalarResult();
 
-        $currentSeasonId = $team->getCurrentSeasonId();
+        $currentSeasonId = $school->getCurrentSeasonId();
         $countCours = $currentSeasonId ? (int) $this->em->createQueryBuilder()
             ->select('COUNT(e.id)')
             ->from(Event::class, 'e')
-            ->where('e.teamId = :teamId')
+            ->where('e.schoolId = :schoolId')
             ->andWhere('e.seasonId = :seasonId')
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $currentSeasonId)
             ->getQuery()->getSingleScalarResult() : 0;
 
         return $this->render('school/home.html.twig', [
-            'team'         => $team,
+            'school'         => $school,
             'kpis'         => $kpis,
-            'countStudents' => $countMembers(TeamRole::TeamStudent),
-            'countTeachers' => $countMembers(TeamRole::TeamTeacher),
-            'countAdmins'   => $countMembers(TeamRole::TeamAdmin),
+            'countStudents' => $countMembers(SchoolRole::Student),
+            'countTeachers' => $countMembers(SchoolRole::Teacher),
+            'countAdmins'   => $countMembers(SchoolRole::Admin),
             'countOrders'   => $countOrders,
             'countCours'    => $countCours,
         ]);
@@ -104,23 +104,23 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::UPDATE, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
         if ($request->isMethod('POST')) {
-            $team->setName((string) $request->request->get('name', $team->getName()));
-            $team->setType($request->request->get('type'));
-            $team->setInvoicePrefix($request->request->get('invoicePrefix'));
-            $team->setInvoiceAddress($request->request->get('invoiceAddress'));
+            $school->setName((string) $request->request->get('name', $school->getName()));
+            $school->setType($request->request->get('type'));
+            $school->setInvoicePrefix($request->request->get('invoicePrefix'));
+            $school->setInvoiceAddress($request->request->get('invoiceAddress'));
 
             $nbStart = $request->request->get('invoiceNumberingStart');
             if ($nbStart !== null) {
-                $team->setInvoiceNumberingStart((int) $nbStart);
+                $school->setInvoiceNumberingStart((int) $nbStart);
             }
 
             $this->em->flush();
@@ -129,7 +129,7 @@ final class SchoolController extends AbstractController
             return $this->redirectToRoute('school_edit');
         }
 
-        return $this->render('school/edit.html.twig', ['team' => $team]);
+        return $this->render('school/edit.html.twig', ['school' => $school]);
     }
 
     #[Route('/events', name: 'school_events', methods: ['GET'])]
@@ -137,16 +137,16 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $season = $team->getCurrentSeasonId()
-            ? $this->em->getRepository(Season::class)->find($team->getCurrentSeasonId())
+        $season = $school->getCurrentSeasonId()
+            ? $this->em->getRepository(Season::class)->find($school->getCurrentSeasonId())
             : null;
 
         $events = $season
@@ -154,7 +154,7 @@ final class SchoolController extends AbstractController
             : [];
 
         return $this->render('school/events.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
             'events' => $events,
         ]);
@@ -165,27 +165,27 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $team = $this->teamContext->getCurrentTeam();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
         $packages = $this->em->createQueryBuilder()
             ->select('tpp')
-            ->from(TeamProfilePackage::class, 'tpp')
-            ->where('tpp.teamId = :teamId')
+            ->from(SchoolProfilePackage::class, 'tpp')
+            ->where('tpp.schoolId = :schoolId')
             ->andWhere('tpp.type = :type')
             ->andWhere('tpp.deletedAt IS NULL')
-            ->setParameter('teamId', $team->getId())
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('type', 'a_la_carte')
             ->getQuery()
             ->getResult();
 
         return $this->render('school/fast_count.html.twig', [
-            'team'     => $team,
+            'school'     => $school,
             'packages' => $packages,
         ]);
     }
@@ -195,14 +195,14 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $team        = $this->teamContext->getCurrentTeam();
-        $teamProfile = $this->teamContext->getCurrentTeamProfile($user);
+        $school        = $this->schoolContext->getCurrentSchool();
+        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
-        if ($team === null || $teamProfile === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $schoolProfile === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
         $type = EventType::tryFrom($event_type);
 
@@ -211,10 +211,10 @@ final class SchoolController extends AbstractController
             ->from(\App\Entity\EventOccurenceProfile::class, 'eop')
             ->join(\App\Entity\EventOccurence::class, 'eo', 'WITH', 'eo.id = eop.occurenceId')
             ->join(\App\Entity\Event::class, 'e', 'WITH', 'e.id = eo.eventId')
-            ->where('eop.teamProfileId = :tpId')
-            ->andWhere('e.teamId = :teamId')
-            ->setParameter('tpId', $teamProfile->getId())
-            ->setParameter('teamId', $team->getId())
+            ->where('eop.schoolProfileId = :tpId')
+            ->andWhere('e.schoolId = :schoolId')
+            ->setParameter('tpId', $schoolProfile->getId())
+            ->setParameter('schoolId', $school->getId())
             ->orderBy('eo.occurenceAt', 'ASC');
 
         if ($type !== null) {
@@ -224,7 +224,7 @@ final class SchoolController extends AbstractController
         $occurrences = $qb->getQuery()->getResult();
 
         return $this->render('school/my/courses.html.twig', [
-            'team'        => $team,
+            'school'        => $school,
             'event_type'  => $event_type,
             'occurrences' => $occurrences,
         ]);
@@ -235,21 +235,21 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $team        = $this->teamContext->getCurrentTeam();
-        $teamProfile = $this->teamContext->getCurrentTeamProfile($user);
+        $school        = $this->schoolContext->getCurrentSchool();
+        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
-        if ($team === null || $teamProfile === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $schoolProfile === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $participations = $this->em->getRepository(TeamProfileGalaParticipation::class)->findBy([
-            'teamProfileId' => $teamProfile->getId(),
+        $participations = $this->em->getRepository(SchoolProfileGalaParticipation::class)->findBy([
+            'schoolProfileId' => $schoolProfile->getId(),
         ]);
 
         return $this->render('school/my/gala.html.twig', [
-            'team'           => $team,
+            'school'           => $school,
             'participations' => $participations,
         ]);
     }
@@ -259,22 +259,22 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $team        = $this->teamContext->getCurrentTeam();
-        $teamProfile = $this->teamContext->getCurrentTeamProfile($user);
+        $school        = $this->schoolContext->getCurrentSchool();
+        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
-        if ($team === null || $teamProfile === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $schoolProfile === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $packages = $this->em->getRepository(TeamProfilePackage::class)->findBy([
-            'teamProfileId' => $teamProfile->getId(),
-            'teamId'        => $team->getId(),
+        $packages = $this->em->getRepository(SchoolProfilePackage::class)->findBy([
+            'schoolProfileId' => $schoolProfile->getId(),
+            'schoolId'        => $school->getId(),
         ]);
 
         return $this->render('school/my/packages.html.twig', [
-            'team'     => $team,
+            'school'     => $school,
             'packages' => $packages,
         ]);
     }
@@ -284,29 +284,29 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $team        = $this->teamContext->getCurrentTeam();
-        $teamProfile = $this->teamContext->getCurrentTeamProfile($user);
+        $school        = $this->schoolContext->getCurrentSchool();
+        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
-        if ($team === null || $teamProfile === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $schoolProfile === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
         $schedules = $this->em->createQueryBuilder()
             ->select('ps')
             ->from(PaymentSchedule::class, 'ps')
             ->join(Order::class, 'o', 'WITH', 'o.id = ps.orderId')
-            ->where('o.teamProfileId = :tpId')
-            ->andWhere('ps.teamId = :teamId')
-            ->setParameter('tpId', $teamProfile->getId())
-            ->setParameter('teamId', $team->getId())
+            ->where('o.schoolProfileId = :tpId')
+            ->andWhere('ps.schoolId = :schoolId')
+            ->setParameter('tpId', $schoolProfile->getId())
+            ->setParameter('schoolId', $school->getId())
             ->orderBy('ps.dueAt', 'ASC')
             ->getQuery()
             ->getResult();
 
         return $this->render('school/my/payment_schedules.html.twig', [
-            'team'      => $team,
+            'school'      => $school,
             'schedules' => $schedules,
         ]);
     }
@@ -316,28 +316,28 @@ final class SchoolController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $team        = $this->teamContext->getCurrentTeam();
-        $teamProfile = $this->teamContext->getCurrentTeamProfile($user);
+        $school        = $this->schoolContext->getCurrentSchool();
+        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
-        if ($team === null || $teamProfile === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $schoolProfile === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        $this->denyAccessUnlessGranted(TeamVoter::VIEW, $team);
+        $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $seasonId        = $team->getCurrentSeasonId();
+        $seasonId        = $school->getCurrentSeasonId();
         $season          = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
-        $teamProfileSeason = $seasonId
-            ? $this->em->getRepository(TeamProfileSeason::class)->findOneBy([
-                'teamProfileId' => $teamProfile->getId(),
+        $schoolProfileSeason = $seasonId
+            ? $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                'schoolProfileId' => $schoolProfile->getId(),
                 'seasonId'      => $seasonId,
             ])
             : null;
 
         return $this->render('school/my/season.html.twig', [
-            'team'              => $team,
+            'school'              => $school,
             'season'            => $season,
-            'teamProfileSeason' => $teamProfileSeason,
+            'schoolProfileSeason' => $schoolProfileSeason,
         ]);
     }
 }

@@ -1,9 +1,9 @@
-{% extends (is_granted('ROLE_SCHOOL') or is_granted('ROLE_PREVIOUS_ADMIN')) ? 'layout/admin.html.twig' : 'layout/app.html.twig' %}
+{% extends 'layout/school.html.twig' %}
 
 {% block title %}Mon profil — LVL UP{% endblock %}
 
-{% block admin_content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+{% block school_content %}
+<div class="py-8">
 
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Mon profil</h1>

@@ -6,17 +6,17 @@ namespace App\Security\Voter;
 
 use App\Entity\Payment;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
-use App\Security\TeamRoleHierarchy;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
+use App\Security\SchoolRoleHierarchy;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
  * Permissions:
- *   payments:view   – any team member
- *   payments:create – any team member
- *   payments:refund – team_admin+ AND the payment belongs to their team
+ *   payments:view   – any school member
+ *   payments:create – any school member
+ *   payments:refund – admin+ AND the payment belongs to their school
  */
 final class PaymentVoter extends Voter
 {
@@ -31,7 +31,7 @@ final class PaymentVoter extends Voter
     ];
 
     public function __construct(
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
     ) {
     }
 
@@ -52,24 +52,24 @@ final class PaymentVoter extends Voter
         /** @var Payment $payment */
         $payment = $subject;
 
-        $teamRole = $this->resolveTeamRole($user, $payment->getTeamId());
+        $schoolRole = $this->resolveSchoolRole($user, $payment->getSchoolId());
 
-        if ($teamRole === null) {
+        if ($schoolRole === null) {
             return false;
         }
 
         return match ($attribute) {
             self::VIEW   => true,
             self::CREATE => true,
-            self::REFUND => TeamRoleHierarchy::isGranted($teamRole, TeamRole::TeamAdmin),
+            self::REFUND => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Admin),
             default      => false,
         };
     }
 
-    private function resolveTeamRole(User $user, string $teamId): ?TeamRole
+    private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($user, $teamId);
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
 
-        return $teamProfile?->getRole();
+        return $schoolProfile?->getRole();
     }
 }

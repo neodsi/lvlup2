@@ -15,13 +15,13 @@ use App\Entity\PaymentScheduleTemplate;
 use App\Entity\PriceModifier;
 use App\Entity\Room;
 use App\Entity\Season;
-use App\Entity\TeamProfileGalaParticipation;
+use App\Entity\SchoolProfileGalaParticipation;
 use App\Entity\User;
 use App\Security\Voter\EventVoter;
 use App\Security\Voter\SeasonVoter;
-use App\Security\Voter\TeamVoter;
+use App\Security\Voter\SchoolVoter;
 use App\Service\Event\EventService;
-use App\Service\TeamContextService;
+use App\Service\SchoolContextService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,7 +34,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class SeasonSettingsController extends AbstractController
 {
     public function __construct(
-        private readonly TeamContextService $teamContext,
+        private readonly SchoolContextService $schoolContext,
         private readonly EntityManagerInterface $em,
         private readonly EventService $eventService,
     ) {
@@ -48,20 +48,20 @@ final class SeasonSettingsController extends AbstractController
     {
         /** @var User $user */
         $user   = $this->getUser();
-        $team   = $this->teamContext->getCurrentTeam();
+        $school   = $this->schoolContext->getCurrentSchool();
         $season = $this->em->getRepository(Season::class)->find($id);
 
-        if ($team === null || $this->teamContext->getCurrentTeamProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a team member.');
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            throw $this->createAccessDeniedException('Not a school member.');
         }
 
-        if ($season === null || $season->getTeamId() !== $team->getId()) {
+        if ($season === null || $season->getSchoolId() !== $school->getId()) {
             throw $this->createNotFoundException('Season not found.');
         }
 
         $this->denyAccessUnlessGranted(SeasonVoter::UPDATE, $season);
 
-        return [$team, $season];
+        return [$school, $season];
     }
 
     // -------------------------------------------------------------------------
@@ -71,12 +71,12 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/lessons', name: 'school_season_lessons', methods: ['GET'])]
     public function lessons(string $id): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $lessons = $this->em->getRepository(Event::class)->findBy(['seasonId' => $season->getId()]);
 
         return $this->render('school/settings/season/lessons/list.html.twig', [
-            'team'    => $team,
+            'school'    => $school,
             'season'  => $season,
             'lessons' => $lessons,
         ]);
@@ -85,9 +85,9 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/lessons/create', name: 'school_season_lessons_create', methods: ['POST'])]
     public function lessonCreate(string $id, Request $request): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
-        $event = $this->eventService->createEvent($team, $season, $request->request->all());
+        $event = $this->eventService->createEvent($school, $season, $request->request->all());
 
         $this->denyAccessUnlessGranted(EventVoter::CREATE, $event);
         $this->addFlash('success', 'Cours créé.');
@@ -98,7 +98,7 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/lessons/{lessonId}', name: 'school_season_lesson_detail', methods: ['GET'])]
     public function lessonDetail(string $id, string $lessonId): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $lesson = $this->em->getRepository(Event::class)->find($lessonId);
 
@@ -107,7 +107,7 @@ final class SeasonSettingsController extends AbstractController
         }
 
         return $this->render('school/settings/season/lessons/detail.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
             'lesson' => $lesson,
         ]);
@@ -116,7 +116,7 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/lessons/{lessonId}/edit', name: 'school_season_lesson_edit', methods: ['GET', 'POST'])]
     public function lessonEdit(string $id, string $lessonId, Request $request): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $lesson = $this->em->getRepository(Event::class)->find($lessonId);
 
@@ -132,7 +132,7 @@ final class SeasonSettingsController extends AbstractController
         }
 
         return $this->render('school/settings/season/lessons/edit.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
             'lesson' => $lesson,
         ]);
@@ -141,7 +141,7 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/lessons/{lessonId}/occurences', name: 'school_season_lesson_occurences', methods: ['GET'])]
     public function lessonOccurences(string $id, string $lessonId): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $lesson = $this->em->getRepository(Event::class)->find($lessonId);
 
@@ -155,7 +155,7 @@ final class SeasonSettingsController extends AbstractController
         );
 
         return $this->render('school/settings/season/lessons/occurences.html.twig', [
-            'team'      => $team,
+            'school'      => $school,
             'season'    => $season,
             'lesson'    => $lesson,
             'occurences' => $occurences,
@@ -165,7 +165,7 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/lessons/{lessonId}/participants', name: 'school_season_lesson_participants', methods: ['GET'])]
     public function lessonParticipants(string $id, string $lessonId): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $lesson = $this->em->getRepository(Event::class)->find($lessonId);
 
@@ -183,7 +183,7 @@ final class SeasonSettingsController extends AbstractController
             ->getResult();
 
         return $this->render('school/settings/season/lessons/participants.html.twig', [
-            'team'         => $team,
+            'school'         => $school,
             'season'       => $season,
             'lesson'       => $lesson,
             'participants' => $participants,
@@ -197,12 +197,12 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/packages', name: 'school_season_packages', methods: ['GET'])]
     public function packages(string $id): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $packages = $this->em->getRepository(Package::class)->findBy(['seasonId' => $season->getId()]);
 
         return $this->render('school/settings/season/packages.html.twig', [
-            'team'     => $team,
+            'school'     => $school,
             'season'   => $season,
             'packages' => $packages,
         ]);
@@ -215,14 +215,14 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/payment-schedulers', name: 'school_season_payment_schedulers', methods: ['GET'])]
     public function paymentSchedulers(string $id): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $templates = $this->em->getRepository(PaymentScheduleTemplate::class)->findBy([
             'seasonId' => $season->getId(),
         ]);
 
         return $this->render('school/settings/season/payment_schedulers.html.twig', [
-            'team'      => $team,
+            'school'      => $school,
             'season'    => $season,
             'templates' => $templates,
         ]);
@@ -235,14 +235,14 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/price-modifiers', name: 'school_season_price_modifiers', methods: ['GET'])]
     public function priceModifiers(string $id): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $modifiers = $this->em->getRepository(PriceModifier::class)->findBy([
             'seasonId' => $season->getId(),
         ]);
 
         return $this->render('school/settings/season/price_modifiers.html.twig', [
-            'team'      => $team,
+            'school'      => $school,
             'season'    => $season,
             'modifiers' => $modifiers,
         ]);
@@ -255,11 +255,11 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/rooms', name: 'school_season_rooms', methods: ['GET', 'POST'])]
     public function rooms(string $id, Request $request): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         if ($request->isMethod('POST')) {
             $room = new Room();
-            $room->setTeamId($team->getId());
+            $room->setSchoolId($school->getId());
             $room->setSeasonId($season->getId());
             $room->setName((string) $request->request->get('name'));
             $this->em->persist($room);
@@ -272,7 +272,7 @@ final class SeasonSettingsController extends AbstractController
         $rooms = $this->em->getRepository(Room::class)->findBy(['seasonId' => $season->getId()]);
 
         return $this->render('school/settings/season/rooms.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
             'rooms'  => $rooms,
         ]);
@@ -285,11 +285,11 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/levels', name: 'school_season_levels', methods: ['GET', 'POST'])]
     public function levels(string $id, Request $request): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         if ($request->isMethod('POST')) {
             $level = new Level();
-            $level->setTeamId($team->getId());
+            $level->setSchoolId($school->getId());
             $level->setSeasonId($season->getId());
             $level->setName((string) $request->request->get('name'));
             $this->em->persist($level);
@@ -302,7 +302,7 @@ final class SeasonSettingsController extends AbstractController
         $levels = $this->em->getRepository(Level::class)->findBy(['seasonId' => $season->getId()]);
 
         return $this->render('school/settings/season/levels.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
             'levels' => $levels,
         ]);
@@ -315,11 +315,11 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/age-groups', name: 'school_season_age_groups', methods: ['GET', 'POST'])]
     public function ageGroups(string $id, Request $request): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         if ($request->isMethod('POST')) {
             $group = new AgeGroup();
-            $group->setTeamId($team->getId());
+            $group->setSchoolId($school->getId());
             $group->setSeasonId($season->getId());
             $group->setName((string) $request->request->get('name'));
             $group->setMinAge($request->request->get('minAge') !== null ? (int) $request->request->get('minAge') : null);
@@ -334,7 +334,7 @@ final class SeasonSettingsController extends AbstractController
         $groups = $this->em->getRepository(AgeGroup::class)->findBy(['seasonId' => $season->getId()]);
 
         return $this->render('school/settings/season/age_groups.html.twig', [
-            'team'   => $team,
+            'school'   => $school,
             'season' => $season,
             'groups' => $groups,
         ]);
@@ -347,11 +347,11 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/addresses', name: 'school_season_addresses', methods: ['GET', 'POST'])]
     public function addresses(string $id, Request $request): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         if ($request->isMethod('POST')) {
             $address = new Address();
-            $address->setTeamId($team->getId());
+            $address->setSchoolId($school->getId());
             $address->setSeasonId($season->getId());
             $address->setName((string) $request->request->get('name'));
             $address->setAddress((string) $request->request->get('address'));
@@ -365,7 +365,7 @@ final class SeasonSettingsController extends AbstractController
         $addresses = $this->em->getRepository(Address::class)->findBy(['seasonId' => $season->getId()]);
 
         return $this->render('school/settings/season/addresses.html.twig', [
-            'team'      => $team,
+            'school'      => $school,
             'season'    => $season,
             'addresses' => $addresses,
         ]);
@@ -378,15 +378,15 @@ final class SeasonSettingsController extends AbstractController
     #[Route('/gala', name: 'school_season_gala', methods: ['GET'])]
     public function gala(string $id): Response
     {
-        [$team, $season] = $this->loadSeasonForAdmin($id);
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
-        $participations = $this->em->getRepository(TeamProfileGalaParticipation::class)->findBy([
+        $participations = $this->em->getRepository(SchoolProfileGalaParticipation::class)->findBy([
             'seasonId' => $season->getId(),
-            'teamId'   => $team->getId(),
+            'schoolId'   => $school->getId(),
         ]);
 
         return $this->render('school/settings/season/gala.html.twig', [
-            'team'           => $team,
+            'school'           => $school,
             'season'         => $season,
             'participations' => $participations,
         ]);

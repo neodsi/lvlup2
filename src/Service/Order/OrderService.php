@@ -10,9 +10,9 @@ use App\Entity\OrderItem;
 use App\Entity\Package;
 use App\Entity\Profile;
 use App\Entity\Season;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
-use App\Entity\TeamProfilePackage;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
+use App\Entity\SchoolProfilePackage;
 use App\Entity\User;
 use App\Enum\IntentStatus;
 use App\Enum\OrderItemType;
@@ -20,8 +20,8 @@ use App\Enum\OrderStatus;
 use App\Enum\PackageStatus;
 use App\Enum\PackageType;
 use App\Enum\PaymentMethod;
-use App\Enum\TeamRole;
-use App\Repository\TeamProfileRepository;
+use App\Enum\SchoolRole;
+use App\Repository\SchoolProfileRepository;
 use App\Service\Email\EmailService;
 use App\Service\Payment\PaymentScheduleService;
 use App\Service\Payment\StripeService;
@@ -32,7 +32,7 @@ class OrderService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly TeamProfileRepository $teamProfileRepository,
+        private readonly SchoolProfileRepository $schoolProfileRepository,
         private readonly PaymentScheduleService $paymentScheduleService,
         private readonly StripeService $stripeService,
         private readonly EmailService $emailService,
@@ -56,24 +56,24 @@ class OrderService
      */
     public function createOrder(array $data, User $currentUser): array
     {
-        $teamId    = $data['teamId']    ?? throw new \InvalidArgumentException('teamId is required.');
+        $schoolId    = $data['schoolId']    ?? throw new \InvalidArgumentException('schoolId is required.');
         $profileId = $data['profileId'] ?? throw new \InvalidArgumentException('profileId is required.');
         $seasonId  = $data['seasonId']  ?? throw new \InvalidArgumentException('seasonId is required.');
 
-        // a. Verify the currentUser is a member of the team
-        $currentUserTeamProfile = $this->teamProfileRepository->findOneByUserAndTeam($currentUser, $teamId);
+        // a. Verify the currentUser is a member of the school
+        $currentUserSchoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($currentUser, $schoolId);
 
-        if ($currentUserTeamProfile === null) {
-            throw new AccessDeniedException('You are not a member of this team.');
+        if ($currentUserSchoolProfile === null) {
+            throw new AccessDeniedException('You are not a member of this school.');
         }
 
-        // b. If creating for someone else, require orders:update permission (team_admin+)
+        // b. If creating for someone else, require orders:update permission (admin+)
         $isSelf = $this->isOrderForCurrentUser($currentUser, $profileId);
 
         if (!$isSelf) {
-            $hasUpdatePermission = \in_array($currentUserTeamProfile->getRole(), [
-                TeamRole::TeamAdmin,
-                TeamRole::TeamOwner,
+            $hasUpdatePermission = \in_array($currentUserSchoolProfile->getRole(), [
+                SchoolRole::Admin,
+                SchoolRole::Owner,
             ], true);
 
             if (!$hasUpdatePermission) {
@@ -82,8 +82,8 @@ class OrderService
         }
 
         // Load required entities
-        $team    = $this->em->getRepository(Team::class)->find($teamId)
-                   ?? throw new \InvalidArgumentException(sprintf('Team "%s" not found.', $teamId));
+        $school    = $this->em->getRepository(School::class)->find($schoolId)
+                   ?? throw new \InvalidArgumentException(sprintf('School "%s" not found.', $schoolId));
         $season  = $this->em->getRepository(Season::class)->find($seasonId)
                    ?? throw new \InvalidArgumentException(sprintf('Season "%s" not found.', $seasonId));
         $profile = $this->em->getRepository(Profile::class)->find($profileId)
@@ -93,11 +93,11 @@ class OrderService
         $packageType = $data['packageType'] ?? null;
 
         if ($packageType === PackageType::SubscriptionOneYear->value) {
-            $this->assertNoActiveAnnualSubscription($profileId, $teamId, $seasonId);
+            $this->assertNoActiveAnnualSubscription($profileId, $schoolId, $seasonId);
         }
 
-        // d. Create or find TeamProfile for the profile
-        $teamProfile = $this->findOrCreateTeamProfile($team, $profile);
+        // d. Create or find SchoolProfile for the profile
+        $schoolProfile = $this->findOrCreateSchoolProfile($school, $profile);
 
         // Determine payment method
         $paymentMethod = $this->resolvePaymentMethod($data);
@@ -120,11 +120,11 @@ class OrderService
 
         // h. Online (Stripe) path
         if ($isOnline) {
-            return $this->handleOnlineOrder($data, $team, $profile, $teamProfile, $season, $scheduleEntries, $paymentMethod);
+            return $this->handleOnlineOrder($data, $school, $profile, $schoolProfile, $season, $scheduleEntries, $paymentMethod);
         }
 
         // i. Onsite path
-        return $this->handleOnsiteOrder($data, $team, $profile, $teamProfile, $season, $scheduleEntries, $scheduleTemplate, $paymentMethod);
+        return $this->handleOnsiteOrder($data, $school, $profile, $schoolProfile, $season, $scheduleEntries, $scheduleTemplate, $paymentMethod);
     }
 
     // -------------------------------------------------------------------------
@@ -133,7 +133,7 @@ class OrderService
 
     /**
      * Update an existing order.
-     * Requires orders:update permission (team_admin+).
+     * Requires orders:update permission (admin+).
      *
      * @throws AccessDeniedException
      * @throws \InvalidArgumentException
@@ -144,15 +144,15 @@ class OrderService
                  ?? throw new \InvalidArgumentException(sprintf('Order "%s" not found.', $orderId));
 
         // Verify orders:update permission
-        $teamProfile = $this->teamProfileRepository->findOneByUserAndTeam($currentUser, $order->getTeamId());
+        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($currentUser, $order->getSchoolId());
 
-        if ($teamProfile === null) {
-            throw new AccessDeniedException('You are not a member of this team.');
+        if ($schoolProfile === null) {
+            throw new AccessDeniedException('You are not a member of this school.');
         }
 
-        $hasUpdatePermission = \in_array($teamProfile->getRole(), [
-            TeamRole::TeamAdmin,
-            TeamRole::TeamOwner,
+        $hasUpdatePermission = \in_array($schoolProfile->getRole(), [
+            SchoolRole::Admin,
+            SchoolRole::Owner,
         ], true);
 
         if (!$hasUpdatePermission) {
@@ -222,18 +222,18 @@ class OrderService
         $this->em->wrapInTransaction(function () use ($intentOrder, $stripeSessionId, &$order): void {
             $payload = $intentOrder->getPayload();
 
-            $team    = $this->em->getRepository(Team::class)->find($payload['teamId'])
-                       ?? throw new \InvalidArgumentException('Team not found in intent payload.');
+            $school    = $this->em->getRepository(School::class)->find($payload['schoolId'])
+                       ?? throw new \InvalidArgumentException('School not found in intent payload.');
             $season  = $this->em->getRepository(Season::class)->find($payload['seasonId'])
                        ?? throw new \InvalidArgumentException('Season not found in intent payload.');
             $profile = $this->em->getRepository(Profile::class)->find($payload['profileId'])
                        ?? throw new \InvalidArgumentException('Profile not found in intent payload.');
 
-            // Create or find TeamProfile
-            $teamProfile = $this->findOrCreateTeamProfile($team, $profile);
+            // Create or find SchoolProfile
+            $schoolProfile = $this->findOrCreateSchoolProfile($school, $profile);
 
             // Create Order
-            $order = $this->buildOrder($payload, $teamProfile);
+            $order = $this->buildOrder($payload, $schoolProfile);
             $this->em->persist($order);
             $this->em->flush();
 
@@ -257,8 +257,8 @@ class OrderService
             $paymentMethod = $this->resolvePaymentMethod($payload);
             $this->paymentScheduleService->createSchedules($order, $scheduleEntries, $paymentMethod->value);
 
-            // Create TeamProfilePackages
-            $this->createTeamProfilePackages($order, $payload, $teamProfile);
+            // Create SchoolProfilePackages
+            $this->createSchoolProfilePackages($order, $payload, $schoolProfile);
 
             // Mark intent as completed
             $intentOrder->setStatus(IntentStatus::Completed);
@@ -292,9 +292,9 @@ class OrderService
      */
     private function handleOnlineOrder(
         array $data,
-        Team $team,
+        School $school,
         Profile $profile,
-        TeamProfile $teamProfile,
+        SchoolProfile $schoolProfile,
         Season $season,
         array $scheduleEntries,
         PaymentMethod $paymentMethod,
@@ -305,9 +305,9 @@ class OrderService
 
         $this->em->wrapInTransaction(function () use (
             $data,
-            $team,
+            $school,
             $profile,
-            $teamProfile,
+            $schoolProfile,
             $season,
             $scheduleEntries,
             $paymentMethod,
@@ -315,7 +315,7 @@ class OrderService
             &$stripeUrl,
         ): void {
             // f. Create IntentOrder
-            $intentOrder = $this->buildIntentOrder($data, $team, $season, $profile);
+            $intentOrder = $this->buildIntentOrder($data, $school, $season, $profile);
             $this->em->persist($intentOrder);
             $this->em->flush();
 
@@ -324,8 +324,8 @@ class OrderService
 
             // h. Create Stripe checkout session
             $stripeUrl = $this->stripeService->createCheckoutSession(
-                $this->buildOrderForStripe($data, $teamProfile),
-                $team,
+                $this->buildOrderForStripe($data, $schoolProfile),
+                $school,
                 $profile,
                 $scheduleEntries,
                 $isAutoPay,
@@ -344,9 +344,9 @@ class OrderService
      */
     private function handleOnsiteOrder(
         array $data,
-        Team $team,
+        School $school,
         Profile $profile,
-        TeamProfile $teamProfile,
+        SchoolProfile $schoolProfile,
         Season $season,
         array $scheduleEntries,
         ?\App\Entity\PaymentScheduleTemplate $scheduleTemplate,
@@ -356,9 +356,9 @@ class OrderService
 
         $this->em->wrapInTransaction(function () use (
             $data,
-            $team,
+            $school,
             $profile,
-            $teamProfile,
+            $schoolProfile,
             $season,
             $scheduleEntries,
             $scheduleTemplate,
@@ -366,7 +366,7 @@ class OrderService
             &$order,
         ): void {
             // i. Create Order
-            $order = $this->buildOrder($data, $teamProfile);
+            $order = $this->buildOrder($data, $schoolProfile);
             $this->em->persist($order);
             $this->em->flush();
 
@@ -376,8 +376,8 @@ class OrderService
             // Create PaymentSchedules
             $this->paymentScheduleService->createSchedules($order, $scheduleEntries, $paymentMethod->value);
 
-            // Create TeamProfilePackages
-            $this->createTeamProfilePackages($order, $data, $teamProfile);
+            // Create SchoolProfilePackages
+            $this->createSchoolProfilePackages($order, $data, $schoolProfile);
         });
 
         return ['orderId' => $order->getId()];
@@ -387,13 +387,13 @@ class OrderService
     // Private helpers – builders
     // -------------------------------------------------------------------------
 
-    private function buildOrder(array $data, TeamProfile $teamProfile): Order
+    private function buildOrder(array $data, SchoolProfile $schoolProfile): Order
     {
         $order = new Order();
-        $order->setTeamId($data['teamId']);
+        $order->setSchoolId($data['schoolId']);
         $order->setSeasonId($data['seasonId']);
         $order->setProfileId($data['profileId']);
-        $order->setTeamProfileId($teamProfile->getId());
+        $order->setSchoolProfileId($schoolProfile->getId());
         $order->setTotalAmount((int) ($data['totalAmount'] ?? 0));
         $order->setStatus(OrderStatus::Pending);
 
@@ -404,10 +404,10 @@ class OrderService
         return $order;
     }
 
-    private function buildIntentOrder(array $data, Team $team, Season $season, Profile $profile): IntentOrder
+    private function buildIntentOrder(array $data, School $school, Season $season, Profile $profile): IntentOrder
     {
         $intentOrder = new IntentOrder();
-        $intentOrder->setTeamId($team->getId());
+        $intentOrder->setSchoolId($school->getId());
         $intentOrder->setSeasonId($season->getId());
         $intentOrder->setProfileId($profile->getId());
         $intentOrder->setStatus(IntentStatus::Pending);
@@ -420,13 +420,13 @@ class OrderService
      * Build a temporary Order object used only to pass to StripeService::createCheckoutSession.
      * It is not persisted.
      */
-    private function buildOrderForStripe(array $data, TeamProfile $teamProfile): Order
+    private function buildOrderForStripe(array $data, SchoolProfile $schoolProfile): Order
     {
         $order = new Order();
-        $order->setTeamId($data['teamId']);
+        $order->setSchoolId($data['schoolId']);
         $order->setSeasonId($data['seasonId']);
         $order->setProfileId($data['profileId']);
-        $order->setTeamProfileId($teamProfile->getId());
+        $order->setSchoolProfileId($schoolProfile->getId());
         $order->setTotalAmount((int) ($data['totalAmount'] ?? 0));
         $order->setStatus(OrderStatus::Pending);
 
@@ -465,7 +465,7 @@ class OrderService
         return $item;
     }
 
-    private function createTeamProfilePackages(Order $order, array $data, TeamProfile $teamProfile): void
+    private function createSchoolProfilePackages(Order $order, array $data, SchoolProfile $schoolProfile): void
     {
         $items = $data['items'] ?? [];
 
@@ -490,10 +490,10 @@ class OrderService
                 continue;
             }
 
-            $tpp = new TeamProfilePackage();
-            $tpp->setTeamProfileId($teamProfile->getId());
+            $tpp = new SchoolProfilePackage();
+            $tpp->setSchoolProfileId($schoolProfile->getId());
             $tpp->setPackageId($package->getId());
-            $tpp->setTeamId($order->getTeamId());
+            $tpp->setSchoolId($order->getSchoolId());
             $tpp->setSeasonId($order->getSeasonId());
             $tpp->setOrderId($order->getId());
             $tpp->setType($package->getType()->value);
@@ -516,10 +516,10 @@ class OrderService
         }
     }
 
-    private function findOrCreateTeamProfile(Team $team, Profile $profile): TeamProfile
+    private function findOrCreateSchoolProfile(School $school, Profile $profile): SchoolProfile
     {
-        $existing = $this->em->getRepository(TeamProfile::class)->findOneBy([
-            'team'    => $team,
+        $existing = $this->em->getRepository(SchoolProfile::class)->findOneBy([
+            'school'    => $school,
             'profile' => $profile,
         ]);
 
@@ -527,45 +527,45 @@ class OrderService
             return $existing;
         }
 
-        $teamProfile = new TeamProfile();
-        $teamProfile->setTeam($team);
-        $teamProfile->setProfile($profile);
-        $teamProfile->setRole(TeamRole::TeamStudent);
+        $schoolProfile = new SchoolProfile();
+        $schoolProfile->setSchool($school);
+        $schoolProfile->setProfile($profile);
+        $schoolProfile->setRole(SchoolRole::Student);
 
-        $this->em->persist($teamProfile);
+        $this->em->persist($schoolProfile);
         $this->em->flush();
 
-        return $teamProfile;
+        return $schoolProfile;
     }
 
     // -------------------------------------------------------------------------
     // Private helpers – validation
     // -------------------------------------------------------------------------
 
-    private function assertNoActiveAnnualSubscription(string $profileId, string $teamId, string $seasonId): void
+    private function assertNoActiveAnnualSubscription(string $profileId, string $schoolId, string $seasonId): void
     {
-        $existing = $this->em->getRepository(TeamProfilePackage::class)->findOneBy([
-            'teamId'   => $teamId,
+        $existing = $this->em->getRepository(SchoolProfilePackage::class)->findOneBy([
+            'schoolId'   => $schoolId,
             'seasonId' => $seasonId,
             'type'     => PackageType::SubscriptionOneYear->value,
             'status'   => PackageStatus::Active,
         ]);
 
-        // Also check by profile via teamProfile
+        // Also check by profile via schoolProfile
         if ($existing === null) {
             $existing = $this->em->createQueryBuilder()
                 ->select('tpp')
-                ->from(TeamProfilePackage::class, 'tpp')
-                ->join(TeamProfile::class, 'tp', 'WITH', 'tp.id = tpp.teamProfileId')
+                ->from(SchoolProfilePackage::class, 'tpp')
+                ->join(SchoolProfile::class, 'tp', 'WITH', 'tp.id = tpp.schoolProfileId')
                 ->join(Profile::class, 'p', 'WITH', 'p.id = tp.profile')
                 ->where('p.id = :profileId')
-                ->andWhere('tpp.teamId = :teamId')
+                ->andWhere('tpp.schoolId = :schoolId')
                 ->andWhere('tpp.seasonId = :seasonId')
                 ->andWhere('tpp.type = :type')
                 ->andWhere('tpp.status = :status')
                 ->andWhere('tpp.deletedAt IS NULL')
                 ->setParameter('profileId', $profileId)
-                ->setParameter('teamId', $teamId)
+                ->setParameter('schoolId', $schoolId)
                 ->setParameter('seasonId', $seasonId)
                 ->setParameter('type', PackageType::SubscriptionOneYear->value)
                 ->setParameter('status', PackageStatus::Active->value)

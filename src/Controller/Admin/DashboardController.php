@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Entity\Profile;
-use App\Entity\Team;
-use App\Entity\TeamProfile;
+use App\Entity\School;
+use App\Entity\SchoolProfile;
 use App\Entity\User;
-use App\Enum\TeamRole;
-use App\Enum\TeamStatus;
+use App\Enum\SchoolRole;
+use App\Enum\SchoolStatus;
+use App\Form\Admin\SchoolStatusType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,9 +29,9 @@ class DashboardController extends AbstractController
     #[IsGranted('ROLE_SCHOOL')]
     public function dashboard(): Response
     {
-        $totalTeams = $this->em->createQueryBuilder()
+        $totalSchools = $this->em->createQueryBuilder()
             ->select('COUNT(t.id)')
-            ->from(Team::class, 't')
+            ->from(School::class, 't')
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -41,17 +42,17 @@ class DashboardController extends AbstractController
             ->getQuery()
             ->getSingleScalarResult();
 
-        $teamsByStatus = $this->em->createQueryBuilder()
+        $schoolsByStatus = $this->em->createQueryBuilder()
             ->select('t.status, COUNT(t.id) AS cnt')
-            ->from(Team::class, 't')
+            ->from(School::class, 't')
             ->groupBy('t.status')
             ->getQuery()
             ->getResult();
 
         return $this->render('admin/dashboard.html.twig', [
-            'totalTeams'     => (int) $totalTeams,
+            'totalSchools'     => (int) $totalSchools,
             'totalUsers'     => (int) $totalUsers,
-            'teamsByStatus'  => $teamsByStatus,
+            'schoolsByStatus'  => $schoolsByStatus,
         ]);
     }
 
@@ -63,23 +64,23 @@ class DashboardController extends AbstractController
 
         $qb = $this->em->createQueryBuilder()
             ->select('t')
-            ->from(Team::class, 't')
+            ->from(School::class, 't')
             ->orderBy('t.createdAt', 'DESC');
 
         if ($statusFilter !== null && $statusFilter !== '') {
-            $status = TeamStatus::tryFrom($statusFilter);
+            $status = SchoolStatus::tryFrom($statusFilter);
             if ($status !== null) {
                 $qb->where('t.status = :status')
                    ->setParameter('status', $status);
             }
         }
 
-        $teams = $qb->getQuery()->getResult();
+        $schools = $qb->getQuery()->getResult();
 
         return $this->render('admin/schools/index.html.twig', [
-            'teams'        => $teams,
+            'schools'        => $schools,
             'statusFilter' => $statusFilter,
-            'statuses'     => TeamStatus::cases(),
+            'statuses'     => SchoolStatus::cases(),
         ]);
     }
 
@@ -87,18 +88,20 @@ class DashboardController extends AbstractController
     #[IsGranted('ROLE_SCHOOL')]
     public function schoolDetail(string $id, Request $request): Response
     {
-        $team = $this->em->getRepository(Team::class)->find($id);
+        $school = $this->em->getRepository(School::class)->find($id);
 
-        if ($team === null) {
+        if ($school === null) {
             throw $this->createNotFoundException('School not found.');
         }
 
-        if ($request->isMethod('POST')) {
-            $newStatus = $request->request->get('status');
-            $status = TeamStatus::tryFrom((string) $newStatus);
+        $form = $this->createForm(SchoolStatusType::class, ['status' => $school->getStatus()->value]);
+        $form->handleRequest($request);
 
-            if ($status !== null) {
-                $team->setStatus($status);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $newStatus = SchoolStatus::tryFrom((string) $form->get('status')->getData());
+
+            if ($newStatus !== null) {
+                $school->setStatus($newStatus);
                 $this->em->flush();
 
                 $this->addFlash('success', 'Statut mis à jour.');
@@ -111,21 +114,22 @@ class DashboardController extends AbstractController
 
         $ownerProfile = $this->em->createQueryBuilder()
             ->select('tp, p, u')
-            ->from(TeamProfile::class, 'tp')
+            ->from(SchoolProfile::class, 'tp')
             ->join('tp.profile', 'p')
             ->join('p.user', 'u')
-            ->where('tp.team = :team')
+            ->where('tp.school = :school')
             ->andWhere('tp.role = :role')
             ->andWhere('tp.deletedAt IS NULL')
-            ->setParameter('team', $team)
-            ->setParameter('role', TeamRole::TeamOwner)
+            ->setParameter('school', $school)
+            ->setParameter('role', SchoolRole::Owner)
             ->getQuery()
             ->getOneOrNullResult();
 
         return $this->render('admin/schools/detail.html.twig', [
-            'team'          => $team,
-            'statuses'      => TeamStatus::cases(),
+            'school'          => $school,
+            'statuses'      => SchoolStatus::cases(),
             'ownerProfile'  => $ownerProfile,
+            'form'          => $form->createView(),
         ]);
     }
 
@@ -182,10 +186,10 @@ class DashboardController extends AbstractController
             return $this->redirectToRoute('app_admin_users');
         }
 
-        // Collect all TeamProfile IDs linked to this user's profiles
-        $teamProfileIds = array_column(
+        // Collect all SchoolProfile IDs linked to this user's profiles
+        $schoolProfileIds = array_column(
             $this->em->createQuery(
-                'SELECT tp.id FROM App\Entity\TeamProfile tp
+                'SELECT tp.id FROM App\Entity\SchoolProfile tp
                  JOIN tp.profile p
                  WHERE p.user = :user'
             )
@@ -194,17 +198,17 @@ class DashboardController extends AbstractController
             'id'
         );
 
-        if (!empty($teamProfileIds)) {
-            $this->em->createQuery('DELETE FROM App\Entity\TeamProfileSeason tps WHERE tps.teamProfileId IN (:ids)')
-                ->setParameter('ids', $teamProfileIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\TeamProfilePackage tpp WHERE tpp.teamProfileId IN (:ids)')
-                ->setParameter('ids', $teamProfileIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.teamProfileId IN (:ids)')
-                ->setParameter('ids', $teamProfileIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\TeamProfileGalaParticipation tpgp WHERE tpgp.teamProfileId IN (:ids)')
-                ->setParameter('ids', $teamProfileIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\TeamProfile tp WHERE tp.id IN (:ids)')
-                ->setParameter('ids', $teamProfileIds)->execute();
+        if (!empty($schoolProfileIds)) {
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileSeason tps WHERE tps.schoolProfileId IN (:ids)')
+                ->setParameter('ids', $schoolProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfilePackage tpp WHERE tpp.schoolProfileId IN (:ids)')
+                ->setParameter('ids', $schoolProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.schoolProfileId IN (:ids)')
+                ->setParameter('ids', $schoolProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileGalaParticipation tpgp WHERE tpgp.schoolProfileId IN (:ids)')
+                ->setParameter('ids', $schoolProfileIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfile tp WHERE tp.id IN (:ids)')
+                ->setParameter('ids', $schoolProfileIds)->execute();
         }
 
         // Detach profiles from the user then remove the user row

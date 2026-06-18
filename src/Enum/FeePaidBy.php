@@ -7,5 +7,5 @@ namespace App\Enum;
 enum FeePaidBy: string
 {
     case Student = 'student';
-    case Team    = 'team';
+    case School    = 'school';
 }

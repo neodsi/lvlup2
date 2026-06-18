@@ -1,31 +1,17 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/school.html.twig' %}
 
 {% block title %}Ma participation au Gala{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
+{% block school_content %}
 
     <header class="bg-white border-b border-gray-200">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="py-4">
             <h1 class="text-2xl font-bold text-gray-900">Participation au Gala</h1>
             <p class="text-sm text-gray-500 mt-0.5">Indiquez si vous souhaitez participer au gala de fin de saison.</p>
         </div>
     </header>
 
-    {# Flash messages #}
-    {% for label, messages in app.flashes %}
-        {% for message in messages %}
-            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                <div class="rounded-lg px-4 py-3 text-sm font-medium
-                    {% if label == 'success' %}bg-green-50 text-green-800 border border-green-200
-                    {% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
-                    {{ message }}
-                </div>
-            </div>
-        {% endfor %}
-    {% endfor %}
-
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="py-8">
 
         {% if gala_events is not defined or gala_events is empty %}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-16 text-center">
@@ -145,5 +131,4 @@
             </div>
         {% endif %}
     </div>
-</div>
-{% endblock %}
+

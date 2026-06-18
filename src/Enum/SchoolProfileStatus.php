@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
-enum TeamProfileStatus: string
+enum SchoolProfileStatus: string
 {
     case Waiting = 'waiting';
     case Accepted = 'accepted';
