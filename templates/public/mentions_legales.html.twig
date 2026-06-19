@@ -1,0 +1,61 @@
+{% extends 'layout/public.html.twig' %}
+
+{% block title %}Mentions légales — LVL UP{% endblock %}
+
+{% block public_content %}
+<div class="min-h-screen bg-white">
+    <main class="max-w-4xl mx-auto px-6 pt-24 pb-16">
+        <h1 class="text-3xl font-bold text-gray-900 mb-10">Mentions légales</h1>
+
+        <div class="prose prose-gray max-w-none space-y-8 text-gray-700 leading-relaxed">
+
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">1 – Édition du site</h2>
+                <p>En vertu de l'article 6 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, il est précisé aux utilisateurs du site internet l'identité des différents intervenants dans le cadre de sa réalisation et de son suivi.</p>
+                <ul class="mt-3 space-y-1 list-none pl-0">
+                    <li><strong>Propriétaire du site :</strong> SAS LVL UP – <a href="mailto:contact@ulvlup.com" class="text-indigo-600 hover:underline">contact@ulvlup.com</a></li>
+                    <li><strong>Adresse :</strong> 3 Rue de Genève, 69006 Lyon</li>
+                    <li><strong>SIREN :</strong> 941 459 638 – RCS Lyon – Capital social : 1 500 €</li>
+                    <li><strong>Directeurs de la publication :</strong> Anne-Charlotte Barthelon, Assia Benhmida, Martin Géraud</li>
+                    <li><strong>Hébergeur :</strong> AWS</li>
+                    <li><strong>Délégué à la protection des données :</strong> Anne-Charlotte Barthelon – <a href="mailto:contact@ulvlup.com" class="text-indigo-600 hover:underline">contact@ulvlup.com</a></li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">2 – Propriété intellectuelle et contrefaçons</h2>
+                <p>SAS LVL UP est propriétaire des droits de propriété intellectuelle et détient les droits d'usage sur tous les éléments accessibles sur le site internet, notamment les textes, images, graphismes, logos, vidéos, architecture, icônes et sons.</p>
+                <p class="mt-2">Toute reproduction, représentation, modification, publication, adaptation de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite, sauf autorisation écrite préalable de SAS LVL UP.</p>
+                <p class="mt-2">Toute exploitation non autorisée du site ou de l'un quelconque des éléments qu'il contient sera considérée comme constitutive d'une contrefaçon et poursuivie conformément aux dispositions des articles L.335-2 et suivants du Code de Propriété Intellectuelle.</p>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">3 – Limitations de responsabilité</h2>
+                <p>SAS LVL UP ne pourra être tenu pour responsable des dommages directs et indirects causés au matériel de l'utilisateur lors de l'accès au site.</p>
+                <p class="mt-2">SAS LVL UP décline toute responsabilité quant à l'utilisation qui pourrait être faite des informations et contenus présents sur le site.</p>
+                <p class="mt-2">SAS LVL UP s'engage à sécuriser au mieux le site, cependant sa responsabilité ne pourra être mise en cause si des données indésirables sont importées et installées sur son site à son insu.</p>
+                <p class="mt-2">Des espaces interactifs sont à la disposition des utilisateurs. SAS LVL UP se réserve le droit de supprimer, sans mise en demeure préalable, tout contenu déposé dans cet espace qui contreviendrait à la législation applicable en France, en particulier aux dispositions relatives à la protection des données. Le cas échéant, SAS LVL UP se réserve également la possibilité de mettre en cause la responsabilité civile et/ou pénale de l'utilisateur.</p>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">4 – CNIL et gestion des données personnelles</h2>
+                <p>Conformément aux dispositions de la loi 78-17 du 6 janvier 1978 modifiée, l'utilisateur du site dispose d'un droit d'accès, de modification et de suppression des informations collectées. Pour exercer ce droit, envoyez un message à notre Délégué à la Protection des Données : Anne-Charlotte Barthelon – <a href="mailto:contact@ulvlup.com" class="text-indigo-600 hover:underline">contact@ulvlup.com</a>.</p>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">5 – Liens hypertextes et cookies</h2>
+                <p>Le site contient des liens hypertextes vers d'autres sites et dégage toute responsabilité à propos de ces liens externes ou des liens créés par d'autres sites vers le présent site.</p>
+                <p class="mt-2">La navigation sur le site est susceptible de provoquer l'installation de cookie(s) sur l'ordinateur de l'utilisateur. Un « cookie » est un fichier de petite taille qui enregistre des informations relatives à la navigation d'un utilisateur sur un site.</p>
+                <p class="mt-2">Vous avez la possibilité d'accepter ou de refuser les cookies en modifiant les paramètres de votre navigateur. Aucun cookie ne sera déposé sans votre consentement. Les cookies sont enregistrés pour une durée maximale de 12 mois.</p>
+                <p class="mt-2">Pour plus d'informations, consultez notre <a href="{{ path('app_cookies') }}" class="text-indigo-600 hover:underline">politique de cookies</a>.</p>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">6 – Droit applicable et attribution de juridiction</h2>
+                <p>Tout litige en relation avec l'utilisation du site est soumis au droit français. En dehors des cas où la loi ne le permet pas, il est fait attribution exclusive de juridiction aux tribunaux compétents de Lyon.</p>
+            </section>
+
+        </div>
+    </main>
+</div>
+{% endblock %}

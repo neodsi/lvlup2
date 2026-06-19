@@ -38,17 +38,13 @@ security:
         ROLE_SCHOOL: [ROLE_TEACHER]
         ROLE_ADMIN: [ROLE_SCHOOL]
     access_control:
-        - { path: ^/login, roles: PUBLIC_ACCESS }
-        - { path: ^/signup, roles: PUBLIC_ACCESS }
-        - { path: ^/reset-password, roles: PUBLIC_ACCESS }
-        - { path: ^/update-password, roles: PUBLIC_ACCESS }
-        - { path: ^/auth/confirm, roles: PUBLIC_ACCESS }
-        - { path: ^/invitations, roles: PUBLIC_ACCESS }
-        - { path: ^/shop, roles: PUBLIC_ACCESS }
-        - { path: ^/iframes, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_SCHOOL }
-        - { path: ^/$, roles: PUBLIC_ACCESS }
-        - { path: ^/, roles: ROLE_USER }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/school, roles: ROLE_SCHOOL }
+        - { path: ^/teacher, roles: ROLE_TEACHER }
+        - { path: ^/student, roles: ROLE_STUDENT }
+        - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/home, roles: ROLE_USER }
+        - { path: ^/api/v1, roles: ROLE_USER }
 
 when@test:
     security:

@@ -2,7 +2,12 @@
 
 {% block title %}{{ school.name }}{% endblock %}
 
-{% block body %}
+{% block stylesheets %}
+{{ parent() }}
+<link rel="stylesheet" href="{{ asset('assets/app.css') }}">
+{% endblock %}
+
+{% block public_content %}
 <div class="shop">
 
     {# ── School header ── #}

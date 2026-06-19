@@ -72,7 +72,7 @@ class HomeController extends AbstractController
         ]);
     }
 
-    #[Route('/select-school/{id}', name: 'app_select_school')]
+    #[Route('/school/select/{id}', name: 'app_select_school')]
     #[IsGranted('ROLE_USER')]
     public function selectSchool(string $id, Request $request): Response
     {
@@ -103,20 +103,20 @@ class HomeController extends AbstractController
         return $this->redirectToRoute('school_home');
     }
 
-    #[Route('/no-school', name: 'app_no_school')]
+    #[Route('/school/no-school', name: 'app_no_school')]
     public function noSchool(): Response
     {
         return $this->render('app/no_school.html.twig');
     }
 
-    #[Route('/setup/you', name: 'app_setup_you')]
+    #[Route('/school/setup/you', name: 'app_setup_you')]
     #[IsGranted('ROLE_USER')]
     public function setupYou(): Response
     {
         return $this->render('app/setup/you.html.twig');
     }
 
-    #[Route('/setup/profile', name: 'app_setup_profile', methods: ['GET', 'POST'])]
+    #[Route('/school/setup/profile', name: 'app_setup_profile', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_USER')]
     public function setupProfile(Request $request): Response
     {
@@ -169,7 +169,7 @@ class HomeController extends AbstractController
         ]);
     }
 
-    #[Route('/setup/create-school', name: 'app_create_school', methods: ['GET', 'POST'])]
+    #[Route('/school/setup/create-school', name: 'app_create_school', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_USER')]
     public function createSchool(Request $request): Response
     {
