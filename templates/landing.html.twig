@@ -3,210 +3,406 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LVL UP — Gestion d'écoles de danse</title>
+    <title>Logiciel de gestion pour école de danse | LVL UP</title>
+    <meta name="description" content="Gérez votre école de danse facilement avec LVL UP : inscriptions en ligne, paiements automatisés et planning centralisé. Démo gratuite.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        brand: { DEFAULT: '#4f46e5', dark: '#3730a3', light: '#818cf8' }
+                        brand: { DEFAULT: '#9136F2', dark: '#7a1fd4' }
                     }
                 }
             }
         }
     </script>
+    <style>
+        .btn-demo { background: linear-gradient(98deg, #F704FE 24%, #9136F2 100%); }
+        .text-brand { color: #9136F2; }
+        .bg-brand { background-color: #9136F2; }
+        details[open] summary .icon-plus { display: none; }
+        details:not([open]) summary .icon-minus { display: none; }
+    </style>
 </head>
 <body class="bg-white text-gray-900 antialiased">
 
 {# ── Navbar ── #}
-<header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a href="/" class="flex items-center gap-2">
-            <img src="/assets/logo_lvl_up.png" alt="LVL UP" class="h-9 w-auto">
-            <span class="text-2xl font-bold text-indigo-600 tracking-tight">LVL UP</span>
+<header class="fixed top-0 inset-x-0 z-50 bg-black/90 backdrop-blur-sm">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+        <a href="/">
+            <img src="/assets/logo_lvl_up_white.png" alt="LVL UP" class="h-10 w-auto">
         </a>
-        <nav class="flex items-center gap-4">
-            <a href="{{ path('app_login') }}"
-               class="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
-                Se connecter
+        <div class="flex items-center gap-4">
+            <a href="https://fr.linkedin.com/company/ulvlup" target="_blank" rel="noopener" class="text-white/60 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 25 25" fill="none"><path d="M0 1.79084C0 0.802052 0.821894 0 1.8358 0H23.1642C24.1781 0 25 0.802055 25 1.79084V23.2092C25 24.1983 24.1781 25 23.1642 25L1.8358 25C0.821894 25 0 24.1983 0 23.2092V1.79084ZM7.72403 20.9276V9.63869H3.97181V20.9276H7.72403ZM5.8479 8.09738C7.15638 8.09738 7.9708 7.23052 7.9708 6.14719C7.94641 5.03948 7.15638 4.19667 5.87273 4.19667C4.5892 4.19667 3.75 5.03948 3.75 6.14719C3.75 7.23052 4.56424 8.09738 5.82345 8.09738H5.8479ZM13.5178 20.9276V14.6234C13.5178 14.286 13.5422 13.9489 13.6413 13.7078C13.9125 13.0336 14.5299 12.3355 15.5665 12.3355C16.9242 12.3355 17.4674 13.3707 17.4674 14.8883V20.9276H21.2192V14.4547C21.2192 10.9872 19.3681 9.37379 16.8994 9.37379C14.909 9.37379 14.0166 10.4678 13.5179 11.237V9.63869H9.76573C9.81497 10.698 9.76573 20.9276 9.76573 20.9276H13.5178Z" fill="white"/></svg>
             </a>
-            <a href="{{ path('app_signup') }}"
-               class="text-sm font-semibold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                Commencer gratuitement
+            <a href="https://www.instagram.com/lvlup_dance/" target="_blank" rel="noopener" class="text-white/60 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 25 25" fill="none"><path d="M12.5012 0C9.10634 0 8.6803 0.0148441 7.34695 0.0755218C6.01621 0.13646 5.10787 0.347139 4.31307 0.656257C3.49092 0.975531 2.79352 1.40262 2.09872 2.09768C1.4034 2.79248 0.976312 3.48988 0.655996 4.31176C0.346097 5.10682 0.135158 6.01543 0.0752611 7.34565C0.015625 8.67899 0 9.1053 0 12.5001C0 15.895 0.0151046 16.3197 0.0755219 17.653C0.13672 18.9838 0.3474 19.8921 0.656257 20.6869C0.975792 21.5091 1.40288 22.2065 2.09794 22.9013C2.79248 23.5966 3.48988 24.0247 4.3115 24.344C5.10682 24.6531 6.01543 24.8638 7.34591 24.9247C8.67926 24.9854 9.10504 25.0003 12.4996 25.0003C15.8947 25.0003 16.3194 24.9854 17.6528 24.9247C18.9835 24.8638 19.8929 24.6531 20.6882 24.344C21.5101 24.0247 22.2065 23.5966 22.901 22.9013C23.5963 22.2065 24.0234 21.5091 24.3437 20.6872C24.651 19.8921 24.862 18.9835 24.9245 17.6533C24.9844 16.32 25 15.895 25 12.5001C25 9.1053 24.9844 8.67925 24.9245 7.34591C24.862 6.01516 24.651 5.10682 24.3437 4.31202C24.0234 3.48988 23.5963 2.79248 22.901 2.09768C22.2057 1.40236 21.5104 0.97527 20.6875 0.656257C19.8906 0.347139 18.9817 0.13646 17.651 0.0755218C16.3176 0.0148441 15.8931 0 12.4973 0H12.5012ZM11.3798 2.25263C11.7126 2.25211 12.084 2.25263 12.5012 2.25263C15.8387 2.25263 16.2343 2.26461 17.5523 2.3245C18.771 2.38023 19.4325 2.58388 19.8731 2.75498C20.4565 2.98154 20.8724 3.25238 21.3096 3.68988C21.7471 4.12738 22.0179 4.54406 22.245 5.1274C22.4161 5.5675 22.62 6.22897 22.6755 7.44773C22.7354 8.76545 22.7484 9.16129 22.7484 12.4973C22.7484 15.8332 22.7354 16.2291 22.6755 17.5468C22.6198 18.7656 22.4161 19.427 22.245 19.8671C22.0185 20.4505 21.7471 20.8658 21.3096 21.3031C20.8721 21.7406 20.4567 22.0114 19.8731 22.238C19.433 22.4099 18.771 22.613 17.5523 22.6687C16.2345 22.7286 15.8387 22.7416 12.5012 22.7416C9.16338 22.7416 8.7678 22.7286 7.45008 22.6687C6.23132 22.6125 5.56985 22.4088 5.12896 22.2377C4.54562 22.0112 4.12895 21.7403 3.69144 21.3028C3.25394 20.8653 2.9831 20.4497 2.75602 19.8661C2.58492 19.426 2.38101 18.7645 2.32555 17.5457C2.26565 16.228 2.25367 15.8322 2.25367 12.4941C2.25367 9.15608 2.26565 8.76233 2.32555 7.44461C2.38127 6.22584 2.58492 5.56438 2.75602 5.12375C2.98258 4.54041 3.25394 4.12374 3.69144 3.68623C4.12895 3.24873 4.54562 2.97789 5.12896 2.75081C5.56959 2.57893 6.23132 2.37581 7.45008 2.31982C8.60321 2.26773 9.05009 2.25211 11.3798 2.2495V2.25263ZM19.1736 4.32817C18.3455 4.32817 17.6736 4.99927 17.6736 5.82766C17.6736 6.6558 18.3455 7.32768 19.1736 7.32768C20.0018 7.32768 20.6737 6.6558 20.6737 5.82766C20.6737 4.99953 20.0018 4.32765 19.1736 4.32765V4.32817ZM12.5012 6.08079C8.95608 6.08079 6.08183 8.95504 6.08183 12.5001C6.08183 16.0452 8.95608 18.9182 12.5012 18.9182C16.0463 18.9182 18.9195 16.0452 18.9195 12.5001C18.9195 8.95504 16.046 6.08079 12.5009 6.08079H12.5012ZM12.5012 8.33342C14.8022 8.33342 16.6679 10.1988 16.6679 12.5001C16.6679 14.8012 14.8022 16.6668 12.5012 16.6668C10.1998 16.6668 8.33446 14.8012 8.33446 12.5001C8.33446 10.1988 10.1998 8.33342 12.5012 8.33342Z" fill="white"/></svg>
             </a>
-        </nav>
+            <a href="{{ path('app_login') }}" class="text-sm font-medium text-white/70 hover:text-white transition hidden sm:inline">Se connecter</a>
+            <a href="https://calendly.com/lvlupdemo/30min" target="_blank" rel="noopener"
+               class="btn-demo text-white text-sm font-semibold px-4 py-2 rounded-lg">
+                Démo gratuite
+            </a>
+        </div>
     </div>
 </header>
 
 {# ── Hero ── #}
-<section class="pt-32 pb-20 px-6 bg-gradient-to-b from-indigo-50 to-white">
-    <div class="max-w-4xl mx-auto text-center">
-        <span class="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1 mb-6">
-            SaaS B2B • Gestion d'écoles de danse
-        </span>
-        <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
-            Gérez votre école de danse<br>
-            <span class="text-indigo-600">sans friction.</span>
-        </h1>
-        <p class="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
-            Inscriptions, forfaits, paiements échelonnés, planning des cours —
-            tout ce dont votre école a besoin, dans une seule application.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ path('app_signup') }}"
-               class="inline-flex items-center justify-center bg-indigo-600 text-white text-base font-semibold px-8 py-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
-                Créer mon école
-                <svg class="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-            </a>
-            <a href="{{ path('app_login') }}"
-               class="inline-flex items-center justify-center bg-white text-gray-700 text-base font-semibold px-8 py-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 transition-colors">
-                J'ai déjà un compte
+<section class="relative min-h-screen flex items-center pt-16 overflow-hidden" style="background-image:url('/assets/auth.jpg'); background-size:cover; background-position:center;">
+    <div class="absolute inset-0" style="background:linear-gradient(to right, rgba(15,10,40,0.1) 0%, rgba(15,10,40,0.5) 40%, rgba(15,10,40,0.88) 65%);"></div>
+    <div class="relative z-10 max-w-6xl mx-auto px-6 py-24 w-full flex justify-end">
+        <div class="max-w-xl">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
+                Gérez votre <br>école de danse<br>sans stress
+            </h1>
+            <p class="text-lg text-white/80 mb-10">
+                <strong class="text-white">Automatisez</strong> les inscriptions, les paiements et les plannings pour
+                <strong class="text-white">gagner plusieurs heures</strong> chaque semaine
+            </p>
+            <a href="#fonctions"
+               class="inline-flex items-center gap-2 btn-demo text-white font-semibold px-6 py-3 rounded-lg text-sm">
+                Découvrir les fonctionnalités
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </a>
         </div>
     </div>
 </section>
 
-{# ── Features ── #}
-<section class="py-20 px-6">
+{# ── Fonctionnalités ── #}
+<section id="fonctions" class="py-24 px-6 bg-white">
     <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-14">
-            <h2 class="text-3xl font-bold text-gray-900 mb-3">Tout ce qu'il faut pour piloter votre école</h2>
-            <p class="text-gray-500 text-lg">Conçu pour les gérants, utile pour les élèves.</p>
+
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                <span class="text-brand">LA plateforme</span> de gestion<br>des <span class="text-brand">écoles de danse</span>
+            </h2>
+            <p class="text-gray-500 text-lg">Pour gérer vos élèves, vos cours, vos évènements et vos paiements</p>
         </div>
-        <div class="grid md:grid-cols-3 gap-8">
 
-            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
-                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Gestion des membres</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">
-                    Invitations par email, profils multi-enfants, rôles (élève, professeur, admin), export CSV, fiches détaillées.
-                </p>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+
+            <div class="bg-gray-50 rounded-2xl p-6 flex flex-col gap-4">
+                <img src="/assets/ico_inscription.png" alt="" class="w-16 h-16">
+                <h3 class="text-base font-semibold text-gray-900">Gestion des inscriptions</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Les élèves s'inscrivent en toute autonomie.</p>
+                <details class="mt-auto">
+                    <summary class="cursor-pointer text-xs font-semibold text-brand flex items-center gap-1 select-none list-none">
+                        <span class="icon-plus">+ voir</span><span class="icon-minus">− réduire</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-gray-600 leading-relaxed space-y-2">
+                        <p><strong class="text-brand">Inscriptions simplifiées :</strong> en quelques clics, vos élèves s'inscrivent eux et leurs enfants, choisissent leur nombre d'échéances et règlent en ligne ou sur place.</p>
+                        <p><strong class="text-brand">Gestion des profils élèves :</strong> tout est centralisé et accessible en une seule plateforme.</p>
+                        <p><strong class="text-brand">Planning intelligent :</strong> les cours complets sont bloqués, les élèves ne peuvent pas s'inscrire à un cours inadapté à leur âge, et le forfait le plus adapté est appliqué automatiquement pour toute la famille.</p>
+                    </div>
+                </details>
             </div>
 
-            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
-                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Planning des cours</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">
-                    Cours récurrents avec règles rrule, gestion des présences, occurrences, annulations, galas et stages.
-                </p>
+            <div class="bg-gray-50 rounded-2xl p-6 flex flex-col gap-4">
+                <img src="/assets/ico_cours.png" alt="" class="w-16 h-16">
+                <h3 class="text-base font-semibold text-gray-900">Gestion des cours</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Donnez à vos professeurs un accès pour gérer efficacement leurs classes.</p>
+                <details class="mt-auto">
+                    <summary class="cursor-pointer text-xs font-semibold text-brand flex items-center gap-1 select-none list-none">
+                        <span class="icon-plus">+ voir</span><span class="icon-minus">− réduire</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-gray-600 leading-relaxed space-y-2">
+                        <p><strong class="text-brand">Suivi des présences :</strong> vos professeurs peuvent faire l'appel à chaque cours.</p>
+                        <p><strong class="text-brand">Partage de contenus :</strong> créez du lien avec vos élèves avec des vidéos, musiques et tutos.</p>
+                        <p><strong class="text-brand">Liste d'inscrits :</strong> visualisation en temps réel de tous les participants au cours, qu'ils soient réguliers ou à la carte.</p>
+                    </div>
+                </details>
             </div>
 
-            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
-                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Paiements en ligne</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">
-                    Stripe Connect par école, paiements échelonnés, prélèvements SEPA automatiques, factures PDF, remboursements.
-                </p>
+            <div class="bg-gray-50 rounded-2xl p-6 flex flex-col gap-4">
+                <img src="/assets/ico_paeiment.png" alt="" class="w-16 h-16">
+                <h3 class="text-base font-semibold text-gray-900">Gestion des paiements</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Vos paiements sont simplifiés, avec un suivi clair et des relances automatiques.</p>
+                <details class="mt-auto">
+                    <summary class="cursor-pointer text-xs font-semibold text-brand flex items-center gap-1 select-none list-none">
+                        <span class="icon-plus">+ voir</span><span class="icon-minus">− réduire</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-gray-600 leading-relaxed space-y-2">
+                        <p><strong class="text-brand">Paiements simplifiés :</strong> vos élèves peuvent régler en ligne sur une plateforme sécurisée ou sur place, avec les modes de paiement que vous avez choisis.</p>
+                        <p><strong class="text-brand">Suivi clair :</strong> consultez en un coup d'œil l'état des paiements de chaque élève, avec un tableau clair et toujours à jour.</p>
+                        <p><strong class="text-brand">Mails et relances automatiques :</strong> vos élèves reçoivent des mails de rappel avant la date et le jour J, et des relances en cas de retard.</p>
+                    </div>
+                </details>
             </div>
 
-            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
-                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Forfaits flexibles</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">
-                    Abonnements annuels, semestriels, cours à la carte, essais. Modificateurs de prix, remises par profil.
-                </p>
+            <div class="bg-gray-50 rounded-2xl p-6 flex flex-col gap-4">
+                <img src="/assets/ico_admin.png" alt="" class="w-16 h-16">
+                <h3 class="text-base font-semibold text-gray-900">Gestion administrative</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Gardez le contrôle sur votre école : suivez vos statistiques, communiquez facilement avec vos élèves et gérez tous vos événements.</p>
+                <details class="mt-auto">
+                    <summary class="cursor-pointer text-xs font-semibold text-brand flex items-center gap-1 select-none list-none">
+                        <span class="icon-plus">+ voir</span><span class="icon-minus">− réduire</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-gray-600 leading-relaxed space-y-2">
+                        <p><strong class="text-brand">Abonnements :</strong> tous les types d'abonnements pris en charge (mensuels, trimestriels, semestriels, annuels, à la carte et cours d'essai).</p>
+                        <p><strong class="text-brand">Statistiques :</strong> suivez l'évolution de vos cours, vos finances et la vie de votre école.</p>
+                        <p><strong class="text-brand">Messagerie intégrée :</strong> communiquez directement avec vos élèves et leur famille sans communiquer votre numéro personnel.</p>
+                        <p><strong class="text-brand">Gestion des événements :</strong> organisez et suivez tous vos stages, workshops, camps, etc.</p>
+                    </div>
+                </details>
             </div>
 
-            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
-                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Emails automatiques</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">
-                    Rappels de paiement à J-3, J0, J+3, J+10, J+15. Confirmations de commande. Invitations. Confirmation email.
-                </p>
-            </div>
+        </div>
 
-            <div class="group p-8 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 transition-colors">
-                    <svg class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Statistiques & KPIs</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">
-                    Tableau de bord par saison : membres inscrits, chiffre d'affaires, taux de paiement, répartition par forfait.
-                </p>
-            </div>
+        <div class="text-center">
+            <a href="https://calendly.com/lvlupdemo/30min" target="_blank" rel="noopener"
+               class="btn-demo inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-lg text-sm">
+                Demander une démo gratuite
+            </a>
+            <p class="mt-2 text-xs text-gray-400">45 minutes en visio – sans engagement</p>
+        </div>
 
+    </div>
+</section>
+
+{# ── Équipe ── #}
+<section class="py-24 px-6 bg-gray-950">
+    <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+
+        <div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                Imaginé par des <br><span class="text-brand">danseuses</span>, construit <br>avec les <span class="text-brand">écoles</span>
+            </h2>
+            <p class="text-white/70 leading-relaxed mb-4">
+                <strong class="text-white">Vous passez vos journées à tout gérer : inscriptions, paiements, relances, plannings…</strong> Et tout cela finit par vous prendre plus de temps que la danse elle-même.
+            </p>
+            <p class="text-white/70 leading-relaxed">
+                Conçu par deux danseuses qui ont vécu la même fatigue administrative, <strong class="text-white">LVL UP vous redonne du temps, et un peu de souffle.</strong>
+            </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-8">
+            <div class="flex flex-col items-center text-center">
+                <img src="/assets/ac.png" alt="Anne-Charlotte" class="w-28 h-28 rounded-full object-cover mb-3">
+                <p class="font-semibold text-white text-sm">Anne-Charlotte</p>
+                <p class="text-xs text-white/50 mt-1 leading-relaxed max-w-[180px]">Avec 22 ans de danse classique, elle est la responsable commerciale chez LVL UP.</p>
+            </div>
+            <div class="flex flex-col items-center text-center">
+                <img src="/assets/assia.png" alt="Assia" class="w-28 h-28 rounded-full object-cover mb-3">
+                <p class="font-semibold text-white text-sm">Assia</p>
+                <p class="text-xs text-white/50 mt-1 leading-relaxed max-w-[180px]">Hyperactive et touche-à-tout, elle est responsable de la création des fonctionnalités.</p>
+            </div>
+            <div class="flex flex-col items-center text-center">
+                <img src="/assets/patrick.png" alt="Patrick" class="w-28 h-28 rounded-full object-cover mb-3">
+                <p class="font-semibold text-white text-sm">Patrick</p>
+                <p class="text-xs text-white/50 mt-1 leading-relaxed max-w-[180px]">Passionné par les projets, il assure le développement technique de la plateforme.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="max-w-6xl mx-auto mt-16 flex flex-col sm:flex-row items-center gap-6 border-t border-white/10 pt-12">
+        <div class="text-center sm:text-left">
+            <a href="tel:0985044896" class="inline-flex items-center gap-2 border border-white/20 text-white font-semibold px-5 py-3 rounded-lg hover:bg-white/10 transition text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                09 85 04 48 96
+            </a>
+            <p class="text-xs text-white/40 mt-1">Appel non surtaxé</p>
+        </div>
+        <div class="text-center sm:text-left">
+            <a href="https://calendly.com/lvlupdemo/30min" target="_blank" rel="noopener"
+               class="btn-demo inline-block text-white font-semibold px-5 py-3 rounded-lg text-sm">
+                Demander une démo gratuite
+            </a>
+            <p class="text-xs text-white/40 mt-1">45 minutes en visio – sans engagement</p>
         </div>
     </div>
 </section>
 
-{# ── Roles ── #}
-<section class="py-20 px-6 bg-gray-50">
-    <div class="max-w-5xl mx-auto">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-3">Un espace pour chaque profil</h2>
-        </div>
-        <div class="grid md:grid-cols-4 gap-6">
-            {% set roles = [
-                { icon: '🎓', title: 'Gérant', desc: 'Pilotez votre école, vos saisons, vos finances et votre équipe depuis un seul tableau de bord.' },
-                { icon: '🎤', title: 'Professeur', desc: 'Consultez les fiches élèves, les inscriptions et gérez les présences à chaque cours.' },
-                { icon: '💃', title: 'Élève', desc: 'Inscrivez-vous aux cours, consultez vos forfaits et payez vos échéances en ligne.' },
-                { icon: '⚙️', title: 'Super-admin', desc: 'Gérez toutes les écoles de la plateforme, validez les comptes et impersonnez les utilisateurs.' },
+{# ── Témoignages ── #}
+<section class="py-24 px-6 bg-white">
+    <div class="max-w-6xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-14">
+            Les <span class="text-brand">avis des écoles</span><br>qui utilisent <span class="text-brand">notre plateforme</span>
+        </h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            {% set testimonials = [
+                { text: "LVL UP m'a énormément aidé dans la gestion de mon école de danse. Les gérantes sont adorables et toujours très à l'écoute.", name: "Magdalena MALFRAY", school: "Diva Danse — Montpellier" },
+                { text: "La centralisation des informations évite de multiplier les manipulations, l'équipe est réactive et disponible — bravo pour le challenge, une belle évolution à venir !", name: "Steve FRESU", school: "Fusion Art Center Peruwelz" },
+                { text: "Un vrai gain de temps grâce à l'enregistrement en ligne des données — plus besoin d'organiser des journées d'inscription ! Le suivi des paiements non réglés est simplifié.", name: "Virginie BOURGUET", school: "Fantasy Dance Complex" },
+                { text: "Assia s'est montrée disponible, claire et toujours très bienveillante. Une fois la mise en place terminée, les élèves ont trouvé la plateforme très simple à utiliser.", name: "Stéphanie REYES GUEVARA", school: "RG Academie" },
+                { text: "LVL UP m'a fait gagner un temps précieux : le suivi quotidien est clair, les inscriptions sont faciles à gérer, et l'accompagnement de l'équipe est super réactif.", name: "Christina Lacazette", school: "Cafroform" },
+                { text: "LVL UP m'a fait gagner un temps fou : tout est clair, suivi en temps réel, paiements facilités, et une équipe ultra réactive.", name: "Mélanie Fernandez", school: "MJ Dance — Marseille" },
+                { text: "Une plateforme ultra pratique qui me fait gagner du temps et réduit mon stress. Réactive et intuitive, elle simplifie totalement la gestion des forfaits.", name: "Camille Amat", school: "The Groove — Lyon" },
             ] %}
-            {% for role in roles %}
-            <div class="bg-white rounded-2xl p-6 border border-gray-100 text-center">
-                <div class="text-4xl mb-4">{{ role.icon }}</div>
-                <h3 class="font-semibold text-gray-900 mb-2">{{ role.title }}</h3>
-                <p class="text-sm text-gray-500 leading-relaxed">{{ role.desc }}</p>
+
+            {% for t in testimonials %}
+            <div class="bg-gray-50 rounded-2xl p-6 flex flex-col gap-4">
+                <svg class="w-8 h-5 text-brand opacity-40" viewBox="0 0 98 68" fill="currentColor"><path d="M0 68V42C0 18.667 9.333 5.333 28 0l6 10C24.667 13.333 20.667 19.333 20 28h16v40H0zm54 0V42C54 18.667 63.333 5.333 82 0l6 10C78.667 13.333 74.667 19.333 74 28h16v40H54z"/></svg>
+                <p class="text-sm text-gray-600 leading-relaxed flex-1">{{ t.text }}</p>
+                <div>
+                    <p class="font-semibold text-gray-900 text-sm">{{ t.name }}</p>
+                    <p class="text-xs text-gray-400">{{ t.school }}</p>
+                </div>
             </div>
             {% endfor %}
+
         </div>
     </div>
 </section>
 
-{# ── CTA ── #}
-<section class="py-24 px-6 bg-indigo-600">
-    <div class="max-w-3xl mx-auto text-center">
-        <h2 class="text-4xl font-bold text-white mb-4">Prêt à démarrer ?</h2>
-        <p class="text-indigo-200 text-lg mb-10">
-            Créez votre compte, configurez votre école en quelques minutes et invitez vos élèves.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ path('app_signup') }}"
-               class="inline-flex items-center justify-center bg-white text-indigo-600 text-base font-bold px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg">
-                Créer mon compte
-            </a>
-            <a href="{{ path('app_login') }}"
-               class="inline-flex items-center justify-center text-white text-base font-semibold px-8 py-4 rounded-xl border border-indigo-400 hover:bg-indigo-700 transition-colors">
-                Se connecter
-            </a>
+{# ── CTA Demo ── #}
+<section class="relative py-24 px-6" style="background-image:url('/assets/background-ecole-de-danse.jpg'); background-size:cover; background-position:center;">
+<div class="absolute inset-0 bg-gray-950/55"></div>
+    <div class="relative z-10 max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+
+        <div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                45 minutes pour<br>transformer la gestion<br>de votre école
+            </h2>
+            <p class="text-white/70 leading-relaxed mb-4">
+                Réservez un créneau avec Assia ou Anne-Charlotte, nos fondatrices et danseuses passionnées. Elles vous montreront concrètement comment LVL UP peut :
+            </p>
+            <ul class="text-white/70 space-y-2 text-sm">
+                <li class="flex items-start gap-2"><span class="text-brand mt-0.5">•</span> <strong class="text-white">Alléger vos tâches administratives</strong></li>
+                <li class="flex items-start gap-2"><span class="text-brand mt-0.5">•</span> <strong class="text-white">Simplifier vos inscriptions et paiements</strong></li>
+                <li class="flex items-start gap-2"><span class="text-brand mt-0.5">•</span> <strong class="text-white">Gagner plus de temps pour la danse</strong></li>
+            </ul>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-6">
+            <div class="text-center sm:text-left">
+                <a href="tel:0985044896" class="inline-flex items-center gap-2 border border-white/20 text-white font-semibold px-5 py-3 rounded-lg hover:bg-white/10 transition text-sm w-full justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                    09 85 04 48 96
+                </a>
+                <p class="text-xs text-white/40 mt-1 text-center">Appel non surtaxé</p>
+            </div>
+            <div class="text-center sm:text-left">
+                <a href="https://calendly.com/lvlupdemo/30min" target="_blank" rel="noopener"
+                   class="btn-demo inline-block text-white font-semibold px-5 py-3 rounded-lg text-sm w-full text-center">
+                    Demander une démo gratuite
+                </a>
+                <p class="text-xs text-white/40 mt-1 text-center">45 minutes en visio – sans engagement</p>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{# ── FAQ ── #}
+<section class="py-24 px-6 bg-white">
+    <div class="max-w-3xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-14">
+            On répond <span class="text-brand">à vos questions</span>
+        </h2>
+
+        {% set faqs = [
+            {
+                q: "Ça prend combien de temps pour créer mon compte ?",
+                a: "C'est très rapide ! Nous mettons en place votre compte en 48h.\n\n1/ Vous nous transmettez vos informations\n2/ On crée votre compte\n3/ On vous montre comment ça marche\n\nVous avez déjà des élèves inscrits ? Pas de panique ! Option 1 : vous les implémentez vous-même, à votre rythme. Option 2 : notre équipe s'en charge pour vous (service en supplément)."
+            },
+            {
+                q: "Combien ça coûte ?",
+                a: "LVL UP fonctionne avec un abonnement mensuel dont le montant dépend du nombre d'élèves que vous avez. En moyenne, cela représente environ 2% de votre chiffre d'affaires. Les tarifs démarrent à 25€ par mois."
+            },
+            {
+                q: "Est-ce qu'il y a un engagement ?",
+                a: "LVL UP fonctionne avec un abonnement mensuel. Vous disposez d'un mois pour tester. Si vous continuez, l'abonnement continue jusqu'à la fin de la saison, avec -10% si vous réglez en une fois."
+            },
+            {
+                q: "Est-il possible de personnaliser les paramètres pour qu'ils correspondent à notre fonctionnement ?",
+                a: "Oui ! Vous pouvez tout personnaliser : prix des forfaits selon la période d'inscription, réductions, frais supplémentaires, modes de paiement (en ligne, sur place ou les deux), échéanciers de paiement… Vous gardez un contrôle total et pouvez modifier chaque paramètre à tout moment, en toute autonomie."
+            },
+            {
+                q: "Quel type d'abonnement puis-je créer et gérer ?",
+                a: "LVL UP vous permet de gérer tous types d'abonnements : annuel, semestriel, trimestriel ou mensuel, ainsi que les cours à la carte et les cours d'essai. L'outil s'adapte entièrement à votre organisation."
+            },
+            {
+                q: "Comment nos élèves peuvent-ils payer ?",
+                a: "Plusieurs options de paiement sont disponibles, avec possibilité de régler en une ou plusieurs fois : en une fois par virement bancaire, en plusieurs fois par prélèvement automatique, et pour les cours d'essai et à la carte par carte bancaire."
+            },
+            {
+                q: "Est-ce qu'il y a une commission sur les paiements ?",
+                a: "Oui, cela concerne uniquement les paiements réalisés en ligne. Une commission de 1,9 % par transaction est appliquée (plafonnée à 5€). Ces frais sont à la charge de l'école."
+            },
+            {
+                q: "Est-ce que toutes les données sont sécurisées et conformes au RGPD ?",
+                a: "Oui ! La sécurité de vos données est une priorité. Toutes les informations sont hébergées sur des serveurs sécurisés européens et LVL UP est pleinement conforme au RGPD."
+            },
+            {
+                q: "Est-ce que LVL UP est accessible à toute l'équipe de l'école ?",
+                a: "Oui. Avec un seul abonnement, toute votre équipe peut accéder à LVL UP : l'accès n'est pas limité à un seul utilisateur, vous pouvez ajouter autant de membres que nécessaire, sans restriction. Et vous pouvez même être connectés en même temps !"
+            },
+            {
+                q: "Est-ce que je peux aussi gérer mes événements (gala, stage, workshop) ?",
+                a: "Oui ! Avec LVL UP, vous pouvez gérer tous vos événements mais aussi avoir toutes les infos importantes centralisées pour la préparation de votre gala : participation des élèves ainsi que leurs tailles pour les costumes."
+            },
+        ] %}
+
+        <div class="space-y-3">
+            {% for faq in faqs %}
+            <details class="group border border-gray-200 rounded-xl overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer select-none list-none font-medium text-gray-900 text-sm">
+                    {{ faq.q }}
+                    <svg class="w-5 h-5 text-brand shrink-0 group-open:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                </summary>
+                <div class="px-5 pb-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-4">
+                    {{ faq.a|nl2br }}
+                </div>
+            </details>
+            {% endfor %}
+        </div>
+
+    </div>
+</section>
+
+{# ── Comparatif ── #}
+<section class="py-24 px-6 bg-gray-50">
+    <div class="max-w-6xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-14">Vous hésitez encore ?</h2>
+
+        <div class="grid md:grid-cols-2 gap-8">
+
+            <div class="bg-white rounded-2xl border border-gray-200 p-8">
+                <h3 class="text-xl font-bold text-gray-700 mb-6">Les autres plateformes</h3>
+                <ul class="space-y-3">
+                    {% for item in ["Complexes et peu intuitives", "Conçues pour des secteurs génériques", "Gestion limitée des abonnements", "Paramètres peu personnalisables", "Impossible d'inscrire toute la famille en même temps", "Pas de sélection automatique de forfaits", "Gestion des événements complexe ou inexistante"] %}
+                    <li class="flex items-start gap-3 text-sm text-gray-600">
+                        <svg class="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        {{ item }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="bg-brand rounded-2xl p-8 text-white">
+                <h3 class="text-xl font-bold mb-6">Avec LVL UP</h3>
+                <ul class="space-y-3 mb-8">
+                    {% for item in ["Utilisation simple et autonome", "Conçue pour les écoles de danse", "Gestion de tous les types d'abonnements", "Ultra-personnalisation de vos paramètres", "Inscription de toute la famille simultanément", "Proposition automatisée du meilleur forfait", "Gestion des événements"] %}
+                    <li class="flex items-start gap-3 text-sm text-white/90">
+                        <svg class="w-5 h-5 text-white shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        {{ item }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="https://calendly.com/lvlupdemo/30min" target="_blank" rel="noopener"
+                   class="inline-block bg-white text-brand font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-white/90 transition">
+                    Échanger avec nous
+                </a>
+            </div>
+
         </div>
     </div>
 </section>
 
 {# ── Footer ── #}
-<footer class="py-8 px-6 border-t border-gray-100">
-    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <a href="/" class="flex items-center gap-2">
-            <img src="/assets/logo_lvl_up.png" alt="LVL UP" class="h-7 w-auto">
-            <span class="font-bold text-indigo-600">LVL UP</span>
+<footer class="bg-black py-10 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+        <a href="/">
+            <img src="/assets/logo_lvl_up_white.png" alt="LVL UP" class="h-9 w-auto">
         </a>
-        <p class="text-sm text-gray-400">&copy; {{ "now"|date("Y") }} LVL UP — Gestion d'écoles de danse</p>
-        <div class="flex gap-6 text-sm text-gray-400">
-            <a href="{{ path('app_login') }}" class="hover:text-indigo-600 transition-colors">Connexion</a>
-            <a href="{{ path('app_signup') }}" class="hover:text-indigo-600 transition-colors">Inscription</a>
+        <p class="text-sm text-white/40">&copy; {{ "now"|date("Y") }} LVL UP — Gestion d'écoles de danse</p>
+        <div class="flex gap-6 text-sm text-white/50">
+            <a href="{{ path('app_login') }}" class="hover:text-white transition">Connexion</a>
+            <a href="https://calendly.com/lvlupdemo/30min" target="_blank" class="hover:text-white transition">Démo gratuite</a>
         </div>
     </div>
 </footer>
