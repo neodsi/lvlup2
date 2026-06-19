@@ -1,0 +1,21 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Déploiement sur le serveur
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 141.94.247.160
+          username: debian
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/html/lvlup2
+            ./bin/deploy.sh
