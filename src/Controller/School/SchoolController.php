@@ -50,7 +50,7 @@ final class SchoolController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            return $this->redirectToRoute('app_home');
+            return $this->redirectToRoute('app_dashboard');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);

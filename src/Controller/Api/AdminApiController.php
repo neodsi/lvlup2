@@ -54,7 +54,7 @@ class AdminApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Target user not found.'], 404);
         }
 
-        $impersonateUrl = $this->urlGenerator->generate('app_home', [
+        $impersonateUrl = $this->urlGenerator->generate('app_dashboard', [
             '_switch_user' => $targetUser->getEmail(),
         ]);
 

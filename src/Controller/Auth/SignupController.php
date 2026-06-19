@@ -25,7 +25,7 @@ class SignupController extends AbstractController
     public function signup(Request $request): Response
     {
         if ($this->isGranted('ROLE_USER')) {
-            return $this->redirectToRoute('app_home');
+            return $this->redirectToRoute('app_dashboard');
         }
 
         $form = $this->createForm(SignupType::class);

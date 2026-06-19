@@ -27,7 +27,7 @@
         :class="sidebarOpen ? 'translate-x-0' : ''"
     >
         {# Logo #}
-        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : 'app_home')) }}"
+        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : 'app_dashboard')) }}"
            class="flex items-center gap-2.5 px-5 h-14 border-b border-gray-100 shrink-0">
             <img src="{{ asset('assets/logo_lvl_up.png') }}" alt="LVL UP" class="h-7 w-auto">
             <span class="font-bold text-indigo-600 text-lg tracking-tight">LVL UP</span>
@@ -170,9 +170,9 @@
             {% else %}
 
                 {# ── Teacher / Student — menu minimal ── #}
-                <a href="{{ path('app_home') }}"
+                <a href="{{ path('app_dashboard') }}"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                          {{ currentRoute == 'app_home' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                          {{ currentRoute == 'app_dashboard' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     Tableau de bord
                 </a>
@@ -201,7 +201,7 @@
         <button @click="sidebarOpen = !sidebarOpen" class="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : 'app_home')) }}" class="flex items-center gap-2">
+        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : 'app_dashboard')) }}" class="flex items-center gap-2">
             <img src="{{ asset('assets/logo_lvl_up.png') }}" alt="LVL UP" class="h-6 w-auto">
             <span class="font-bold text-indigo-600 text-base tracking-tight">LVL UP</span>
         </a>

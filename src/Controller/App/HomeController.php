@@ -26,7 +26,7 @@ class HomeController extends AbstractController
     ) {
     }
 
-    #[Route('/home', name: 'app_home')]
+    #[Route('/home', name: 'app_dashboard')]
     #[IsGranted('ROLE_USER')]
     public function home(Request $request): Response
     {
@@ -128,7 +128,7 @@ class HomeController extends AbstractController
         )->count() > 0;
 
         if ($hasPrimary) {
-            return $this->redirectToRoute('app_home');
+            return $this->redirectToRoute('app_dashboard');
         }
 
         $form = $this->createForm(SetupProfileType::class);
@@ -161,7 +161,7 @@ class HomeController extends AbstractController
             $this->em->persist($profile);
             $this->em->flush();
 
-            return $this->redirectToRoute('app_home');
+            return $this->redirectToRoute('app_dashboard');
         }
 
         return $this->render('app/setup/profile.html.twig', [

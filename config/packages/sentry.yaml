@@ -3,3 +3,7 @@ sentry:
     register_error_listener: true
     options:
         environment: '%kernel.environment%'
+
+when@dev:
+    sentry:
+        dsn: null

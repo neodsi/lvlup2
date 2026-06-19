@@ -1,13 +1,6 @@
-<!DOCTYPE html>
-<html lang="fr" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}LVL UP{% endblock %}</title>
-    <link rel="stylesheet" href="/assets/app.css">
-    {% block stylesheets %}{% endblock %}
-</head>
-<body class="h-full">
+{% extends 'layout/base.html.twig' %}
+
+{% block body %}
 <div class="flex flex-col lg:flex-row lg:min-h-screen">
 
     {# Form panel #}
@@ -15,7 +8,7 @@
 
         <div class="px-8 pt-7">
             <a href="/">
-                <img src="/assets/logo_lvl_up.png" alt="LVL UP" class="h-8 w-auto">
+                <img src="{{ asset('assets/logo_lvl_up.png') }}" alt="LVL UP" class="h-8 w-auto">
             </a>
         </div>
 
@@ -42,10 +35,8 @@
 
     {# Illustration — sous le formulaire sur mobile, panneau droit sur desktop #}
     <div class="h-52 lg:h-auto lg:w-1/2">
-        <img src="/assets/auth.jpg" alt="" class="h-full w-full object-cover">
+        <img src="{{ asset('assets/auth.jpg') }}" alt="" class="h-full w-full object-cover">
     </div>
 
 </div>
-{% block javascripts %}{% endblock %}
-</body>
-</html>
+{% endblock %}
