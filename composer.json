@@ -15,6 +15,7 @@
         "sentry/sentry-symfony": "^5.10",
         "simshaun/recurr": "^5.0",
         "stripe/stripe-php": "^20.2",
+        "symfony/apache-pack": "*",
         "symfony/asset": "6.4.*",
         "symfony/console": "6.4.*",
         "symfony/dotenv": "6.4.*",

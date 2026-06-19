@@ -44,6 +44,9 @@
     "stripe/stripe-php": {
         "version": "v20.2.1"
     },
+    "symfony/apache-pack": {
+        "version": "v1.0.1"
+    },
     "symfony/console": {
         "version": "6.4",
         "recipe": {
