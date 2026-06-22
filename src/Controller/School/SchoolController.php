@@ -102,7 +102,7 @@ final class SchoolController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
@@ -135,7 +135,7 @@ final class SchoolController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);

@@ -37,7 +37,7 @@ final class OrderController extends AbstractController
         $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
         if ($school === null || $schoolProfile === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
@@ -81,7 +81,7 @@ final class OrderController extends AbstractController
         $school  = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $order = $this->em->getRepository(Order::class)->find($id);

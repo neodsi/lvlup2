@@ -28,7 +28,7 @@
                 <input type="hidden" name="_token" value="{{ csrf_token('lesson_edit_' ~ lesson.id) }}">
 
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom du cours</label>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom du cours <span class="text-red-500">*</span></label>
                     <input type="text" id="name" name="name" value="{{ lesson.name }}" required
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>

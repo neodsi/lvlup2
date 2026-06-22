@@ -43,7 +43,7 @@ final class MyController extends AbstractController
         $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
         if ($school === null || $schoolProfile === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
@@ -67,7 +67,7 @@ final class MyController extends AbstractController
         $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
         if ($school === null || $schoolProfile === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
@@ -92,7 +92,7 @@ final class MyController extends AbstractController
         $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
         if ($school === null || $schoolProfile === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
@@ -124,7 +124,7 @@ final class MyController extends AbstractController
         $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
         if ($school === null || $schoolProfile === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
@@ -154,7 +154,7 @@ final class MyController extends AbstractController
         $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
 
         if ($school === null || $schoolProfile === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);

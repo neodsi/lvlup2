@@ -43,7 +43,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
@@ -130,7 +130,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
@@ -182,7 +182,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::CONFIGURE_STRIPE, $school);
@@ -198,7 +198,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::CONFIGURE_STRIPE, $school);
@@ -248,7 +248,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
@@ -272,7 +272,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
@@ -323,7 +323,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::CONFIGURE_STRIPE, $school);
@@ -347,7 +347,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
@@ -369,7 +369,7 @@ final class SettingsController extends AbstractController
         $school = $this->schoolContext->getCurrentSchool();
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
@@ -398,7 +398,7 @@ final class SettingsController extends AbstractController
         $season = $this->em->getRepository(Season::class)->find($id);
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         if ($season === null || $season->getSchoolId() !== $school->getId()) {
@@ -444,7 +444,7 @@ final class SettingsController extends AbstractController
         $season = $this->em->getRepository(Season::class)->find($id);
 
         if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
-            throw $this->createAccessDeniedException('Not a school member.');
+            return $this->redirectToRoute('app_create_school');
         }
 
         if ($season === null || $season->getSchoolId() !== $school->getId()) {

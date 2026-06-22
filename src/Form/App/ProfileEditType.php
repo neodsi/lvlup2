@@ -40,27 +40,31 @@ class ProfileEditType extends AbstractType
                 'label' => 'Téléphone',
                 'label_attr' => ['class' => $labelClass],
                 'attr' => ['class' => $inputClass, 'type' => 'tel'],
+                'required' => true,
+                'constraints' => [new NotBlank(message: 'Le téléphone est obligatoire.')],
             ])
             ->add('dob', DateType::class, [
                 'label' => 'Date de naissance',
                 'label_attr' => ['class' => $labelClass],
                 'attr' => ['class' => $inputClass],
-                'required' => false,
+                'required' => true,
                 'widget' => 'single_text',
                 'input' => 'string',
                 'html5' => true,
+                'constraints' => [new NotBlank(message: 'La date de naissance est obligatoire.')],
             ])
             ->add('gender', ChoiceType::class, [
                 'label' => 'Genre',
                 'label_attr' => ['class' => $labelClass],
                 'attr' => ['class' => $inputClass],
-                'required' => false,
-                'placeholder' => '—',
+                'required' => true,
+                'placeholder' => '— Sélectionner —',
                 'choices' => [
                     'Femme' => 'female',
                     'Homme' => 'male',
                     'Ne pas préciser' => 'other',
                 ],
+                'constraints' => [new NotBlank(message: 'Le genre est obligatoire.')],
             ])
             ->add('sizeTop', TextType::class, [
                 'label'      => 'Taille haut',

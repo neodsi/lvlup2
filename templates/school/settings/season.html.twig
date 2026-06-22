@@ -28,7 +28,7 @@
                     <input type="hidden" name="_token" value="{{ csrf_token('season_' ~ season.id) }}">
 
                     <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom de la saison</label>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom de la saison <span class="text-red-500">*</span></label>
                         <input type="text" id="name" name="name" value="{{ season.name }}" required
                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     </div>

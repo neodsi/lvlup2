@@ -28,14 +28,15 @@
                 <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
             </div>
             <div class="px-6 py-5 space-y-4">
+                <p class="text-xs text-gray-400 mb-4">Les champs marqués <span class="text-red-500 font-medium">*</span> sont obligatoires.</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        {{ form_label(form.firstName) }}
+                        <label for="{{ form.firstName.vars.id }}" class="block text-xs text-gray-500 mb-1">Prénom <span class="text-red-500">*</span></label>
                         {{ form_widget(form.firstName) }}
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.firstName) }}</div>
                     </div>
                     <div>
-                        {{ form_label(form.lastName) }}
+                        <label for="{{ form.lastName.vars.id }}" class="block text-xs text-gray-500 mb-1">Nom <span class="text-red-500">*</span></label>
                         {{ form_widget(form.lastName) }}
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.lastName) }}</div>
                     </div>

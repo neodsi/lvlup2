@@ -25,12 +25,12 @@
                       class="flex flex-wrap items-end gap-3">
                     <input type="hidden" name="_token" value="{{ csrf_token('address_create') }}">
                     <div class="min-w-32">
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Libellé</label>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Libellé <span class="text-red-500">*</span></label>
                         <input type="text" name="name" required placeholder="Salle principale"
                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     </div>
                     <div class="flex-1 min-w-48">
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Adresse</label>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Adresse <span class="text-red-500">*</span></label>
                         <input type="text" name="address" required placeholder="1 rue de la Danse, 75001 Paris"
                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     </div>
