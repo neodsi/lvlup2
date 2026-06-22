@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LVL UP — {{ status_text }}</title>
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+
+<div class="min-h-screen flex flex-col items-center justify-center px-4">
+    <div class="text-center max-w-md w-full">
+        <div class="text-9xl font-black text-gray-100 select-none leading-none">{{ status_code }}</div>
+        <h1 class="mt-4 text-2xl font-bold text-gray-900">{{ status_text }}</h1>
+        <p class="mt-2 text-sm text-gray-500">Une erreur s'est produite. Veuillez réessayer ou retourner à l'accueil.</p>
+        <div class="mt-8 flex items-center justify-center gap-3">
+            <a href="/" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Accueil
+            </a>
+            <a href="javascript:history.back()" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-5 py-2.5 rounded-lg border border-gray-200 transition-colors">
+                Retour
+            </a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

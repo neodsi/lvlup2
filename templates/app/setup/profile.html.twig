@@ -14,34 +14,45 @@
         {{ form_start(form, {action: path('app_setup_profile'), attr: {class: 'divide-y divide-gray-100'}}) }}
 
             <div class="px-6 py-5">
+                <p class="text-xs text-gray-400 mb-4">Les champs marqués <span class="text-red-500 font-medium">*</span> sont obligatoires.</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                     <div>
-                        {{ form_label(form.firstName) }}
+                        <label for="{{ form.firstName.vars.id }}" class="block text-xs text-gray-500 mb-1">
+                            Prénom <span class="text-red-500">*</span>
+                        </label>
                         {{ form_widget(form.firstName) }}
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.firstName) }}</div>
                     </div>
 
                     <div>
-                        {{ form_label(form.lastName) }}
+                        <label for="{{ form.lastName.vars.id }}" class="block text-xs text-gray-500 mb-1">
+                            Nom <span class="text-red-500">*</span>
+                        </label>
                         {{ form_widget(form.lastName) }}
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.lastName) }}</div>
                     </div>
 
                     <div>
-                        {{ form_label(form.dob) }}
+                        <label for="{{ form.dob.vars.id }}" class="block text-xs text-gray-500 mb-1">
+                            Date de naissance <span class="text-red-500">*</span>
+                        </label>
                         {{ form_widget(form.dob) }}
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.dob) }}</div>
                     </div>
 
                     <div>
-                        {{ form_label(form.gender) }}
+                        <label for="{{ form.gender.vars.id }}" class="block text-xs text-gray-500 mb-1">
+                            Genre <span class="text-red-500">*</span>
+                        </label>
                         {{ form_widget(form.gender) }}
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.gender) }}</div>
                     </div>
 
                     <div class="sm:col-span-2">
-                        {{ form_label(form.phone) }}
+                        <label for="{{ form.phone.vars.id }}" class="block text-xs text-gray-500 mb-1">
+                            Téléphone <span class="text-red-500">*</span>
+                        </label>
                         {{ form_widget(form.phone) }}
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.phone) }}</div>
                     </div>
@@ -49,7 +60,7 @@
                 </div>
             </div>
 
-            <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-between">
+            <div class="px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="h-2 w-6 rounded-full bg-gray-200"></span>
                     <span class="h-2 w-8 rounded-full bg-indigo-600"></span>

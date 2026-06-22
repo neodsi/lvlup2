@@ -21,40 +21,44 @@ class SetupProfileType extends AbstractType
             ->add('firstName', TextType::class, [
                 'label' => 'Prénom',
                 'required' => true,
-                'constraints' => [new NotBlank()],
+                'constraints' => [new NotBlank(message: 'Le prénom est obligatoire.')],
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])
             ->add('lastName', TextType::class, [
                 'label' => 'Nom',
                 'required' => true,
-                'constraints' => [new NotBlank()],
+                'constraints' => [new NotBlank(message: 'Le nom est obligatoire.')],
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])
             ->add('phone', TextType::class, [
                 'label' => 'Téléphone',
-                'required' => false,
+                'required' => true,
+                'constraints' => [new NotBlank(message: 'Le téléphone est obligatoire.')],
                 'attr' => ['class' => $inputClass, 'type' => 'tel'],
                 'label_attr' => ['class' => $labelClass],
             ])
             ->add('dob', DateType::class, [
                 'label' => 'Date de naissance',
-                'required' => false,
+                'required' => true,
                 'widget' => 'single_text',
                 'html5' => true,
+                'input' => 'datetime_immutable',
+                'constraints' => [new NotBlank(message: 'La date de naissance est obligatoire.')],
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])
             ->add('gender', ChoiceType::class, [
                 'label' => 'Genre',
-                'required' => false,
-                'placeholder' => '—',
+                'required' => true,
+                'placeholder' => '— Sélectionner —',
                 'choices' => [
                     'Femme' => 'female',
                     'Homme' => 'male',
                     'Ne pas préciser' => 'other',
                 ],
+                'constraints' => [new NotBlank(message: 'Le genre est obligatoire.')],
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])
