@@ -116,9 +116,23 @@ class Room
         return $this->createdAt;
     }
 
+    public function setCreatedAt(\DateTimeImmutable $v): static
+    {
+        $this->createdAt = $v;
+
+        return $this;
+    }
+
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $v): static
+    {
+        $this->updatedAt = $v;
+
+        return $this;
     }
 
     public function getDeletedAt(): ?\DateTimeImmutable

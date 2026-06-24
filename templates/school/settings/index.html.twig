@@ -123,6 +123,34 @@
     <form method="POST" action="{{ path('school_settings') }}" class="space-y-6">
         <input type="hidden" name="_token" value="{{ csrf_token('settings_general') }}">
 
+        {# Localisation #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Localisation</h2>
+                <p class="text-sm text-gray-500 mt-0.5">La ville est extraite automatiquement de la carte pour construire l'URL publique.</p>
+                <p class="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    Modifier l'adresse met à jour l'adresse de facturation — pensez à la vérifier dans les <a href="{{ path('school_settings_legal') }}" class="underline hover:text-amber-800 transition">informations légales</a>.
+                </p>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div class="flex gap-2">
+                    <input type="text" id="address-search" placeholder="Rechercher une adresse…"
+                           value="{{ school.addressText ?? '' }}"
+                           class="flex-1 block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <button type="button" id="address-search-btn"
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+                        Rechercher
+                    </button>
+                </div>
+                <div id="map" class="rounded-xl border border-gray-200 overflow-hidden" style="height:360px"></div>
+                <input type="hidden" id="addressText" name="addressText" value="{{ school.addressText ?? '' }}">
+                <input type="hidden" id="addressLat"  name="addressLat"  value="{{ school.addressLat ?? '' }}">
+                <input type="hidden" id="addressLng"  name="addressLng"  value="{{ school.addressLng ?? '' }}">
+            </div>
+        </div>
+
         {# Informations générales #}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="px-6 py-5 border-b border-gray-100">
@@ -147,9 +175,15 @@
                             ↺ Générer
                         </button>
                     </div>
-                    <p id="slug-preview-full" class="mt-1 text-xs text-gray-400 font-mono">
-                        lvlup.fr/<span id="preview-city">{{ school.citySlug ?? '…' }}</span>/<span id="preview-slug">{{ school.currentSlug ?? suggestedSlug }}</span>
-                    </p>
+                    {% if school.citySlug and school.currentSlug %}
+                    <a id="public-page-link"
+                       href="{{ url('app_school_page', {citySlug: school.citySlug, schoolSlug: school.currentSlug}) }}"
+                       target="_blank" rel="noopener"
+                       class="mt-1 inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-mono transition">
+                        <span id="public-page-link-text">{{ app.request.schemeAndHttpHost }}/{{ school.citySlug }}/{{ school.currentSlug }}</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    {% endif %}
                     <p class="text-xs text-gray-400">Modifiable — l'ancien identifiant sera conservé comme alias.</p>
                     <input type="hidden" id="citySlug" name="citySlug" value="{{ school.citySlug ?? '' }}">
                 </div>
@@ -194,30 +228,6 @@
             </div>
         </div>
         {% endfor %}
-
-        {# Localisation #}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div class="px-6 py-5 border-b border-gray-100">
-                <h2 class="text-base font-semibold text-gray-900">Localisation</h2>
-                <p class="text-sm text-gray-500 mt-0.5">La ville est extraite automatiquement de la carte pour construire l'URL publique.</p>
-            </div>
-            <div class="px-6 py-5 space-y-4">
-                <div class="flex gap-2">
-                    <input type="text" id="address-search" placeholder="Rechercher une adresse…"
-                           value="{{ school.addressText ?? '' }}"
-                           class="flex-1 block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <button type="button" id="address-search-btn"
-                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
-                        Rechercher
-                    </button>
-                </div>
-                <div id="map" class="rounded-xl border border-gray-200 overflow-hidden" style="height:360px"></div>
-                <input type="hidden" id="addressText" name="addressText" value="{{ school.addressText ?? '' }}">
-                <input type="hidden" id="addressLat"  name="addressLat"  value="{{ school.addressLat ?? '' }}">
-                <input type="hidden" id="addressLng"  name="addressLng"  value="{{ school.addressLng ?? '' }}">
-            </div>
-        </div>
 
         <div class="flex justify-end">
             <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
@@ -274,11 +284,20 @@
     });
 
     // Slug preview
+    const _baseUrl = {{ app.request.schemeAndHttpHost|json_encode|raw }};
     function updateSlugPreview() {
         const city  = document.getElementById('citySlug').value || '…';
         const slug  = document.getElementById('slug').value || document.getElementById('slug').placeholder || '…';
-        document.getElementById('preview-city').textContent = city;
-        document.getElementById('preview-slug').textContent = slug;
+        const link = document.getElementById('public-page-link');
+        if (link && city !== '…' && slug !== '…') {
+            const fullUrl = _baseUrl + '/' + city + '/' + slug;
+            link.href = fullUrl;
+            const txt = document.getElementById('public-page-link-text');
+            if (txt) txt.textContent = fullUrl;
+            link.style.display = '';
+        } else if (link) {
+            link.style.display = 'none';
+        }
     }
     updateSlugPreview();
     document.getElementById('slug').addEventListener('input', updateSlugPreview);
