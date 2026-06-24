@@ -20,6 +20,15 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # protection robot
+    RewriteCond %{REQUEST_URI} (^|/)(xmlrpc|xmlrpc\.php)$ [NC,OR]
+    RewriteCond %{REQUEST_URI} (^|/)wp-admin(/.*)?$ [NC,OR]
+    RewriteCond %{REQUEST_URI} (^|/)wp-login\.php$ [NC,OR]
+    RewriteCond %{REQUEST_URI} (^|/)server/?$ [NC,OR]
+    RewriteCond %{REQUEST_URI} (^|/)\.env([.-].*)?$ [NC]
+
+    RewriteRule ^.*$ / [R=301,L]
+
     # Determine the RewriteBase automatically and set it as environment variable.
     # If you are using Apache aliases or something similar, chances are that the
     # temporary redirect will fail with "too many redirects", in which case you
