@@ -20,6 +20,9 @@ node_modules/
 # User uploads (images, documents)
 /public/uploads/
 
+# LiipImagine cache
+/public/media/cache/
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
