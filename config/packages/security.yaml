@@ -35,8 +35,8 @@ security:
     role_hierarchy:
         ROLE_STUDENT: [ROLE_USER]
         ROLE_TEACHER: [ROLE_USER]
-        ROLE_SCHOOL: [ROLE_TEACHER]
-        ROLE_ADMIN: [ROLE_SCHOOL]
+        ROLE_SCHOOL: [ROLE_USER]
+        ROLE_ADMIN: [ROLE_USER]
     access_control:
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/school, roles: ROLE_SCHOOL }

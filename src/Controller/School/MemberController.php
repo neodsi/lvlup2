@@ -974,7 +974,7 @@ final class MemberController extends AbstractController
             $userAccount  = $this->em->getRepository(User::class)->findOneBy(['email' => $memberEmail]);
             $isNewAccount = false;
 
-            // Check for duplicate SchoolProfile in this school
+            // Block only if same email + same role already exists in this school
             if ($userAccount !== null) {
                 $existingMember = $this->em->createQueryBuilder()
                     ->select('COUNT(tp.id)')
@@ -982,14 +982,24 @@ final class MemberController extends AbstractController
                     ->join('tp.profile', 'p')
                     ->where('tp.school = :school')
                     ->andWhere('p.user = :user')
+                    ->andWhere('tp.role = :role')
                     ->andWhere('tp.deletedAt IS NULL')
                     ->setParameter('school', $school)
                     ->setParameter('user', $userAccount)
+                    ->setParameter('role', $roleMap[$type])
                     ->getQuery()
                     ->getSingleScalarResult();
 
                 if ((int) $existingMember > 0) {
-                    $this->addFlash('error', 'Un membre avec cet e-mail est déjà inscrit dans cette école.');
+                    $roleLabels = [
+                        'students' => 'élève',
+                        'teachers' => 'professeur',
+                        'admins'   => 'administrateur',
+                    ];
+                    $this->addFlash('error', sprintf(
+                        'Cet e-mail est déjà inscrit comme %s dans cette école.',
+                        $roleLabels[$type]
+                    ));
 
                     return $this->render('school/members/create.html.twig', [
                         'school' => $school,

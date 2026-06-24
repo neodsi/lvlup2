@@ -3,6 +3,9 @@
 {% block body %}
 {% set _navProfile = primary_profile() %}
 {% set currentRoute = app.request.attributes.get('_route') %}
+{% set _userSchoolRoles = user_school_roles() %}
+{% set _isTeacher = 'teacher' in _userSchoolRoles %}
+{% set _isStudent = 'student' in _userSchoolRoles %}
 
 <div class="min-h-screen flex bg-gray-50" x-data="{ sidebarOpen: false }">
 
@@ -27,7 +30,7 @@
         :class="sidebarOpen ? 'translate-x-0' : ''"
     >
         {# Logo #}
-        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : 'app_dashboard')) }}"
+        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : (_isTeacher ? 'teacher_home' : (_isStudent ? 'student_home' : 'app_dashboard')))) }}"
            class="flex items-center gap-2.5 px-5 h-14 border-b border-gray-100 shrink-0">
             <img src="{{ asset('assets/logo_lvl_up.png') }}" alt="LVL UP" class="h-7 w-auto">
             <span class="font-bold text-indigo-600 text-lg tracking-tight">LVL UP</span>
@@ -64,124 +67,153 @@
         {# Navigation #}
         <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
 
+            {# ── Admin ── #}
             {% if is_granted('ROLE_ADMIN') %}
+            <p class="px-3 pb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administration</p>
+            <a href="{{ path('app_admin') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute == 'app_admin' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Tableau de bord
+            </a>
+            <a href="{{ path('app_admin_schools') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute starts with 'app_admin_school' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                Écoles
+            </a>
+            <a href="{{ path('app_admin_users') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute starts with 'app_admin_user' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                Utilisateurs
+            </a>
+            {% endif %}
 
-                {# ── Admin ── #}
-                <p class="px-3 pb-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administration</p>
-                <a href="{{ path('app_admin') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                          {{ currentRoute == 'app_admin' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    Tableau de bord
-                </a>
-                <a href="{{ path('app_admin_schools') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                          {{ currentRoute starts with 'app_admin_school' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    Écoles
-                </a>
-                <a href="{{ path('app_admin_users') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                          {{ currentRoute starts with 'app_admin_user' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    Utilisateurs
-                </a>
+            {# ── École ── #}
+            {% if is_granted('ROLE_SCHOOL') %}
+            {% if is_granted('ROLE_ADMIN') %}<div class="border-t border-gray-100 my-1.5"></div>{% endif %}
+            <p class="px-3 pb-1.5 pt-0.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Admin école</p>
+            <a href="{{ path('school_home') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute in ['school_home', 'school_index'] ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Tableau de bord
+            </a>
 
-            {% elseif is_granted('ROLE_SCHOOL') %}
-
-                {# ── School admin ── #}
-                <a href="{{ path('school_home') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                          {{ currentRoute in ['school_home', 'school_index'] ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    Tableau de bord
-                </a>
-
-                {# Season-scoped group #}
-                {% set _sd = school_sidebar_data() %}
-                <div class="rounded-lg bg-indigo-50 border border-indigo-100 overflow-hidden"
-                     id="season-group"
-                     data-config-url-tpl="{{ path('school_settings_season', {id: 'SEASON_ID'}) }}"
-                     data-membres-url="{{ path('school_members_list', {type: 'students'}) }}"
-                     data-orders-url="{{ path('school_orders_list') }}"
-                     data-new-season-url="{{ path('school_settings_season_create') }}"
-                     data-default-season="{{ _sd.currentSeasonId }}">
-                    <div class="flex items-center gap-1 px-2 pt-2" style="padding-bottom:8px">
-                        <select id="season-select"
-                                class="flex-1 min-w-0 rounded-md border border-indigo-200 bg-white text-xs font-medium text-gray-800 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition cursor-pointer">
-                            {% if _sd.seasons is empty %}
-                                <option value="">Aucune saison</option>
-                            {% else %}
-                                {% for season in _sd.seasons %}
-                                    <option value="{{ season.id }}">{{ season.name }}</option>
-                                {% endfor %}
-                            {% endif %}
-                        </select>
-                        <a href="{{ path('school_settings_season_create') }}"
-                           title="Nouvelle saison"
-                           class="shrink-0 flex items-center justify-center w-7 h-7 rounded-md border border-indigo-200 bg-white text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        </a>
-                        <a href="{{ path('school_settings_seasons') }}"
-                           title="Toutes les saisons"
-                           class="shrink-0 flex items-center justify-center w-7 h-7 rounded-md border border-indigo-200 bg-white text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                        </a>
-                    </div>
-                    {% set _membresActive   = currentRoute starts with 'school_member' %}
-                    {% set _commandesActive = currentRoute starts with 'school_order' %}
-                    {% set _configActive    = currentRoute starts with 'school_settings_season' or currentRoute starts with 'school_season' %}
-                    <div>
-                        <a href="{{ path('school_members_list', {type: 'students'}) }}"
-                           id="sidebar-membres"
-                           class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition
-                                  {{ _membresActive ? 'bg-indigo-500 text-white' : 'text-indigo-700 hover:bg-gray-100' }}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            <span class="flex-1 min-w-0">
-                                <span class="block leading-tight">Membres</span>
-                                <span class="season-sub block leading-none mt-0.5 truncate empty:hidden {{ _membresActive ? 'text-white/70' : 'text-indigo-400' }}" style="font-size:10px;line-height:1"></span>
-                            </span>
-                        </a>
-                        <a href="{{ path('school_orders_list') }}"
-                           id="sidebar-commandes"
-                           class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition
-                                  {{ _commandesActive ? 'bg-indigo-500 text-white' : 'text-indigo-700 hover:bg-gray-100' }}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            <span class="flex-1 min-w-0">
-                                <span class="block leading-tight">Commandes</span>
-                                <span class="season-sub block leading-none mt-0.5 truncate empty:hidden {{ _commandesActive ? 'text-white/70' : 'text-indigo-400' }}" style="font-size:10px;line-height:1"></span>
-                            </span>
-                        </a>
-                        <a href="#"
-                           id="sidebar-config"
-                           class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition
-                                  {{ _configActive ? 'bg-indigo-500 text-white' : 'text-indigo-700 hover:bg-gray-100' }}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            <span class="flex-1 min-w-0">
-                                <span class="block leading-tight">Config</span>
-                                <span class="season-sub block leading-none mt-0.5 truncate empty:hidden {{ _configActive ? 'text-white/70' : 'text-indigo-400' }}" style="font-size:10px;line-height:1"></span>
-                            </span>
-                        </a>
-                    </div>
+            {# Season-scoped group #}
+            {% set _sd = school_sidebar_data() %}
+            <div class="rounded-lg bg-indigo-50 border border-indigo-100 overflow-hidden"
+                 id="season-group"
+                 data-config-url-tpl="{{ path('school_settings_season', {id: 'SEASON_ID'}) }}"
+                 data-membres-url="{{ path('school_members_list', {type: 'students'}) }}"
+                 data-orders-url="{{ path('school_orders_list') }}"
+                 data-new-season-url="{{ path('school_settings_season_create') }}"
+                 data-default-season="{{ _sd.currentSeasonId }}">
+                <div class="flex items-center gap-1 px-2 pt-2" style="padding-bottom:8px">
+                    <select id="season-select"
+                            class="flex-1 min-w-0 rounded-md border border-indigo-200 bg-white text-xs font-medium text-gray-800 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition cursor-pointer">
+                        {% if _sd.seasons is empty %}
+                            <option value="">Aucune saison</option>
+                        {% else %}
+                            {% for season in _sd.seasons %}
+                                <option value="{{ season.id }}">{{ season.name }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    <a href="{{ path('school_settings_season_create') }}"
+                       title="Nouvelle saison"
+                       class="shrink-0 flex items-center justify-center w-7 h-7 rounded-md border border-indigo-200 bg-white text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </a>
+                    <a href="{{ path('school_settings_seasons') }}"
+                       title="Toutes les saisons"
+                       class="shrink-0 flex items-center justify-center w-7 h-7 rounded-md border border-indigo-200 bg-white text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    </a>
                 </div>
+                {% set _membresActive   = currentRoute starts with 'school_member' %}
+                {% set _commandesActive = currentRoute starts with 'school_order' %}
+                {% set _configActive    = currentRoute starts with 'school_settings_season' or currentRoute starts with 'school_season' %}
+                <div>
+                    <a href="{{ path('school_members_list', {type: 'students'}) }}"
+                       id="sidebar-membres"
+                       class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition
+                              {{ _membresActive ? 'bg-indigo-500 text-white' : 'text-indigo-700 hover:bg-gray-100' }}">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span class="flex-1 min-w-0">
+                            <span class="block leading-tight">Membres</span>
+                            <span class="season-sub block leading-none mt-0.5 truncate empty:hidden {{ _membresActive ? 'text-white/70' : 'text-indigo-400' }}" style="font-size:10px;line-height:1"></span>
+                        </span>
+                    </a>
+                    <a href="{{ path('school_orders_list') }}"
+                       id="sidebar-commandes"
+                       class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition
+                              {{ _commandesActive ? 'bg-indigo-500 text-white' : 'text-indigo-700 hover:bg-gray-100' }}">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        <span class="flex-1 min-w-0">
+                            <span class="block leading-tight">Commandes</span>
+                            <span class="season-sub block leading-none mt-0.5 truncate empty:hidden {{ _commandesActive ? 'text-white/70' : 'text-indigo-400' }}" style="font-size:10px;line-height:1"></span>
+                        </span>
+                    </a>
+                    <a href="#"
+                       id="sidebar-config"
+                       class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition
+                              {{ _configActive ? 'bg-indigo-500 text-white' : 'text-indigo-700 hover:bg-gray-100' }}">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span class="flex-1 min-w-0">
+                            <span class="block leading-tight">Config</span>
+                            <span class="season-sub block leading-none mt-0.5 truncate empty:hidden {{ _configActive ? 'text-white/70' : 'text-indigo-400' }}" style="font-size:10px;line-height:1"></span>
+                        </span>
+                    </a>
+                </div>
+            </div>
+            <a href="{{ path('school_settings') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ (currentRoute starts with 'school_setting') and not (currentRoute starts with 'school_settings_season') and not (currentRoute starts with 'school_season') ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Paramètres
+            </a>
+            {% endif %}
 
-                <a href="{{ path('school_settings') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                          {{ (currentRoute starts with 'school_setting') and not (currentRoute starts with 'school_settings_season') and not (currentRoute starts with 'school_season') ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Paramètres
-                </a>
+            {# ── Enseignant ── #}
+            {% if _isTeacher %}
+            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SCHOOL') %}<div class="border-t border-gray-100 my-1.5"></div>{% endif %}
+            <p class="px-3 pb-1.5 pt-0.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Enseignant</p>
+            <a href="{{ path('teacher_home') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute == 'teacher_home' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Tableau de bord
+            </a>
+            {% if app.session.get('currentSchoolId') %}
+            <a href="{{ path('teacher_fast_count') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute == 'teacher_fast_count' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                Comptage rapide
+            </a>
+            {% endif %}
+            {% endif %}
 
-            {% else %}
-
-                {# ── Teacher / Student — menu minimal ── #}
-                <a href="{{ path('app_dashboard') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                          {{ currentRoute == 'app_dashboard' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    Tableau de bord
-                </a>
-
+            {# ── Élève ── #}
+            {% if _isStudent %}
+            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_SCHOOL') or is_granted('ROLE_TEACHER') %}<div class="border-t border-gray-100 my-1.5"></div>{% endif %}
+            <p class="px-3 pb-1.5 pt-0.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Élève</p>
+            <a href="{{ path('student_home') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute == 'student_home' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Mes écoles
+            </a>
+            {% if app.session.get('currentSchoolId') %}
+            <a href="{{ path('school_my_packages') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+                      {{ currentRoute starts with 'school_my' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                Mes forfaits
+            </a>
+            {% endif %}
             {% endif %}
 
             {# ── Commun : Mon profil + Se déconnecter ── #}
@@ -206,7 +238,7 @@
         <button @click="sidebarOpen = !sidebarOpen" class="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : 'app_dashboard')) }}" class="flex items-center gap-2">
+        <a href="{{ path(is_granted('ROLE_ADMIN') ? 'app_admin' : (is_granted('ROLE_SCHOOL') ? 'school_home' : (_isTeacher ? 'teacher_home' : (_isStudent ? 'student_home' : 'app_dashboard')))) }}" class="flex items-center gap-2">
             <img src="{{ asset('assets/logo_lvl_up.png') }}" alt="LVL UP" class="h-6 w-auto">
             <span class="font-bold text-indigo-600 text-base tracking-tight">LVL UP</span>
         </a>

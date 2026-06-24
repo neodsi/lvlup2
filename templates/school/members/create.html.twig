@@ -61,7 +61,7 @@
                 </div>
 
                 <div>
-                    {{ form_label(form.email) }}
+                    <label for="{{ form.email.vars.id }}" class="block text-xs text-gray-500 mb-1">E-mail <span class="text-red-500">*</span></label>
                     {{ form_widget(form.email) }}
                     <div class="mt-1 text-xs text-red-500">{{ form_errors(form.email) }}</div>
                 </div>

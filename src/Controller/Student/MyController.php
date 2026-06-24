@@ -9,6 +9,7 @@ use App\Entity\EventOccurenceProfile;
 use App\Entity\Event;
 use App\Entity\PaymentSchedule;
 use App\Entity\Order;
+use App\Entity\Profile;
 use App\Entity\SchoolProfile;
 use App\Entity\SchoolProfileGalaParticipation;
 use App\Entity\SchoolProfilePackage;
@@ -16,6 +17,7 @@ use App\Entity\SchoolProfileSeason;
 use App\Entity\Season;
 use App\Entity\User;
 use App\Enum\EventType;
+use App\Enum\SchoolRole;
 use App\Security\Voter\SchoolVoter;
 use App\Service\SchoolContextService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -32,6 +34,34 @@ final class MyController extends AbstractController
         private readonly SchoolContextService $schoolContext,
         private readonly EntityManagerInterface $em,
     ) {
+    }
+
+    #[Route('/home', name: 'student_home', methods: ['GET'])]
+    public function home(): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $profileIds = $user->getProfiles()
+            ->filter(fn(Profile $p) => $p->getDeletedAt() === null)
+            ->map(fn(Profile $p) => $p->getId())
+            ->getValues();
+
+        $schoolProfiles = empty($profileIds) ? [] : $this->em->createQueryBuilder()
+            ->select('sp', 's')
+            ->from(SchoolProfile::class, 'sp')
+            ->join('sp.school', 's')
+            ->where('sp.profile IN (:profileIds)')
+            ->andWhere('sp.role = :role')
+            ->andWhere('sp.deletedAt IS NULL')
+            ->setParameter('profileIds', $profileIds)
+            ->setParameter('role', SchoolRole::Student)
+            ->getQuery()
+            ->getResult();
+
+        return $this->render('student/home.html.twig', [
+            'schoolProfiles' => $schoolProfiles,
+        ]);
     }
 
     #[Route('/gala', name: 'school_my_gala', methods: ['GET'])]

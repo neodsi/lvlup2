@@ -50,8 +50,9 @@ class StaffMemberType extends AbstractType
             ])
             ->add('email', EmailType::class, [
                 'label' => 'E-mail',
-                'required' => false,
+                'required' => true,
                 'mapped' => false,
+                'constraints' => [new NotBlank(message: 'L\'e-mail est obligatoire.')],
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])

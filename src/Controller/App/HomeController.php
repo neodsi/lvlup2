@@ -67,9 +67,11 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('school_home');
         }
 
-        return $this->render('app/home.html.twig', [
-            'schools' => [],
-        ]);
+        if ($this->isGranted('ROLE_TEACHER')) {
+            return $this->redirectToRoute('teacher_home');
+        }
+
+        return $this->redirectToRoute('student_home');
     }
 
     #[Route('/school/select/{id}', name: 'app_select_school')]
@@ -100,7 +102,11 @@ class HomeController extends AbstractController
 
         $request->getSession()->set('currentSchoolId', $id);
 
-        return $this->redirectToRoute('school_home');
+        return match ($tp->getRole()) {
+            SchoolRole::Teacher => $this->redirectToRoute('teacher_fast_count'),
+            SchoolRole::Student => $this->redirectToRoute('student_home'),
+            default             => $this->redirectToRoute('school_home'),
+        };
     }
 
     #[Route('/school/no-school', name: 'app_no_school')]

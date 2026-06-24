@@ -21,6 +21,7 @@ class AppExtension extends AbstractExtension
     ) {
     }
 
+
     public function getFilters(): array
     {
         return [
@@ -34,6 +35,7 @@ class AppExtension extends AbstractExtension
             new TwigFunction('is_school_admin', $this->isSchoolAdmin(...)),
             new TwigFunction('current_school_profile', $this->currentSchoolProfile(...)),
             new TwigFunction('primary_profile', $this->primaryProfile(...)),
+            new TwigFunction('user_school_roles', $this->userSchoolRoles(...)),
         ];
     }
 
@@ -85,6 +87,40 @@ class AppExtension extends AbstractExtension
         }
 
         return null;
+    }
+
+    /**
+     * Returns the list of SchoolRole values (strings) the current user holds across all schools.
+     * e.g. ['student', 'teacher'] — used to conditionally show menu sections.
+     *
+     * @return string[]
+     */
+    public function userSchoolRoles(): array
+    {
+        $token = $this->tokenStorage->getToken();
+        if ($token === null) {
+            return [];
+        }
+
+        $user = $token->getUser();
+        if (!$user instanceof \App\Entity\User) {
+            return [];
+        }
+
+        $roles = [];
+        foreach ($user->getProfiles() as $profile) {
+            if ($profile->getDeletedAt() !== null) {
+                continue;
+            }
+            foreach ($profile->getSchoolProfiles() as $sp) {
+                if ($sp->getDeletedAt() !== null) {
+                    continue;
+                }
+                $roles[$sp->getRole()->value] = true;
+            }
+        }
+
+        return array_keys($roles);
     }
 
     /**

@@ -25,7 +25,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin', name: 'app_admin')]
-    #[IsGranted('ROLE_SCHOOL')]
+    #[IsGranted('ROLE_ADMIN')]
     public function dashboard(): Response
     {
         $totalSchools = $this->em->createQueryBuilder()
@@ -56,7 +56,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/schools', name: 'app_admin_schools')]
-    #[IsGranted('ROLE_SCHOOL')]
+    #[IsGranted('ROLE_ADMIN')]
     public function schools(Request $request): Response
     {
         $statusFilter = $request->query->get('status');
@@ -103,7 +103,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/schools/{id}', name: 'app_admin_school_detail', methods: ['GET'])]
-    #[IsGranted('ROLE_SCHOOL')]
+    #[IsGranted('ROLE_ADMIN')]
     public function schoolDetail(string $id): Response
     {
         $school = $this->em->getRepository(School::class)->find($id);
@@ -142,7 +142,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/schools/{id}/status', name: 'app_admin_school_status', methods: ['POST'])]
-    #[IsGranted('ROLE_SCHOOL')]
+    #[IsGranted('ROLE_ADMIN')]
     public function setSchoolStatus(string $id, Request $request): Response
     {
         $school = $this->em->getRepository(School::class)->find($id);
@@ -200,7 +200,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/users', name: 'app_admin_users')]
-    #[IsGranted('ROLE_SCHOOL')]
+    #[IsGranted('ROLE_ADMIN')]
     public function users(Request $request): Response
     {
         $search     = $request->query->get('q', '');
@@ -261,7 +261,7 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/admin/users/{userId}', name: 'app_admin_user_detail', methods: ['GET'])]
-    #[IsGranted('ROLE_SCHOOL')]
+    #[IsGranted('ROLE_ADMIN')]
     public function userDetail(string $userId): Response
     {
         $user = $this->em->getRepository(User::class)->find($userId);
