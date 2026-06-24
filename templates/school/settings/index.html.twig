@@ -137,21 +137,21 @@
                 <div class="sm:w-1/2">
                     <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">Identifiant public (slug)</label>
                     <div class="flex gap-2">
-                        <div class="relative flex-1">
-                            <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm pointer-events-none">lvlup.fr/</span>
-                            <input type="text" id="slug" name="slug"
-                                   value="{{ school.currentSlug ?? suggestedSlug }}"
-                                   placeholder="{{ suggestedSlug }}"
-                                   style="padding-left:72px"
-                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 pr-3 py-2.5 text-sm text-gray-900 font-mono focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                        </div>
+                        <input type="text" id="slug" name="slug"
+                               value="{{ school.currentSlug ?? suggestedSlug }}"
+                               placeholder="{{ suggestedSlug }}"
+                               class="flex-1 block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 font-mono focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                         <button type="button" id="slug-generate"
                                 title="Regénérer depuis le nom"
                                 class="shrink-0 px-3 py-2.5 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-500 text-xs transition">
                             ↺ Générer
                         </button>
                     </div>
-                    <p class="mt-1 text-xs text-gray-400">Modifiable — l'ancien identifiant sera conservé comme alias.</p>
+                    <p id="slug-preview-full" class="mt-1 text-xs text-gray-400 font-mono">
+                        lvlup.fr/<span id="preview-city">{{ school.citySlug ?? '…' }}</span>/<span id="preview-slug">{{ school.currentSlug ?? suggestedSlug }}</span>
+                    </p>
+                    <p class="text-xs text-gray-400">Modifiable — l'ancien identifiant sera conservé comme alias.</p>
+                    <input type="hidden" id="citySlug" name="citySlug" value="{{ school.citySlug ?? '' }}">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -195,6 +195,30 @@
         </div>
         {% endfor %}
 
+        {# Localisation #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">Localisation</h2>
+                <p class="text-sm text-gray-500 mt-0.5">La ville est extraite automatiquement de la carte pour construire l'URL publique.</p>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div class="flex gap-2">
+                    <input type="text" id="address-search" placeholder="Rechercher une adresse…"
+                           value="{{ school.addressText ?? '' }}"
+                           class="flex-1 block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <button type="button" id="address-search-btn"
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+                        Rechercher
+                    </button>
+                </div>
+                <div id="map" class="rounded-xl border border-gray-200 overflow-hidden" style="height:360px"></div>
+                <input type="hidden" id="addressText" name="addressText" value="{{ school.addressText ?? '' }}">
+                <input type="hidden" id="addressLat"  name="addressLat"  value="{{ school.addressLat ?? '' }}">
+                <input type="hidden" id="addressLng"  name="addressLng"  value="{{ school.addressLng ?? '' }}">
+            </div>
+        </div>
+
         <div class="flex justify-end">
             <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
                 Enregistrer
@@ -207,6 +231,8 @@
 
 {% block scripts %}
 {{ parent() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
@@ -247,18 +273,98 @@
         });
     });
 
+    // Slug preview
+    function updateSlugPreview() {
+        const city  = document.getElementById('citySlug').value || '…';
+        const slug  = document.getElementById('slug').value || document.getElementById('slug').placeholder || '…';
+        document.getElementById('preview-city').textContent = city;
+        document.getElementById('preview-slug').textContent = slug;
+    }
+    updateSlugPreview();
+    document.getElementById('slug').addEventListener('input', updateSlugPreview);
+
     // Slug generator
     const slugGenBtn = document.getElementById('slug-generate');
     if (slugGenBtn) {
         slugGenBtn.addEventListener('click', function () {
             const name = (document.getElementById('name').value || '').trim();
             const slug = name.toLowerCase()
-                .normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .normalize('NFD').replace(/\p{Diacritic}/gu, '')
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/^-+|-+$/g, '');
             document.getElementById('slug').value = slug;
+            updateSlugPreview();
         });
     }
+
+    // Map
+    (function () {
+        const lat0   = parseFloat(document.getElementById('addressLat').value) || 48.8566;
+        const lng0   = parseFloat(document.getElementById('addressLng').value) || 2.3522;
+        const hasPos = !!document.getElementById('addressLat').value;
+
+        const map = L.map('map').setView([lat0, lng0], hasPos ? 15 : 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors', maxZoom: 19,
+        }).addTo(map);
+
+        const marker = L.marker([lat0, lng0], { draggable: true });
+        if (hasPos) marker.addTo(map);
+
+        function extractCitySlug(addr) {
+            const city = addr?.city || addr?.town || addr?.village || addr?.municipality || addr?.county || '';
+            return city.toLowerCase()
+                .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+                .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        }
+
+        function setPos(lat, lng, label, addr) {
+            marker.setLatLng([lat, lng]);
+            if (!map.hasLayer(marker)) marker.addTo(map);
+            map.setView([lat, lng], 15);
+            document.getElementById('addressLat').value = lat.toFixed(7);
+            document.getElementById('addressLng').value = lng.toFixed(7);
+            if (label) {
+                document.getElementById('addressText').value  = label;
+                document.getElementById('address-search').value = label;
+            }
+            if (addr) {
+                const cs = extractCitySlug(addr);
+                if (cs) { document.getElementById('citySlug').value = cs; updateSlugPreview(); }
+            }
+        }
+
+        marker.on('dragend', function () {
+            const p = marker.getLatLng();
+            document.getElementById('addressLat').value = p.lat.toFixed(7);
+            document.getElementById('addressLng').value = p.lng.toFixed(7);
+            fetch('https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=' + p.lat + '&lon=' + p.lng)
+                .then(r => r.json()).then(d => {
+                    if (d.display_name) {
+                        document.getElementById('addressText').value = d.display_name;
+                        document.getElementById('address-search').value = d.display_name;
+                        const cs = extractCitySlug(d.address);
+                        if (cs) { document.getElementById('citySlug').value = cs; updateSlugPreview(); }
+                    }
+                });
+        });
+
+        map.on('click', function (e) { setPos(e.latlng.lat, e.latlng.lng, null, null); });
+
+        document.getElementById('address-search-btn').addEventListener('click', function () {
+            const q = document.getElementById('address-search').value.trim();
+            if (!q) return;
+            fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=' + encodeURIComponent(q) + '&limit=1')
+                .then(r => r.json()).then(d => {
+                    if (d.length) setPos(parseFloat(d[0].lat), parseFloat(d[0].lon), d[0].display_name, d[0].address);
+                    else alert('Adresse introuvable.');
+                });
+        });
+
+        document.getElementById('address-search').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); document.getElementById('address-search-btn').click(); }
+        });
+    })();
 })();
 </script>
 <script>

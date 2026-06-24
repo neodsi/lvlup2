@@ -57,6 +57,16 @@ final class SettingsController extends AbstractController
             $school->setWebsiteUrl($request->request->get('websiteUrl') ?: null);
             $school->setContactEmail($request->request->get('contactEmail') ?: null);
             $school->setPhone($request->request->get('phone') ?: null);
+
+            $addressText = $request->request->get('addressText') ?: null;
+            $school->setAddressText($addressText);
+            $school->setAddressLat($request->request->get('addressLat') ?: null);
+            $school->setAddressLng($request->request->get('addressLng') ?: null);
+            $school->setCitySlug($request->request->get('citySlug') ?: null);
+            if ($addressText) {
+                $school->setInvoiceAddress($addressText);
+            }
+
             $school->setDescription($request->request->get('description') ?: null);
             $school->setSchedule($request->request->get('schedule') ?: null);
             $school->setPricing($request->request->get('pricing') ?: null);
@@ -242,15 +252,12 @@ final class SettingsController extends AbstractController
         if ($request->isMethod('POST')) {
             $school->setCurrency($request->request->get('currency', 'EUR'));
             $school->setCompanyName($request->request->get('companyName') ?: null);
-            $school->setSiret($request->request->get('siret') ?: null);
-            $school->setIban($request->request->get('iban') ?: null);
+            $school->setSiret(preg_replace('/\s+/', '', $request->request->get('siret') ?: '') ?: null);
+            $school->setIban(preg_replace('/\s+/', '', $request->request->get('iban') ?: '') ?: null);
             $school->setApeNaf($request->request->get('apeNaf') ?: null);
             $school->setIsCollectingVat((bool) $request->request->get('isCollectingVat'));
             $school->setVatNumber($request->request->get('vatNumber') ?: null);
             $school->setInvoiceAddress($request->request->get('invoiceAddress') ?: null);
-            $school->setAddressText($request->request->get('addressText') ?: null);
-            $school->setAddressLat($request->request->get('addressLat') ?: null);
-            $school->setAddressLng($request->request->get('addressLng') ?: null);
 
             $feePaidBy = FeePaidBy::tryFrom($request->request->get('feePaidBy', 'student'));
             if ($feePaidBy) {

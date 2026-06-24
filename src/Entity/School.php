@@ -99,6 +99,9 @@ class School
     #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
     private ?string $addressLng = null;
 
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private ?string $citySlug = null;
+
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $siret = null;
 
@@ -401,6 +404,9 @@ class School
 
     public function getAddressLng(): ?string { return $this->addressLng; }
     public function setAddressLng(?string $v): static { $this->addressLng = $v; return $this; }
+
+    public function getCitySlug(): ?string { return $this->citySlug; }
+    public function setCitySlug(?string $v): static { $this->citySlug = $v; return $this; }
 
     public function getSiret(): ?string { return $this->siret; }
     public function setSiret(?string $v): static { $this->siret = $v; return $this; }

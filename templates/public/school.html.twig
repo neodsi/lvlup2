@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ school.name }}{% if school.citySlug %} — {{ school.citySlug|replace({'-': ' '})|title }}{% endif %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        .prose h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: .5rem; margin-top: 1.25rem; }
+        .prose h3 { font-size: 1rem; font-weight: 600; margin-bottom: .4rem; margin-top: 1rem; }
+        .prose p  { margin-bottom: .6rem; line-height: 1.65; }
+        .prose ul { list-style: disc; padding-left: 1.4rem; margin-bottom: .6rem; }
+        .prose ol { list-style: decimal; padding-left: 1.4rem; margin-bottom: .6rem; }
+        .prose li { margin-bottom: .2rem; }
+        .prose strong { font-weight: 600; }
+        .prose em { font-style: italic; }
+        .prose a { color: #4f46e5; text-decoration: underline; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased" x-data>
+
+{# ── Hero ── #}
+<div class="relative{% if school.avatarPath %} bg-gray-900{% else %} bg-gradient-to-br from-indigo-900 to-indigo-700{% endif %} overflow-hidden" style="min-height:260px">
+    {% if school.avatarPath %}
+    <img src="/{{ school.avatarPath }}" alt="{{ school.name }}"
+         class="absolute inset-0 w-full h-full object-cover opacity-50">
+    {% endif %}
+    <div class="relative z-10 px-4 sm:px-6 py-10 flex flex-col items-center text-center" style="min-height:260px;justify-content:center">
+        {% if school.logoPath %}
+        <img src="/{{ school.logoPath }}" alt="Logo {{ school.name }}"
+             class="h-20 w-20 rounded-xl object-contain bg-white/10 border border-white/20 p-2 mb-4 shadow-lg">
+        {% endif %}
+        <h1 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">{{ school.name }}</h1>
+        {% if school.addressText %}
+        <p class="mt-2 text-sm text-white/70 flex items-center gap-1.5 justify-center">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            {{ school.addressText }}
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Contact bar ── #}
+{% if school.phone or school.contactEmail or school.websiteUrl %}
+<div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
+    <div class="max-w-4xl mx-auto flex flex-wrap items-center gap-x-6 gap-y-2 justify-center text-sm">
+        {% if school.phone %}
+        <a href="tel:{{ school.phone|replace({' ': ''}) }}" class="flex items-center gap-1.5 text-gray-600 hover:text-indigo-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            {{ school.phone }}
+        </a>
+        {% endif %}
+        {% if school.contactEmail %}
+        <a href="mailto:{{ school.contactEmail }}" class="flex items-center gap-1.5 text-gray-600 hover:text-indigo-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            {{ school.contactEmail }}
+        </a>
+        {% endif %}
+        {% if school.websiteUrl %}
+        <a href="{{ school.websiteUrl }}" target="_blank" rel="noopener" class="flex items-center gap-1.5 text-gray-600 hover:text-indigo-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            {{ school.websiteUrl|replace({'https://': '', 'http://': ''})|rtrim('/') }}
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Main content ── #}
+<main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+    {# Description #}
+    {% if school.description %}
+    <section>
+        <h2 class="text-lg font-bold text-gray-900 mb-3">À propos</h2>
+        <div class="bg-white rounded-xl border border-gray-200 p-5 prose text-sm text-gray-700">
+            {{ school.description|raw }}
+        </div>
+    </section>
+    {% endif %}
+
+    {# Saisons à venir #}
+    {% if seasonData is not empty %}
+    <section>
+        <h2 class="text-lg font-bold text-gray-900 mb-3">Inscriptions & Saisons</h2>
+        <div class="space-y-4">
+            {% for item in seasonData %}
+            {% set season = item.season %}
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+
+                {# Season header #}
+                <div class="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <div>
+                        <h3 class="font-semibold text-gray-900">{{ season.name }}</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Du {{ season.startAt|date('d/m/Y') }} au {{ season.endAt|date('d/m/Y') }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        {% if item.regOpen %}
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                            Inscriptions ouvertes
+                        </span>
+                        {% elseif item.preRegOpen %}
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            Pré-inscriptions ouvertes
+                        </span>
+                        {% elseif season.registrationsStartAt and season.registrationsStartAt > date() %}
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                            Inscriptions le {{ season.registrationsStartAt|date('d/m/Y') }}
+                        </span>
+                        {% endif %}
+                        {% if item.regOpen or item.preRegOpen %}
+                        <a href="{{ path('app_shop', {schoolSlug: school.currentSlug}) }}"
+                           class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition">
+                            S'inscrire
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if season.registrationPublicDescription %}
+                <div class="px-5 py-3 border-b border-gray-100 text-sm text-gray-600 prose">
+                    {{ season.registrationPublicDescription|raw }}
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+
+                    {# Forfaits #}
+                    {% if item.packages is not empty %}
+                    <div class="px-5 py-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Forfaits</p>
+                        <div class="space-y-2">
+                            {% for pkg in item.packages %}
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">{{ pkg.name }}</p>
+                                    <p class="text-xs text-gray-400">
+                                        {% if pkg.type.value == 'subscription_one_year' %}Abonnement annuel
+                                        {% elseif pkg.type.value == 'subscription_one_semester' %}Abonnement semestriel
+                                        {% elseif pkg.type.value == 'trial_class' %}Cours d'essai
+                                        {% elseif pkg.type.value == 'a_la_carte' %}À la carte
+                                        {% else %}{{ pkg.type.value }}{% endif %}
+                                        {% if pkg.classesQty %} · {{ pkg.classesQty }} cours{% endif %}
+                                    </p>
+                                </div>
+                                <span class="shrink-0 text-sm font-semibold text-indigo-600">{{ (pkg.price / 100)|number_format(2, ',', ' ') }} €</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# Cours #}
+                    {% if item.events is not empty %}
+                    <div class="px-5 py-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Cours & activités</p>
+                        <div class="space-y-1.5">
+                            {% for event in item.events %}
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium
+                                    {% if event.type.value == 'lesson' %}bg-indigo-50 text-indigo-700
+                                    {% elseif event.type.value == 'stage' %}bg-purple-50 text-purple-700
+                                    {% elseif event.type.value == 'gala' %}bg-pink-50 text-pink-700
+                                    {% elseif event.type.value == 'workshop' %}bg-amber-50 text-amber-700
+                                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                    {% if event.type.value == 'lesson' %}Cours
+                                    {% elseif event.type.value == 'stage' %}Stage
+                                    {% elseif event.type.value == 'gala' %}Gala
+                                    {% elseif event.type.value == 'workshop' %}Atelier
+                                    {% else %}{{ event.type.value }}{% endif %}
+                                </span>
+                                <span class="text-sm text-gray-800 truncate">{{ event.name }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                {# Fermetures #}
+                {% if season.closures is not empty %}
+                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Fermetures</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for closure in season.closures %}
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs bg-white border border-gray-200 text-gray-600">
+                            {% if closure.label is defined %}{{ closure.label }}{% endif %}
+                            {% if closure.startDate is defined %}{{ closure.startDate }}{% if closure.endDate is defined and closure.endDate != closure.startDate %} – {{ closure.endDate }}{% endif %}{% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {# Horaires #}
+    {% if school.schedule %}
+    <section>
+        <h2 class="text-lg font-bold text-gray-900 mb-3">Horaires</h2>
+        <div class="bg-white rounded-xl border border-gray-200 p-5 prose text-sm text-gray-700">
+            {{ school.schedule|raw }}
+        </div>
+    </section>
+    {% endif %}
+
+    {# Tarifs #}
+    {% if school.pricing %}
+    <section>
+        <h2 class="text-lg font-bold text-gray-900 mb-3">Tarifs</h2>
+        <div class="bg-white rounded-xl border border-gray-200 p-5 prose text-sm text-gray-700">
+            {{ school.pricing|raw }}
+        </div>
+    </section>
+    {% endif %}
+
+    {# Moyens de paiement #}
+    {% set _pmLabels = {
+        'voucher_activity':            'Chèques activités',
+        'card_on_site':                'Carte bancaire',
+        'voucher_holiday_ancv_paper':  'Chèques vacances ANCV',
+        'sepa_direct_debit':           'Prélèvement SEPA',
+        'financement_pole_emploi':     'Pôle emploi',
+        'voucher_holiday_ancv_online': 'Chèques e-ANCV',
+        'coupon_sport':                'Coupon sport',
+        'bank_transfer':               'Virement',
+        'culture_pass':                'Pass culture',
+        'cash':                        'Espèces',
+        'check':                       'Chèques',
+        'online_card':                 'Carte en ligne',
+        'online_bank_transfer':        'Virement en ligne',
+        'other':                       'Autre',
+    } %}
+    {% set _enabledMethods = [] %}
+    {% for m in school.paymentMethods ?? [] %}
+        {% if m.allowed_for_one_shot or m.allowed_for_multiple_payments %}
+            {% set _enabledMethods = _enabledMethods|merge([m.id]) %}
+        {% endif %}
+    {% endfor %}
+    {% if _enabledMethods is not empty %}
+    <section>
+        <h2 class="text-lg font-bold text-gray-900 mb-3">Moyens de paiement</h2>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="flex flex-wrap gap-2">
+                {% for id in _enabledMethods %}
+                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm bg-gray-100 text-gray-700 border border-gray-200">
+                    <svg class="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    {{ _pmLabels[id] ?? id }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {# Carte & adresse #}
+    {% if school.addressLat and school.addressLng %}
+    <section>
+        <h2 class="text-lg font-bold text-gray-900 mb-3">Nous trouver</h2>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div id="public-map" style="height:300px"></div>
+            {% if school.addressText %}
+            <div class="px-5 py-3 flex items-start gap-2 border-t border-gray-100">
+                <svg class="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <p class="text-sm text-gray-600">{{ school.addressText }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    {# CGU #}
+    {% if school.readAndCheck %}
+    <div class="text-center">
+        <button type="button" @click="$dispatch('open-cgu')"
+                class="text-sm text-indigo-600 hover:text-indigo-800 underline transition">
+            Consulter les conditions d'utilisation
+        </button>
+    </div>
+
+    <div x-data="{ open: false }" @open-cgu.window="open = true">
+        <div x-show="open" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none">
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="open = false"></div>
+            <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900">Conditions d'utilisation</h3>
+                    <button type="button" @click="open = false" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="px-6 py-5 overflow-y-auto prose text-sm text-gray-700">
+                    {{ school.readAndCheck|raw }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</main>
+
+{# ── Footer ── #}
+<footer class="mt-12 border-t border-gray-200 bg-white py-6 px-4 text-center">
+    <p class="text-xs text-gray-400">
+        {{ school.name }} · Propulsé par <a href="{{ path('app_home') }}" class="text-indigo-500 hover:underline">LVL UP</a>
+    </p>
+</footer>
+
+{% if school.addressLat and school.addressLng %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    const lat = {{ school.addressLat }};
+    const lng = {{ school.addressLng }};
+    const map = L.map('public-map', { zoomControl: true, scrollWheelZoom: false }).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 19,
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map);
+})();
+</script>
+{% endif %}
+
+</body>
+</html>

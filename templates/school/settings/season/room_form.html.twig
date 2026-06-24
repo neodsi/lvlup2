@@ -57,7 +57,7 @@
         <div class="px-6 py-5 space-y-4">
             <div class="flex gap-2">
                 <input type="text" id="address-search" placeholder="Rechercher une adresse…"
-                       value="{{ isEdit ? (room.addressText ?? '') : '' }}"
+                       value="{{ isEdit ? (room.addressText ?? '') : (school.addressText ?? '') }}"
                        class="flex-1 block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                 <button type="button" id="address-search-btn"
                         class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">
@@ -66,9 +66,9 @@
                 </button>
             </div>
             <div id="map" class="rounded-xl border border-gray-200 overflow-hidden" style="height:380px"></div>
-            <input type="hidden" id="addressText" name="addressText" value="{{ isEdit ? (room.addressText ?? '') : '' }}">
-            <input type="hidden" id="addressLat"  name="addressLat"  value="{{ isEdit ? (room.addressLat ?? '') : '' }}">
-            <input type="hidden" id="addressLng"  name="addressLng"  value="{{ isEdit ? (room.addressLng ?? '') : '' }}">
+            <input type="hidden" id="addressText" name="addressText" value="{{ isEdit ? (room.addressText ?? '') : (school.addressText ?? '') }}">
+            <input type="hidden" id="addressLat"  name="addressLat"  value="{{ isEdit ? (room.addressLat ?? '') : (school.addressLat ?? '') }}">
+            <input type="hidden" id="addressLng"  name="addressLng"  value="{{ isEdit ? (room.addressLng ?? '') : (school.addressLng ?? '') }}">
         </div>
     </div>
 
