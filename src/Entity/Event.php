@@ -54,6 +54,15 @@ class Event
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $rruleDayOrder = null;
 
+    #[ORM\Column(type: 'boolean')]
+    private bool $visible = true;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $minAge = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $maxAge = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -62,22 +71,6 @@ class Event
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
-
-    #[ORM\ManyToMany(targetEntity: Level::class)]
-    #[ORM\JoinTable(
-        name: 'event_levels',
-        joinColumns: [new ORM\JoinColumn(name: 'event_id', referencedColumnName: 'id')],
-        inverseJoinColumns: [new ORM\JoinColumn(name: 'level_id', referencedColumnName: 'id')]
-    )]
-    private Collection $levels;
-
-    #[ORM\ManyToMany(targetEntity: AgeGroup::class)]
-    #[ORM\JoinTable(
-        name: 'event_age_groups',
-        joinColumns: [new ORM\JoinColumn(name: 'event_id', referencedColumnName: 'id')],
-        inverseJoinColumns: [new ORM\JoinColumn(name: 'age_group_id', referencedColumnName: 'id')]
-    )]
-    private Collection $ageGroups;
 
     #[ORM\ManyToMany(targetEntity: Package::class)]
     #[ORM\JoinTable(
@@ -92,8 +85,6 @@ class Event
         $this->id = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        $this->levels = new ArrayCollection();
-        $this->ageGroups = new ArrayCollection();
         $this->packages = new ArrayCollection();
     }
 
@@ -252,6 +243,42 @@ class Event
         return $this;
     }
 
+    public function isVisible(): bool
+    {
+        return $this->visible;
+    }
+
+    public function setVisible(bool $visible): static
+    {
+        $this->visible = $visible;
+
+        return $this;
+    }
+
+    public function getMinAge(): ?int
+    {
+        return $this->minAge;
+    }
+
+    public function setMinAge(?int $minAge): static
+    {
+        $this->minAge = $minAge;
+
+        return $this;
+    }
+
+    public function getMaxAge(): ?int
+    {
+        return $this->maxAge;
+    }
+
+    public function setMaxAge(?int $maxAge): static
+    {
+        $this->maxAge = $maxAge;
+
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -270,48 +297,6 @@ class Event
     public function setDeletedAt(?\DateTimeImmutable $deletedAt): static
     {
         $this->deletedAt = $deletedAt;
-
-        return $this;
-    }
-
-    public function getLevels(): Collection
-    {
-        return $this->levels;
-    }
-
-    public function addLevel(Level $level): static
-    {
-        if (!$this->levels->contains($level)) {
-            $this->levels->add($level);
-        }
-
-        return $this;
-    }
-
-    public function removeLevel(Level $level): static
-    {
-        $this->levels->removeElement($level);
-
-        return $this;
-    }
-
-    public function getAgeGroups(): Collection
-    {
-        return $this->ageGroups;
-    }
-
-    public function addAgeGroup(AgeGroup $ageGroup): static
-    {
-        if (!$this->ageGroups->contains($ageGroup)) {
-            $this->ageGroups->add($ageGroup);
-        }
-
-        return $this;
-    }
-
-    public function removeAgeGroup(AgeGroup $ageGroup): static
-    {
-        $this->ageGroups->removeElement($ageGroup);
 
         return $this;
     }

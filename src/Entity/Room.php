@@ -24,6 +24,18 @@ class Room
     #[ORM\Column(type: 'string', length: 255)]
     private string $name;
 
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $maxCapacity = null;
+
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $addressText = null;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    private ?float $addressLat = null;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 7, nullable: true)]
+    private ?float $addressLng = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -86,6 +98,18 @@ class Room
 
         return $this;
     }
+
+    public function getMaxCapacity(): ?int { return $this->maxCapacity; }
+    public function setMaxCapacity(?int $v): static { $this->maxCapacity = $v; return $this; }
+
+    public function getAddressText(): ?string { return $this->addressText; }
+    public function setAddressText(?string $v): static { $this->addressText = $v; return $this; }
+
+    public function getAddressLat(): ?float { return $this->addressLat; }
+    public function setAddressLat(?float $v): static { $this->addressLat = $v; return $this; }
+
+    public function getAddressLng(): ?float { return $this->addressLng; }
+    public function setAddressLng(?float $v): static { $this->addressLng = $v; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable
     {

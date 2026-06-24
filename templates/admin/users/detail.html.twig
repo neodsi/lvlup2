@@ -174,7 +174,7 @@
                             {% set school = sp.school %}
                             <div class="flex items-center gap-4 px-6 py-4">
                                 {% if school.logoPath %}
-                                    <img src="{{ school.logoPath | imagine_filter('team_logo') }}" alt="" class="h-10 w-10 rounded-lg object-cover shrink-0 border border-gray-100">
+                                    <img src="{{ school.logoPath | imagine_filter('school_logo') }}" alt="" class="h-10 w-10 rounded-lg object-cover shrink-0 border border-gray-100">
                                 {% else %}
                                     <span class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
                                         {{ school.name|first|upper }}

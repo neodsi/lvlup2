@@ -1,0 +1,154 @@
+{% extends 'layout/school.html.twig' %}
+
+{% set isEdit = room is not null %}
+{% block title %}{{ isEdit ? 'Modifier ' ~ room.name : 'Nouvelle salle' }} — {{ season.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_season_rooms', {id: season.id}) }}" class="hover:text-gray-700 transition">Salles</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">{{ isEdit ? room.name : 'Nouvelle salle' }}</span>
+{% endblock %}
+
+{% block school_content %}
+<div class="py-8">
+
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">{{ isEdit ? 'Modifier la salle' : 'Nouvelle salle' }}</h1>
+</div>
+
+<form method="POST"
+      action="{{ isEdit ? path('school_season_room_edit', {id: season.id, roomId: room.id}) : path('school_season_room_create', {id: season.id}) }}"
+      class="space-y-6 max-w-3xl">
+    <input type="hidden" name="_token" value="{{ csrf_token(isEdit ? 'room_edit_' ~ room.id : 'room_create') }}">
+
+    {# Infos générales #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Informations</h2>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom de la salle <span class="text-red-500">*</span></label>
+                <input type="text" id="name" name="name" required
+                       value="{{ isEdit ? room.name : '' }}"
+                       placeholder="Ex : Studio A, Salle principale…"
+                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+            </div>
+            <div class="w-48">
+                <label for="maxCapacity" class="block text-sm font-medium text-gray-700 mb-1">Capacité (personnes)</label>
+                <input type="number" id="maxCapacity" name="maxCapacity" min="1" max="10000"
+                       value="{{ isEdit and room.maxCapacity ? room.maxCapacity : '' }}"
+                       placeholder="Ex : 20"
+                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+            </div>
+        </div>
+    </div>
+
+    {# Adresse avec carte #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Adresse</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Positionnez le marqueur sur la carte ou saisissez l'adresse.</p>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <div class="flex gap-2">
+                <input type="text" id="address-search" placeholder="Rechercher une adresse…"
+                       value="{{ isEdit ? (room.addressText ?? '') : '' }}"
+                       class="flex-1 block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                <button type="button" id="address-search-btn"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+                    Rechercher
+                </button>
+            </div>
+            <div id="map" class="rounded-xl border border-gray-200 overflow-hidden" style="height:380px"></div>
+            <input type="hidden" id="addressText" name="addressText" value="{{ isEdit ? (room.addressText ?? '') : '' }}">
+            <input type="hidden" id="addressLat"  name="addressLat"  value="{{ isEdit ? (room.addressLat ?? '') : '' }}">
+            <input type="hidden" id="addressLng"  name="addressLng"  value="{{ isEdit ? (room.addressLng ?? '') : '' }}">
+        </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
+            {{ isEdit ? 'Enregistrer les modifications' : 'Créer la salle' }}
+        </button>
+        <a href="{{ path('school_season_rooms', {id: season.id}) }}"
+           class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
+    </div>
+</form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ parent() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    var lat0 = parseFloat(document.getElementById('addressLat').value) || 48.8566;
+    var lng0 = parseFloat(document.getElementById('addressLng').value) || 2.3522;
+    var hasPos = !!document.getElementById('addressLat').value;
+
+    var map = L.map('map').setView([lat0, lng0], hasPos ? 15 : 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+    }).addTo(map);
+
+    var marker = L.marker([lat0, lng0], { draggable: true });
+    if (hasPos) marker.addTo(map);
+
+    function setPos(lat, lng, label) {
+        marker.setLatLng([lat, lng]);
+        if (!map.hasLayer(marker)) marker.addTo(map);
+        map.setView([lat, lng], 15);
+        document.getElementById('addressLat').value = lat.toFixed(7);
+        document.getElementById('addressLng').value = lng.toFixed(7);
+        if (label) {
+            document.getElementById('addressText').value = label;
+            document.getElementById('address-search').value = label;
+        }
+    }
+
+    marker.on('dragend', function () {
+        var p = marker.getLatLng();
+        document.getElementById('addressLat').value = p.lat.toFixed(7);
+        document.getElementById('addressLng').value = p.lng.toFixed(7);
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + p.lat + '&lon=' + p.lng)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.display_name) {
+                    document.getElementById('addressText').value = d.display_name;
+                    document.getElementById('address-search').value = d.display_name;
+                }
+            });
+    });
+
+    map.on('click', function (e) { setPos(e.latlng.lat, e.latlng.lng, null); });
+
+    document.getElementById('address-search-btn').addEventListener('click', function () {
+        var q = document.getElementById('address-search').value.trim();
+        if (!q) return;
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.length) {
+                    setPos(parseFloat(d[0].lat), parseFloat(d[0].lon), d[0].display_name);
+                } else {
+                    alert('Adresse introuvable.');
+                }
+            });
+    });
+
+    document.getElementById('address-search').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('address-search-btn').click(); }
+    });
+})();
+</script>
+{% endblock %}

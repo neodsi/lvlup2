@@ -17,7 +17,7 @@
             {% if school.avatarPath %}
             <div class="shop__avatar">
                 <img
-                    src="{{ school.avatarPath | imagine_filter('team_avatar') }}"
+                    src="{{ school.avatarPath | imagine_filter('school_avatar') }}"
                     alt="{{ school.name }}"
                     class="shop__avatar-img"
                 >
@@ -33,7 +33,7 @@
             {% for path in school.carouselPaths %}
             <div class="shop__carousel-slide{% if loop.first %} shop__carousel-slide--active{% endif %}">
                 <img
-                    src="{{ path | imagine_filter('team_carousel') }}"
+                    src="{{ path | imagine_filter('school_carousel') }}"
                     alt="{{ school.name }} - photo {{ loop.index }}"
                     class="shop__carousel-img"
                 >

@@ -1,0 +1,240 @@
+{% extends 'layout/school.html.twig' %}
+
+{% set isEdit = package is not null %}
+{% block title %}{{ isEdit ? 'Modifier ' ~ package.name : 'Nouveau forfait' }} — {{ season.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_season_packages', {id: season.id}) }}" class="hover:text-gray-700 transition">Forfaits</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">{{ isEdit ? package.name : 'Nouveau forfait' }}</span>
+{% endblock %}
+
+{% set initType = isEdit ? package.type.value : (lockedType is not null and lockedType != '' ? lockedType : 'subscription_one_year') %}
+{% set initValidityStart = isEdit ? package.validityStartType.value : 'at_attribution' %}
+{% set initExpiration = isEdit ? package.expirationType.value : 'seasonal' %}
+
+{% block school_content %}
+<div class="py-8">
+
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">{{ isEdit ? 'Modifier le forfait' : 'Nouveau forfait' }}</h1>
+</div>
+
+<form method="POST"
+      action="{{ isEdit ? path('school_season_package_edit', {id: season.id, packageId: package.id}) : path('school_season_package_create', {id: season.id}) }}"
+      class="space-y-6 max-w-2xl"
+      x-data="packageForm('{{ initType }}', '{{ initValidityStart }}', '{{ initExpiration }}')">
+    <input type="hidden" name="_token" value="{{ csrf_token(isEdit ? 'package_edit_' ~ package.id : 'package_create') }}">
+    {% if not isEdit %}<input type="hidden" name="lockedType" value="{{ lockedType ?? '' }}">{% endif %}
+
+    {# Identité #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Identité</h2>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom du forfait <span class="text-red-500">*</span></label>
+                <input type="text" id="name" name="name" required
+                       value="{{ isEdit ? package.name : ((lockedType ?? '') == 'registration_fee' ? 'Frais d\'inscription — ' ~ season.name : '') }}"
+                       placeholder="Ex : Abonnement annuel, Pack 10 cours…"
+                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea id="description" name="description" rows="3"
+                          placeholder="Description optionnelle affichée aux familles…"
+                          class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-none">{{ isEdit ? package.description : '' }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type <span class="text-red-500">*</span></label>
+                    {% if (lockedType ?? '') == 'registration_fee' or (isEdit and package.type.value == 'registration_fee') %}
+                        <input type="hidden" name="type" value="registration_fee">
+                        <div class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">
+                            Frais d'inscription
+                        </div>
+                    {% else %}
+                        <select id="type" name="type" required x-model="type"
+                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            <option value="subscription_one_year"     {{ initType == 'subscription_one_year' ? 'selected' : '' }}>Abonnement annuel</option>
+                            <option value="subscription_one_semester" {{ initType == 'subscription_one_semester' ? 'selected' : '' }}>Abonnement semestriel</option>
+                            <option value="subscription_one_quarter"  {{ initType == 'subscription_one_quarter' ? 'selected' : '' }}>Abonnement trimestriel</option>
+                            <option value="subscription_one_month"    {{ initType == 'subscription_one_month' ? 'selected' : '' }}>Abonnement mensuel</option>
+                            <option value="trial_class"               {{ initType == 'trial_class' ? 'selected' : '' }}>Cours d'essai</option>
+                            <option value="a_la_carte"                {{ initType == 'a_la_carte' ? 'selected' : '' }}>À la carte</option>
+                        </select>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Prix (€) <span class="text-red-500">*</span></label>
+                    <input type="number" id="price" name="price" required min="0" step="0.01"
+                           value="{{ isEdit ? (package.price / 100)|number_format(2, '.', '') : '' }}"
+                           placeholder="0.00"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
+
+            <div class="w-40">
+                <label for="classesQty" class="block text-sm font-medium text-gray-700 mb-1">Nb de cours</label>
+                <input type="number" id="classesQty" name="classesQty" min="1" max="9999"
+                       value="{{ isEdit and package.classesQty ? package.classesQty : '' }}"
+                       placeholder="Illimité si vide"
+                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+            </div>
+        </div>
+    </div>
+
+    {# Validité — masquée pour à la carte #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200" x-show="type !== 'a_la_carte'">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Validité</h2>
+        </div>
+        <div class="px-6 py-5 space-y-5">
+
+            <div>
+                <p class="text-sm font-medium text-gray-700 mb-3">Début de validité</p>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="validityStartType" value="at_attribution"
+                               x-model="validityStart"
+                               class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                        <span class="text-sm text-gray-700">Date d'achat (dès que le forfait est attribué)</span>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="radio" name="validityStartType" value="fixed_date"
+                               x-model="validityStart"
+                               class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-0.5">
+                        <div class="flex-1">
+                            <span class="text-sm text-gray-700">Date fixe</span>
+                            <div x-show="validityStart === 'fixed_date'" class="mt-2">
+                                <input type="date" name="validityStartsAt"
+                                       value="{{ isEdit and package.validityStartsAt ? package.validityStartsAt|date('Y-m-d') : '' }}"
+                                       class="block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-100 pt-5">
+                <p class="text-sm font-medium text-gray-700 mb-3">Expiration</p>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="expirationType" value="seasonal"
+                               x-model="expiration"
+                               class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                        <span class="text-sm text-gray-700">Fin de saison</span>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="radio" name="expirationType" value="fixed"
+                               x-model="expiration"
+                               class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500 mt-0.5">
+                        <div class="flex-1">
+                            <span class="text-sm text-gray-700">Date fixe</span>
+                            <div x-show="expiration === 'fixed'" class="mt-2">
+                                <input type="date" name="expiresAt"
+                                       value="{{ isEdit and package.expiresAt ? package.expiresAt|date('Y-m-d') : '' }}"
+                                       class="block rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# À la carte — visible uniquement pour ce type #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200" x-show="type === 'a_la_carte'">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Options à la carte</h2>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="validityDurationDays" class="block text-sm font-medium text-gray-700 mb-1">Durée de validité (jours)</label>
+                    <input type="number" id="validityDurationDays" name="validityDurationDays" min="1"
+                           value="{{ isEdit and package.validityDurationDays ? package.validityDurationDays : '' }}"
+                           placeholder="Ex : 30"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+                <div>
+                    <label for="cancellationDelayMinutes" class="block text-sm font-medium text-gray-700 mb-1">Délai d'annulation autorisé (minutes)</label>
+                    <input type="number" id="cancellationDelayMinutes" name="cancellationDelayMinutes" min="0"
+                           value="{{ isEdit and package.cancellationDelayMinutes is not null ? package.cancellationDelayMinutes : '' }}"
+                           placeholder="Ex : 60"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Cours associés #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Cours associés</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Ce forfait sera disponible pour les cours sélectionnés. Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs cours.</p>
+        </div>
+        <div class="px-6 py-5">
+            {% if events is not empty %}
+            <select name="eventIds[]" multiple
+                    size="{{ events|length > 8 ? 8 : events|length }}"
+                    class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                {% for event in events %}
+                <option value="{{ event.id }}" {{ event.id in associatedEventIds ? 'selected' : '' }}>{{ event.name }}</option>
+                {% endfor %}
+            </select>
+            <p class="mt-1.5 text-xs text-gray-400">{{ events|length }} cours disponibles</p>
+            {% else %}
+            <p class="text-sm text-gray-400">Aucun cours créé pour cette saison.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Pré-inscription #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Pré-inscription</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Conditions de paiement lors de la pré-inscription à ce forfait.</p>
+        </div>
+        <div class="px-6 py-5">
+            <select name="preRegistrationPaymentType"
+                    class="block w-full sm:w-64 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                <option value="">— Pas de pré-inscription —</option>
+                <option value="free" {{ isEdit and package.preRegistrationPaymentType == 'free' ? 'selected' : '' }}>Pré-inscription gratuite</option>
+                <option value="paid" {{ isEdit and package.preRegistrationPaymentType == 'paid' ? 'selected' : '' }}>Pré-inscription payante</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
+            {{ isEdit ? 'Enregistrer les modifications' : 'Créer le forfait' }}
+        </button>
+        <a href="{{ path('school_season_packages', {id: season.id}) }}"
+           class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
+    </div>
+</form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ parent() }}
+<script>
+function packageForm(initialType, initialValidityStart, initialExpiration) {
+    return {
+        type: initialType,
+        validityStart: initialValidityStart,
+        expiration: initialExpiration,
+    };
+}
+</script>
+{% endblock %}

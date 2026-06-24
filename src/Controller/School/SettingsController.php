@@ -18,6 +18,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Stripe\StripeClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -120,6 +121,109 @@ final class SettingsController extends AbstractController
             'school'          => $school,
             'suggestedSlug' => $suggestedSlug,
         ]);
+    }
+
+    #[Route('/images/upload', name: 'school_settings_image_upload', methods: ['POST'])]
+    public function schoolImageUpload(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            return $this->json(['success' => false, 'error' => 'Accès refusé.'], 403);
+        }
+
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
+
+        $field = $request->request->get('field');
+        if (!in_array($field, ['photo', 'logo'], true)) {
+            return $this->json(['success' => false, 'error' => 'Champ invalide.'], 400);
+        }
+
+        /** @var ?UploadedFile $file */
+        $file = $request->files->get('file');
+        if (!$file instanceof UploadedFile) {
+            return $this->json(['success' => false, 'error' => 'Aucun fichier reçu.'], 400);
+        }
+
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!in_array($file->getMimeType(), $allowed, true)) {
+            return $this->json(['success' => false, 'error' => 'Format non supporté (jpg, png, webp, gif uniquement).'], 400);
+        }
+
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            return $this->json(['success' => false, 'error' => 'Fichier trop volumineux (max 5 Mo).'], 400);
+        }
+
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/school/' . $school->getId();
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $oldPath = $field === 'photo' ? $school->getAvatarPath() : $school->getLogoPath();
+
+        if ($oldPath && str_starts_with($oldPath, 'uploads/school/')) {
+            $oldFull = $this->getParameter('kernel.project_dir') . '/public/' . $oldPath;
+            if (file_exists($oldFull)) {
+                unlink($oldFull);
+            }
+        }
+
+        $slugger  = new AsciiSlugger();
+        $filename = $field . '-' . $slugger->slug($school->getId()) . '-' . uniqid() . '.' . $file->guessExtension();
+        $file->move($uploadDir, $filename);
+
+        $path = 'uploads/school/' . $school->getId() . '/' . $filename;
+        if ($field === 'photo') {
+            $school->setAvatarPath($path);
+        } else {
+            $school->setLogoPath($path);
+        }
+
+        $school->setUpdatedAt(new \DateTimeImmutable());
+        $this->em->flush();
+
+        return $this->json(['success' => true, 'url' => '/' . $path]);
+    }
+
+    #[Route('/images/delete', name: 'school_settings_image_delete', methods: ['POST'])]
+    public function schoolImageDelete(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            return $this->json(['success' => false, 'error' => 'Accès refusé.'], 403);
+        }
+
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
+
+        $field = $request->request->get('field');
+        if (!in_array($field, ['photo', 'logo'], true)) {
+            return $this->json(['success' => false, 'error' => 'Champ invalide.'], 400);
+        }
+
+        if ($field === 'photo') {
+            $oldPath = $school->getAvatarPath();
+            $school->setAvatarPath(null);
+        } else {
+            $oldPath = $school->getLogoPath();
+            $school->setLogoPath(null);
+        }
+
+        if ($oldPath) {
+            $oldFull = $this->getParameter('kernel.project_dir') . '/public/' . $oldPath;
+            if (file_exists($oldFull)) {
+                unlink($oldFull);
+            }
+        }
+
+        $school->setUpdatedAt(new \DateTimeImmutable());
+        $this->em->flush();
+
+        return $this->json(['success' => true]);
     }
 
     #[Route('/legal', name: 'school_settings_legal', methods: ['GET', 'POST'])]
@@ -258,10 +362,182 @@ final class SettingsController extends AbstractController
             ['createdAt' => 'DESC'],
         );
 
+        $seasonIds = array_map(fn(Season $s) => $s->getId(), $seasons);
+
+        $orderedSeasonIds = $seasonIds ? array_column(
+            $this->em->createQuery(
+                'SELECT DISTINCT o.seasonId FROM App\Entity\Order o WHERE o.seasonId IN (:ids)'
+            )->setParameter('ids', $seasonIds)->getScalarResult(),
+            'seasonId'
+        ) : [];
+
+        $enrolledSeasonIds = $seasonIds ? array_column(
+            $this->em->createQuery(
+                'SELECT DISTINCT sps.seasonId FROM App\Entity\SchoolProfileSeason sps WHERE sps.seasonId IN (:ids)'
+            )->setParameter('ids', $seasonIds)->getScalarResult(),
+            'seasonId'
+        ) : [];
+
+        $nonDeletableIds = array_unique(array_merge($orderedSeasonIds, $enrolledSeasonIds));
+
         return $this->render('school/settings/seasons.html.twig', [
-            'school'    => $school,
-            'seasons' => $seasons,
+            'school'          => $school,
+            'seasons'         => $seasons,
+            'nonDeletableIds' => $nonDeletableIds,
         ]);
+    }
+
+    #[Route('/saisons/{seasonId}/delete', name: 'school_settings_season_delete', methods: ['POST'])]
+    public function seasonDelete(string $seasonId, Request $request): Response
+    {
+        /** @var User $user */
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+
+        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+            return $this->redirectToRoute('app_create_school');
+        }
+
+        $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
+
+        $season = $this->em->getRepository(Season::class)->find($seasonId);
+
+        if ($season === null || $season->getSchoolId() !== $school->getId()) {
+            throw $this->createNotFoundException('Saison introuvable.');
+        }
+
+        if (!$this->isCsrfTokenValid('season_delete_' . $seasonId, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token invalide.');
+            return $this->redirectToRoute('school_settings_seasons');
+        }
+
+        $hasOrders = (int) $this->em->createQuery(
+            'SELECT COUNT(o.id) FROM App\Entity\Order o WHERE o.seasonId = :sid'
+        )->setParameter('sid', $seasonId)->getSingleScalarResult() > 0;
+
+        $hasEnrolled = (int) $this->em->createQuery(
+            'SELECT COUNT(sps.id) FROM App\Entity\SchoolProfileSeason sps WHERE sps.seasonId = :sid'
+        )->setParameter('sid', $seasonId)->getSingleScalarResult() > 0;
+
+        if ($hasOrders || $hasEnrolled) {
+            $this->addFlash('error', 'Impossible de supprimer cette saison : des élèves ou des paiements y sont rattachés.');
+            return $this->redirectToRoute('school_settings_seasons');
+        }
+
+        $this->em->remove($season);
+        $this->em->flush();
+
+        $this->addFlash('success', 'Saison supprimée.');
+        return $this->redirectToRoute('school_settings_seasons');
+    }
+
+    #[Route('/season/{id}/images/upload', name: 'school_settings_season_image_upload', methods: ['POST'])]
+    public function seasonImageUpload(string $id, Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+        $season = $this->em->getRepository(Season::class)->find($id);
+
+        if ($school === null || $season === null || $season->getSchoolId() !== $school->getId()) {
+            return $this->json(['success' => false, 'error' => 'Accès refusé.'], 403);
+        }
+
+        $this->denyAccessUnlessGranted(SeasonVoter::UPDATE, $season);
+
+        $field = $request->request->get('field');
+        if (!in_array($field, ['planningImage', 'packagesImage'], true)) {
+            return $this->json(['success' => false, 'error' => 'Champ invalide.'], 400);
+        }
+
+        /** @var ?UploadedFile $file */
+        $file = $request->files->get('file');
+        if (!$file instanceof UploadedFile) {
+            return $this->json(['success' => false, 'error' => 'Aucun fichier reçu.'], 400);
+        }
+
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!in_array($file->getMimeType(), $allowed, true)) {
+            return $this->json(['success' => false, 'error' => 'Format non supporté (jpg, png, webp, gif uniquement).'], 400);
+        }
+
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            return $this->json(['success' => false, 'error' => 'Fichier trop volumineux (max 5 Mo).'], 400);
+        }
+
+        $slugger   = new AsciiSlugger();
+        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/seasons/' . $school->getId();
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $oldPath = $field === 'planningImage'
+            ? $season->getPlanningImagePath()
+            : $season->getPackagesImagePath();
+
+        $suffix       = $field === 'planningImage' ? 'planning' : 'packages';
+        $safeFilename = $slugger->slug($season->getId()) . '-' . $suffix . '-' . uniqid();
+        $filename     = $safeFilename . '.' . $file->guessExtension();
+        $file->move($uploadDir, $filename);
+
+        if ($oldPath) {
+            $oldFull = $this->getParameter('kernel.project_dir') . '/public/' . $oldPath;
+            if (file_exists($oldFull)) {
+                unlink($oldFull);
+            }
+        }
+
+        $path = 'uploads/seasons/' . $school->getId() . '/' . $filename;
+        if ($field === 'planningImage') {
+            $season->setPlanningImagePath($path);
+        } else {
+            $season->setPackagesImagePath($path);
+        }
+
+        $season->setUpdatedAt(new \DateTimeImmutable());
+        $this->em->flush();
+
+        return $this->json(['success' => true, 'path' => $path, 'url' => '/' . $path]);
+    }
+
+    #[Route('/season/{id}/images/delete', name: 'school_settings_season_image_delete', methods: ['POST'])]
+    public function seasonImageDelete(string $id, Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+        $season = $this->em->getRepository(Season::class)->find($id);
+
+        if ($school === null || $season === null || $season->getSchoolId() !== $school->getId()) {
+            return $this->json(['success' => false, 'error' => 'Accès refusé.'], 403);
+        }
+
+        $this->denyAccessUnlessGranted(SeasonVoter::UPDATE, $season);
+
+        $field = $request->request->get('field');
+        if (!in_array($field, ['planningImage', 'packagesImage'], true)) {
+            return $this->json(['success' => false, 'error' => 'Champ invalide.'], 400);
+        }
+
+        if ($field === 'planningImage') {
+            $oldPath = $season->getPlanningImagePath();
+            $season->setPlanningImagePath(null);
+        } else {
+            $oldPath = $season->getPackagesImagePath();
+            $season->setPackagesImagePath(null);
+        }
+
+        if ($oldPath) {
+            $fullPath = $this->getParameter('kernel.project_dir') . '/public/' . $oldPath;
+            if (file_exists($fullPath)) {
+                unlink($fullPath);
+            }
+        }
+
+        $season->setUpdatedAt(new \DateTimeImmutable());
+        $this->em->flush();
+
+        return $this->json(['success' => true]);
     }
 
     #[Route('/rooms', name: 'school_settings_rooms', methods: ['GET', 'POST'])]
@@ -408,30 +684,81 @@ final class SettingsController extends AbstractController
         $this->denyAccessUnlessGranted(SeasonVoter::UPDATE, $season);
 
         if ($request->isMethod('POST')) {
-            $season->setName((string) $request->request->get('name', $season->getName()));
+            $section = $request->request->get('_section', 'general');
 
-            if ($request->request->get('startAt')) {
-                $season->setStartAt(new \DateTimeImmutable((string) $request->request->get('startAt')));
+            if ($section === 'general') {
+                $season->setName((string) $request->request->get('name', $season->getName()));
+                if ($request->request->get('startAt')) {
+                    $season->setStartAt(new \DateTimeImmutable((string) $request->request->get('startAt')));
+                }
+                if ($request->request->get('endAt')) {
+                    $season->setEndAt(new \DateTimeImmutable((string) $request->request->get('endAt')));
+                }
+                $season->setVisible((bool) $request->request->get('visible', false));
+                $season->setDescription($request->request->get('description') ?: null);
             }
-            if ($request->request->get('endAt')) {
-                $season->setEndAt(new \DateTimeImmutable((string) $request->request->get('endAt')));
-            }
-            if ($request->request->get('closures') !== null) {
-                $season->setClosures(json_decode((string) $request->request->get('closures'), true));
-            }
-            if ($request->request->get('registrationFeeId') !== null) {
+
+            if ($section === 'registrations') {
                 $season->setRegistrationFeeId($request->request->get('registrationFeeId') ?: null);
+                $season->setRegistrationPaymentCondition($request->request->get('registrationPaymentCondition') ?: null);
+                $season->setRegistrationPublicDescription($request->request->get('registrationPublicDescription') ?: null);
+                foreach ([
+                    'preRegistrationsStartAt' => 'setPreRegistrationsStartAt',
+                    'preRegistrationsEndAt'   => 'setPreRegistrationsEndAt',
+                    'registrationsStartAt'    => 'setRegistrationsStartAt',
+                    'registrationsEndAt'      => 'setRegistrationsEndAt',
+                ] as $field => $setter) {
+                    $val = $request->request->get($field);
+                    $season->$setter($val ? new \DateTimeImmutable($val) : null);
+                }
             }
 
+            if ($section === 'closures') {
+                $raw = $request->request->get('closures', '[]');
+                $decoded = json_decode((string) $raw, true);
+                $season->setClosures(is_array($decoded) ? $decoded : []);
+            }
+
+            if ($section === 'images') {
+                $slugger   = new AsciiSlugger();
+                $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/seasons/' . $school->getId();
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                /** @var ?UploadedFile $planningFile */
+                $planningFile = $request->files->get('planningImage');
+                if ($planningFile instanceof UploadedFile) {
+                    $safeFilename = $slugger->slug($season->getId()) . '-planning-' . uniqid();
+                    $filename     = $safeFilename . '.' . $planningFile->guessExtension();
+                    $planningFile->move($uploadDir, $filename);
+                    $season->setPlanningImagePath('uploads/seasons/' . $school->getId() . '/' . $filename);
+                }
+                /** @var ?UploadedFile $packagesFile */
+                $packagesFile = $request->files->get('packagesImage');
+                if ($packagesFile instanceof UploadedFile) {
+                    $safeFilename = $slugger->slug($season->getId()) . '-packages-' . uniqid();
+                    $filename     = $safeFilename . '.' . $packagesFile->guessExtension();
+                    $packagesFile->move($uploadDir, $filename);
+                    $season->setPackagesImagePath('uploads/seasons/' . $school->getId() . '/' . $filename);
+                }
+            }
+
+            $season->setUpdatedAt(new \DateTimeImmutable());
             $this->em->flush();
             $this->addFlash('success', 'Saison mise à jour.');
 
             return $this->redirectToRoute('school_settings_season', ['id' => $id]);
         }
 
+        $packages = $this->em->getRepository(\App\Entity\Package::class)->findBy(
+            ['seasonId' => $season->getId(), 'deletedAt' => null],
+            ['name' => 'ASC']
+        );
+
         return $this->render('school/settings/season.html.twig', [
             'school'   => $school,
-            'season' => $season,
+            'season'   => $season,
+            'packages' => $packages,
         ]);
     }
 

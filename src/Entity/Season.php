@@ -30,6 +30,30 @@ class Season
     #[ORM\Column(type: 'string', length: 36, nullable: true)]
     private ?string $registrationFeeId = null;
 
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    private ?string $registrationPaymentCondition = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $preRegistrationsStartAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $preRegistrationsEndAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $registrationsStartAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $registrationsEndAt = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $registrationPublicDescription = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $visible = true;
+
     #[ORM\Column(type: 'string', nullable: true)]
     private ?string $planningImagePath = null;
 
@@ -74,6 +98,30 @@ class Season
 
     public function getRegistrationFeeId(): ?string { return $this->registrationFeeId; }
     public function setRegistrationFeeId(?string $v): static { $this->registrationFeeId = $v; return $this; }
+
+    public function getRegistrationPaymentCondition(): ?string { return $this->registrationPaymentCondition; }
+    public function setRegistrationPaymentCondition(?string $v): static { $this->registrationPaymentCondition = $v; return $this; }
+
+    public function getPreRegistrationsStartAt(): ?\DateTimeImmutable { return $this->preRegistrationsStartAt; }
+    public function setPreRegistrationsStartAt(?\DateTimeImmutable $v): static { $this->preRegistrationsStartAt = $v; return $this; }
+
+    public function getPreRegistrationsEndAt(): ?\DateTimeImmutable { return $this->preRegistrationsEndAt; }
+    public function setPreRegistrationsEndAt(?\DateTimeImmutable $v): static { $this->preRegistrationsEndAt = $v; return $this; }
+
+    public function getRegistrationsStartAt(): ?\DateTimeImmutable { return $this->registrationsStartAt; }
+    public function setRegistrationsStartAt(?\DateTimeImmutable $v): static { $this->registrationsStartAt = $v; return $this; }
+
+    public function getRegistrationsEndAt(): ?\DateTimeImmutable { return $this->registrationsEndAt; }
+    public function setRegistrationsEndAt(?\DateTimeImmutable $v): static { $this->registrationsEndAt = $v; return $this; }
+
+    public function getRegistrationPublicDescription(): ?string { return $this->registrationPublicDescription; }
+    public function setRegistrationPublicDescription(?string $v): static { $this->registrationPublicDescription = $v; return $this; }
+
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $v): static { $this->description = $v; return $this; }
+
+    public function isVisible(): bool { return $this->visible; }
+    public function setVisible(bool $v): static { $this->visible = $v; return $this; }
 
     public function getPlanningImagePath(): ?string { return $this->planningImagePath; }
     public function setPlanningImagePath(?string $v): static { $this->planningImagePath = $v; return $this; }

@@ -122,6 +122,11 @@
                            class="shrink-0 flex items-center justify-center w-7 h-7 rounded-md border border-indigo-200 bg-white text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         </a>
+                        <a href="{{ path('school_settings_seasons') }}"
+                           title="Toutes les saisons"
+                           class="shrink-0 flex items-center justify-center w-7 h-7 rounded-md border border-indigo-200 bg-white text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                        </a>
                     </div>
                     {% set _membresActive   = currentRoute starts with 'school_member' %}
                     {% set _commandesActive = currentRoute starts with 'school_order' %}

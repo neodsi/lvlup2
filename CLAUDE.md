@@ -48,6 +48,16 @@ Le breadcrumb est défini via `{% block breadcrumb %}` dans chaque template enfa
 
 ---
 
+## Base de données — schéma
+
+Ne jamais créer de fichier de migration Doctrine. Pour appliquer les changements de schéma (ajout de colonne, modification d'entité…), utiliser :
+
+```bash
+php bin/console doctrine:schema:update --force
+```
+
+---
+
 ## Layout général
 
 - Pas de `max-w-*` sur les pages : tout prend la largeur disponible

@@ -13,7 +13,7 @@
     <header class="shop__header shop__header--compact">
         {% if school.avatarPath %}
         <img
-            src="{{ school.avatarPath | imagine_filter('team_avatar') }}"
+            src="{{ school.avatarPath | imagine_filter('school_avatar') }}"
             alt="{{ school.name }}"
             class="shop__avatar-img shop__avatar-img--small"
         >

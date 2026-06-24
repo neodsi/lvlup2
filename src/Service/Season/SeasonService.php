@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Season;
 
 use App\Entity\Activity;
-use App\Entity\AgeGroup;
 use App\Entity\Event;
-use App\Entity\Level;
 use App\Entity\Package;
 use App\Entity\PaymentScheduleTemplate;
 use App\Entity\PriceModifier;
@@ -84,26 +82,6 @@ class SeasonService
                 $room->setSeasonId($newSeason->getId());
                 $room->setName($sourceRoom->getName());
                 $this->em->persist($room);
-            }
-
-            // --- Age groups ---
-            foreach ($sourceSeason->getAgeGroups() as $sourceAgeGroup) {
-                $ageGroup = new AgeGroup();
-                $ageGroup->setSchoolId($school->getId());
-                $ageGroup->setSeasonId($newSeason->getId());
-                $ageGroup->setName($sourceAgeGroup->getName());
-                $ageGroup->setMinAge($sourceAgeGroup->getMinAge());
-                $ageGroup->setMaxAge($sourceAgeGroup->getMaxAge());
-                $this->em->persist($ageGroup);
-            }
-
-            // --- Levels ---
-            foreach ($sourceSeason->getLevels() as $sourceLevel) {
-                $level = new Level();
-                $level->setSchoolId($school->getId());
-                $level->setSeasonId($newSeason->getId());
-                $level->setName($sourceLevel->getName());
-                $this->em->persist($level);
             }
 
             // --- Price modifiers ---

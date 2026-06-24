@@ -11,10 +11,17 @@
 {% endblock %}
 
 {% block school_content %}
+<div class="py-8">
 
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-xl font-bold text-gray-900">Cours</h1>
+    <h1 class="text-2xl font-bold text-gray-900">Cours</h1>
+    <button type="button" id="btn-add-lesson"
+            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Créer un cours
+    </button>
 </div>
+
     {# Add lesson modal #}
     <div id="modal-add-lesson" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
@@ -65,8 +72,7 @@
         </div>
     </div>
 
-    <div class="py-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             {% if lessons is empty %}
                 <div class="px-6 py-16 text-center">
                     <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +138,7 @@
                 </div>
             {% endif %}
         </div>
-    </div>
+
 </div>
 
 <script>

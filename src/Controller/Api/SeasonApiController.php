@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\Activity;
-use App\Entity\AgeGroup;
 use App\Entity\Event;
-use App\Entity\Level;
 use App\Entity\Package;
 use App\Entity\Room;
 use App\Entity\Season;
@@ -118,24 +116,12 @@ class SeasonApiController extends AbstractController
             $this->em->getRepository(Activity::class)->findBy(['seasonId' => $seasonId]),
         );
 
-        $ageGroups = array_map(
-            static fn (AgeGroup $ag) => ['id' => $ag->getId(), 'name' => $ag->getName()],
-            $this->em->getRepository(AgeGroup::class)->findBy(['seasonId' => $seasonId]),
-        );
-
-        $levels = array_map(
-            static fn (Level $l) => ['id' => $l->getId(), 'name' => $l->getName()],
-            $this->em->getRepository(Level::class)->findBy(['seasonId' => $seasonId]),
-        );
-
         return new JsonResponse([
             'success'    => true,
             'rooms'      => $rooms,
             'packages'   => $packages,
             'events'     => $events,
             'activities' => $activities,
-            'ageGroups'  => $ageGroups,
-            'levels'     => $levels,
         ]);
     }
 }

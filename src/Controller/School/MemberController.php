@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller\School;
 
 use App\Entity\Activity;
-use App\Entity\AgeGroup;
 use App\Entity\Order;
 use App\Entity\Package;
 use App\Entity\PaymentSchedule;
@@ -94,7 +93,7 @@ final class MemberController extends AbstractController
         $filterHasUser      = (string) $request->query->get('has_user', '');
         $filterHasInjury    = (string) $request->query->get('has_injury', '');
         $filterPayStatus    = (string) $request->query->get('payment_status', '');
-        $filterAgeGroup     = (string) $request->query->get('age_group', '');
+        $filterAgeGroup     = '';
         $filterActivity     = (string) $request->query->get('activity', '');
         $filterPkgType      = (string) $request->query->get('package_type', '');
         $filterPackageId    = (string) $request->query->get('package_id', '');
@@ -198,7 +197,6 @@ final class MemberController extends AbstractController
         $allPackages        = [];
         $activitiesMap      = [];
         $allActivities      = [];
-        $allAgeGroups       = [];
         $allReductions      = [];
         $allIncrements      = [];
 
@@ -588,15 +586,6 @@ final class MemberController extends AbstractController
             }
             $allActivities = $actList;
 
-            $allAgeGroups = $this->em->createQuery(
-                'SELECT ag FROM App\Entity\AgeGroup ag
-                 WHERE ag.schoolId = :schoolId AND ag.seasonId = :seasonId AND ag.deletedAt IS NULL
-                 ORDER BY ag.name ASC'
-            )
-            ->setParameter('schoolId', $school->getId())
-            ->setParameter('seasonId', $season->getId())
-            ->getResult();
-
             $priceModifiers = $this->em->createQuery(
                 'SELECT pm FROM App\Entity\PriceModifier pm
                  WHERE pm.schoolId = :schoolId
@@ -644,7 +633,6 @@ final class MemberController extends AbstractController
             'allPackages'         => $allPackages,
             'activitiesMap'       => $activitiesMap,
             'allActivities'       => $allActivities,
-            'allAgeGroups'        => $allAgeGroups,
             'allReductions'       => $allReductions,
             'allIncrements'       => $allIncrements,
             'filters'             => [
@@ -653,7 +641,6 @@ final class MemberController extends AbstractController
                 'has_user'            => $filterHasUser,
                 'has_injury'          => $filterHasInjury,
                 'payment_status'      => $filterPayStatus,
-                'age_group'           => $filterAgeGroup,
                 'activity'            => $filterActivity,
                 'package_type'        => $filterPkgType,
                 'payment_location'    => $filterPayLoc,

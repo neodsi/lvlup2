@@ -125,15 +125,6 @@
 
                 {% if season %}
 
-                {# Groupe d'âge #}
-                {% if allAgeGroups|length > 0 %}
-                <select name="age_group" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="">Tous âges</option>
-                    {% for ag in allAgeGroups %}
-                    <option value="{{ ag.id }}" {{ filters.age_group == ag.id ? 'selected' }}>{{ ag.name }}</option>
-                    {% endfor %}
-                </select>
-                {% endif %}
 
                 {# Échéance en retard #}
                 <select name="past_due" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
@@ -181,7 +172,6 @@
                             <th class="py-3 pl-5 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Nom</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Contact</th>
                             {% if season %}
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Groupe d'âge</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Inscription</th>
                             {% endif %}
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Adhésion</th>
@@ -214,7 +204,6 @@
                             {% set pkgs        = packagesMap[member.id] ?? 0 %}
                             {% set rs          = tps ? tps.registrationStatus.value : null %}
                             {% set actIds      = tps ? (tps.activityIds ?? []) : [] %}
-                            {% set ageGroupId  = tps ? tps.ageGroupId : null %}
                             {% set ordersCount = fin ? fin.ordersCount : 0 %}
                             {% set lastPaid    = lastPaymentDateMap[member.id] ?? null %}
                             {% set buyer       = buyerMap[member.id] ?? null %}
@@ -264,12 +253,6 @@
 
                                 {% if season %}
 
-                                {# Groupe d'âge #}
-                                <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
-                                    {% set agName = null %}
-                                    {% for ag in allAgeGroups %}{% if ag.id == ageGroupId %}{% set agName = ag.name %}{% endif %}{% endfor %}
-                                    {{ agName ?? '—' }}
-                                </td>
 
                                 {# Statut inscription #}
                                 <td class="px-3 py-3 whitespace-nowrap">

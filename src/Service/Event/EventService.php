@@ -47,6 +47,15 @@ class EventService
         if (isset($data['rruleDayOrder'])) {
             $event->setRruleDayOrder($data['rruleDayOrder']);
         }
+        if (isset($data['visible'])) {
+            $event->setVisible((bool) $data['visible']);
+        }
+        if (array_key_exists('minAge', $data)) {
+            $event->setMinAge($data['minAge']);
+        }
+        if (array_key_exists('maxAge', $data)) {
+            $event->setMaxAge($data['maxAge']);
+        }
 
         $this->em->wrapInTransaction(function () use ($event, $season): void {
             $this->em->persist($event);
@@ -88,6 +97,15 @@ class EventService
         }
         if (array_key_exists('rruleDayOrder', $data)) {
             $event->setRruleDayOrder($data['rruleDayOrder']);
+        }
+        if (isset($data['visible'])) {
+            $event->setVisible((bool) $data['visible']);
+        }
+        if (array_key_exists('minAge', $data)) {
+            $event->setMinAge($data['minAge']);
+        }
+        if (array_key_exists('maxAge', $data)) {
+            $event->setMaxAge($data['maxAge']);
         }
 
         /** @var Season $season */

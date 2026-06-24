@@ -1,89 +1,143 @@
 {% extends 'layout/school.html.twig' %}
 
-{% block title %}Modificateurs de prix — {{ season.name }}{% endblock %}
+{% block title %}Frais & Réductions — {{ season.name }}{% endblock %}
 
 {% block breadcrumb %}
 <a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<span class="text-gray-700 font-medium">Modificateurs de prix</span>
+<span class="text-gray-700 font-medium">Frais & Réductions</span>
 {% endblock %}
 
 {% block school_content %}
+<div class="py-8">
 
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-xl font-bold text-gray-900">Modificateurs de prix</h1>
+    <h1 class="text-2xl font-bold text-gray-900">Frais & Réductions</h1>
+    <a href="{{ path('school_season_price_modifier_create', {id: season.id}) }}"
+       class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nouveau modificateur
+    </a>
 </div>
 
-    <div class="py-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {% if modifiers is empty %}
-                <div class="px-6 py-16 text-center">
-                    <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                    </svg>
-                    <p class="mt-4 text-sm text-gray-500">Aucun modificateur de prix pour cette saison.</p>
-                </div>
-            {% else %}
-                <table class="min-w-full divide-y divide-gray-100">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Valeur</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Type de valeur</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Opération</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Conditions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-50">
-                        {% for modifier in modifiers %}
-                            <tr class="hover:bg-gray-50 transition-colors">
-                                <td class="px-6 py-4">
-                                    <span class="text-sm font-medium text-gray-900">{{ modifier.name }}</span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        {% if modifier.type.value == 'discount' %}bg-green-50 text-green-700
-                                        {% elseif modifier.type.value == 'surcharge' %}bg-orange-50 text-orange-700
-                                        {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                        {{ modifier.type.value }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm font-semibold text-gray-900">
-                                    {% if modifier.valueType.value == 'percent' %}
-                                        {{ modifier.value }} %
-                                    {% else %}
-                                        {{ (modifier.value / 100)|number_format(2, ',', ' ') }} €
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-500">
-                                    {{ modifier.valueType.value }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        {% if modifier.operation.value == 'add' %}bg-blue-50 text-blue-700
-                                        {% elseif modifier.operation.value == 'subtract' %}bg-red-50 text-red-700
-                                        {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                        {{ modifier.operation.value }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-400">
-                                    {% if modifier.terms %}
-                                        <span class="text-xs font-mono bg-gray-50 px-2 py-0.5 rounded">{{ modifier.terms|json_encode }}</span>
-                                    {% else %}
-                                        —
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-                    {{ modifiers|length }} modificateur{{ modifiers|length > 1 ? 's' : '' }}
-                </div>
-            {% endif %}
+{% set typeLabels = {
+    'cart': 'Panier',
+    'profile': 'Élève',
+    'registration_fee': 'Frais d\'inscription',
+} %}
+{% set typeColors = {
+    'cart': 'bg-blue-50 text-blue-700',
+    'profile': 'bg-purple-50 text-purple-700',
+    'registration_fee': 'bg-yellow-50 text-yellow-700',
+} %}
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+     x-data="{ confirmId: null, confirmName: '', confirmToken: '', confirmAction: '' }">
+    {% if modifiers is empty %}
+        <div class="px-6 py-16 text-center">
+            <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+            <p class="mt-4 text-sm text-gray-500">Aucun modificateur pour cette saison.</p>
+            <a href="{{ path('school_season_price_modifier_create', {id: season.id}) }}"
+               class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition">
+                Créer le premier modificateur
+            </a>
+        </div>
+    {% else %}
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nature</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Portée</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Valeur</th>
+                    <th class="px-6 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-50">
+                {% for modifier in modifiers %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="text-sm font-medium text-gray-900">{{ modifier.name }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if modifier.operation.value == 'subtract' %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                                    Réduction
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    Majoration
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ typeColors[modifier.type.value] ?? 'bg-gray-100 text-gray-600' }}">
+                                {{ typeLabels[modifier.type.value] ?? modifier.type.value }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">
+                            {% if modifier.valueType.value == 'percentage' %}
+                                {{ (modifier.value / 100)|number_format(modifier.value % 100 == 0 ? 0 : 2, ',', ' ') }} %
+                            {% else %}
+                                {{ (modifier.value / 100)|number_format(2, ',', ' ') }} €
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-end gap-4">
+                                <a href="{{ path('school_season_price_modifier_edit', {id: season.id, modifierId: modifier.id}) }}"
+                                   class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
+                                    Modifier
+                                </a>
+                                <button type="button"
+                                        data-token="{{ csrf_token('price_modifier_delete_' ~ modifier.id) }}"
+                                        data-action="{{ path('school_season_price_modifier_delete', {id: season.id, modifierId: modifier.id}) }}"
+                                        @click="confirmId = '{{ modifier.id }}'; confirmName = '{{ modifier.name|e('js') }}'; confirmToken = $el.dataset.token; confirmAction = $el.dataset.action"
+                                        class="text-xs text-red-400 hover:text-red-600 font-medium transition">
+                                    Supprimer
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
+            {{ modifiers|length }} modificateur{{ modifiers|length > 1 ? 's' : '' }}
+        </div>
+    {% endif %}
+
+    {# Modal confirmation suppression #}
+    <div x-show="confirmId !== null"
+         x-transition.opacity
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+         style="display:none">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" @click.stop>
+            <h3 class="text-base font-semibold text-gray-900 mb-2">Supprimer le modificateur</h3>
+            <p class="text-sm text-gray-600 mb-6">Supprimer <strong x-text="confirmName"></strong> ? Cette action est irréversible.</p>
+            <div class="flex justify-end gap-3">
+                <button type="button" @click="confirmId = null"
+                        class="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg border border-gray-200 transition">
+                    Annuler
+                </button>
+                <form method="POST" :action="confirmAction">
+                    <input type="hidden" name="_token" :value="confirmToken">
+                    <button type="submit"
+                            class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition">
+                        Supprimer
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
+</div>
+
+</div>
 {% endblock %}

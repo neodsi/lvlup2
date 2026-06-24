@@ -15,77 +15,113 @@
 
     {% include 'school/settings/_tabs.html.twig' %}
 
-    <form method="POST" action="{{ path('school_settings') }}" enctype="multipart/form-data" class="space-y-6">
-        <input type="hidden" name="_token" value="{{ csrf_token('settings_general') }}">
-
-        {# Photo & Logo #}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div class="px-6 py-5 border-b border-gray-100">
-                <h2 class="text-base font-semibold text-gray-900">Visuels</h2>
-            </div>
-            <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
-
-                {# Photo 16:9 #}
-                <div class="flex flex-col">
-                    <p class="text-sm font-medium text-gray-700">Photo principale</p>
-                    <p class="text-xs text-gray-400 mb-2">Format idéal&nbsp;: 16:9 (ex&nbsp;: 1920×1080 px)</p>
-                    <div id="photo-preview-wrap" class="relative w-full aspect-video rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center mb-3 flex-1">
-                        {% if school.avatarPath %}
-                            <img id="photo-preview" src="{{ school.avatarPath | imagine_filter('team_photo_main') }}" alt="Photo" class="absolute inset-0 w-full h-full object-cover">
-                        {% else %}
-                            <img id="photo-preview" src="" alt="" class="absolute inset-0 w-full h-full object-cover hidden">
-                        {% endif %}
-                        <div id="photo-placeholder" class="flex flex-col items-center gap-1 text-gray-400 {% if school.avatarPath %}hidden{% endif %}">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            <span class="text-xs">Aucune photo</span>
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 px-3 py-2 text-sm text-gray-700 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                            Choisir un fichier
-                            <input type="file" name="photo" id="photo-input" accept="image/*" class="sr-only">
-                        </label>
-                        <button type="button" id="camera-btn"
-                                class="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 px-3 py-2 text-sm text-gray-700 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            Caméra
-                        </button>
-                    </div>
-                    {# Camera capture modal #}
-                    <div id="camera-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-                        <div class="bg-white rounded-xl shadow-xl p-4 w-full max-w-lg">
-                            <p class="text-sm font-semibold text-gray-900 mb-3">Prendre une photo</p>
-                            <video id="camera-video" autoplay playsinline class="w-full rounded-lg bg-black aspect-video"></video>
-                            <canvas id="camera-canvas" class="hidden"></canvas>
-                            <div class="flex gap-2 mt-3">
-                                <button type="button" id="camera-capture" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">Capturer</button>
-                                <button type="button" id="camera-close" class="flex-1 border border-gray-300 text-sm text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition">Annuler</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Logo #}
-                <div class="flex flex-col">
-                    <p class="text-sm font-medium text-gray-700">Logo</p>
-                    <p class="text-xs text-gray-400 mb-2">Format idéal&nbsp;: 1:1 carré (ex&nbsp;: 256×256 px)</p>
-                    <div class="relative flex items-center justify-center w-full aspect-square rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 overflow-hidden mb-3 flex-1">
-                        {% if school.logoPath %}
-                            <img id="logo-preview" src="{{ school.logoPath | imagine_filter('team_logo') }}" alt="Logo" class="max-h-28 max-w-full object-contain">
-                        {% else %}
-                            <img id="logo-preview" src="" alt="" class="max-h-28 max-w-full object-contain hidden">
-                        {% endif %}
-                        <span id="logo-placeholder" class="text-xs text-gray-400 {% if school.logoPath %}hidden{% endif %}">Aucun logo</span>
-                    </div>
-                    <label class="flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 px-3 py-2 text-sm text-gray-700 transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        Choisir un fichier
-                        <input type="file" name="logo" id="logo-input" accept="image/*" class="sr-only">
-                    </label>
-                </div>
-            </div>
+    {# Photo & Logo — upload AJAX indépendant du form #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6"
+         x-data="schoolImages('{{ path('school_settings_image_upload') }}', '{{ path('school_settings_image_delete') }}')">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Visuels</h2>
         </div>
+        <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+            {# Photo principale #}
+            <div>
+                <p class="text-sm font-medium text-gray-700 mb-1">Photo principale</p>
+                <p class="text-xs text-gray-400 mb-2">Format 16:9 recommandé</p>
+
+                <label x-show="!images.photo.url"
+                       class="flex flex-col items-center justify-center h-28 w-full rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition-colors">
+                    <div x-show="images.photo.loading" class="flex flex-col items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        <span class="text-xs text-indigo-500">Téléversement…</span>
+                    </div>
+                    <div x-show="!images.photo.loading" class="flex flex-col items-center gap-1 text-center px-4">
+                        <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="text-xs text-gray-400">Cliquer pour choisir</span>
+                    </div>
+                    <input type="file" class="sr-only" accept="image/*"
+                           @change="uploadImage($event, 'photo')" :disabled="images.photo.loading">
+                </label>
+
+                <div x-show="images.photo.url" class="relative">
+                    <img :src="images.photo.url" alt="Photo"
+                         class="w-full h-28 object-contain rounded-lg border border-gray-200 bg-gray-50">
+                    <div x-show="images.photo.loading"
+                         class="absolute inset-0 flex items-center justify-center rounded-lg bg-white/70">
+                        <svg class="w-5 h-5 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    </div>
+                </div>
+
+                <p x-show="images.photo.error" x-text="images.photo.error"
+                   class="mt-1 text-xs text-red-600" style="display:none"></p>
+
+                <div x-show="images.photo.url" class="mt-2 flex items-center gap-4" style="display:none">
+                    <input type="file" x-ref="photoReplace" class="sr-only" accept="image/*"
+                           @change="uploadImage($event, 'photo')">
+                    <button type="button" @click="$refs.photoReplace.click()" :disabled="images.photo.loading"
+                            class="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        Remplacer
+                    </button>
+                    <button type="button" @click="deleteImage('photo')" :disabled="images.photo.loading"
+                            class="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+
+            {# Logo #}
+            <div>
+                <p class="text-sm font-medium text-gray-700 mb-1">Logo</p>
+                <p class="text-xs text-gray-400 mb-2">Format carré recommandé</p>
+
+                <label x-show="!images.logo.url"
+                       class="flex flex-col items-center justify-center h-28 w-full rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition-colors">
+                    <div x-show="images.logo.loading" class="flex flex-col items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        <span class="text-xs text-indigo-500">Téléversement…</span>
+                    </div>
+                    <div x-show="!images.logo.loading" class="flex flex-col items-center gap-1 text-center px-4">
+                        <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="text-xs text-gray-400">Cliquer pour choisir</span>
+                    </div>
+                    <input type="file" class="sr-only" accept="image/*"
+                           @change="uploadImage($event, 'logo')" :disabled="images.logo.loading">
+                </label>
+
+                <div x-show="images.logo.url" class="relative">
+                    <img :src="images.logo.url" alt="Logo"
+                         class="w-full h-28 object-contain rounded-lg border border-gray-200 bg-gray-50 p-2">
+                    <div x-show="images.logo.loading"
+                         class="absolute inset-0 flex items-center justify-center rounded-lg bg-white/70">
+                        <svg class="w-5 h-5 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    </div>
+                </div>
+
+                <p x-show="images.logo.error" x-text="images.logo.error"
+                   class="mt-1 text-xs text-red-600" style="display:none"></p>
+
+                <div x-show="images.logo.url" class="mt-2 flex items-center gap-4" style="display:none">
+                    <input type="file" x-ref="logoReplace" class="sr-only" accept="image/*"
+                           @change="uploadImage($event, 'logo')">
+                    <button type="button" @click="$refs.logoReplace.click()" :disabled="images.logo.loading"
+                            class="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        Remplacer
+                    </button>
+                    <button type="button" @click="deleteImage('logo')" :disabled="images.logo.loading"
+                            class="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <form method="POST" action="{{ path('school_settings') }}" class="space-y-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('settings_general') }}">
 
         {# Informations générales #}
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -211,67 +247,6 @@
         });
     });
 
-    // Photo preview
-    document.getElementById('photo-input').addEventListener('change', function () {
-        if (!this.files[0]) return;
-        const url = URL.createObjectURL(this.files[0]);
-        const img = document.getElementById('photo-preview');
-        img.src = url;
-        img.classList.remove('hidden');
-        document.getElementById('photo-placeholder').classList.add('hidden');
-    });
-
-    // Logo preview
-    document.getElementById('logo-input').addEventListener('change', function () {
-        if (!this.files[0]) return;
-        const url = URL.createObjectURL(this.files[0]);
-        const img = document.getElementById('logo-preview');
-        img.src = url;
-        img.classList.remove('hidden');
-        document.getElementById('logo-placeholder').classList.add('hidden');
-    });
-
-    // Camera capture
-    let cameraStream = null;
-    document.getElementById('camera-btn').addEventListener('click', async function () {
-        try {
-            cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById('camera-video').srcObject = cameraStream;
-            document.getElementById('camera-modal').classList.remove('hidden');
-        } catch (e) {
-            alert('Impossible d\'accéder à la caméra.');
-        }
-    });
-
-    document.getElementById('camera-capture').addEventListener('click', function () {
-        const video  = document.getElementById('camera-video');
-        const canvas = document.getElementById('camera-canvas');
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        canvas.toBlob(function (blob) {
-            const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-            const dt   = new DataTransfer();
-            dt.items.add(file);
-            document.getElementById('photo-input').files = dt.files;
-
-            const url = URL.createObjectURL(blob);
-            const img = document.getElementById('photo-preview');
-            img.src = url;
-            img.classList.remove('hidden');
-            document.getElementById('photo-placeholder').classList.add('hidden');
-
-            stopCamera();
-        }, 'image/jpeg', 0.92);
-    });
-
-    function stopCamera() {
-        if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-        document.getElementById('camera-modal').classList.add('hidden');
-    }
-
-    document.getElementById('camera-close').addEventListener('click', stopCamera);
-
     // Slug generator
     const slugGenBtn = document.getElementById('slug-generate');
     if (slugGenBtn) {
@@ -285,5 +260,94 @@
         });
     }
 })();
+</script>
+<script>
+function schoolImages(uploadUrl, deleteUrl) {
+    return {
+        uploadUrl: uploadUrl,
+        deleteUrl: deleteUrl,
+        images: {
+            photo: {
+                url: {{ school.avatarPath ? ('\'/' ~ school.avatarPath ~ '\'')|raw : 'null' }},
+                loading: false,
+                error: '',
+            },
+            logo: {
+                url: {{ school.logoPath ? ('\'/' ~ school.logoPath ~ '\'')|raw : 'null' }},
+                loading: false,
+                error: '',
+            },
+        },
+        cropToSquare(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const objUrl = URL.createObjectURL(file);
+                img.onload = () => {
+                    const size = Math.min(img.width, img.height);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    canvas.getContext('2d').drawImage(
+                        img,
+                        (img.width - size) / 2, (img.height - size) / 2,
+                        size, size,
+                        0, 0, size, size
+                    );
+                    URL.revokeObjectURL(objUrl);
+                    canvas.toBlob(resolve, 'image/jpeg', 0.92);
+                };
+                img.src = objUrl;
+            });
+        },
+
+        async uploadImage(event, field) {
+            const file = event.target.files[0];
+            if (!file) return;
+            this.images[field].loading = true;
+            this.images[field].error = '';
+            const fd = new FormData();
+            let uploadFile = file;
+            if (field === 'logo') {
+                const blob = await this.cropToSquare(file);
+                uploadFile = new File([blob], 'logo.jpg', { type: 'image/jpeg' });
+            }
+            fd.append('file', uploadFile);
+            fd.append('field', field);
+            try {
+                const res = await fetch(this.uploadUrl, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    this.images[field].url = data.url;
+                } else {
+                    this.images[field].error = data.error || 'Erreur lors du téléversement.';
+                }
+            } catch (e) {
+                this.images[field].error = 'Erreur réseau.';
+            } finally {
+                this.images[field].loading = false;
+                event.target.value = '';
+            }
+        },
+        async deleteImage(field) {
+            this.images[field].loading = true;
+            this.images[field].error = '';
+            const fd = new FormData();
+            fd.append('field', field);
+            try {
+                const res = await fetch(this.deleteUrl, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    this.images[field].url = null;
+                } else {
+                    this.images[field].error = data.error || 'Erreur lors de la suppression.';
+                }
+            } catch (e) {
+                this.images[field].error = 'Erreur réseau.';
+            } finally {
+                this.images[field].loading = false;
+            }
+        },
+    };
+}
 </script>
 {% endblock %}

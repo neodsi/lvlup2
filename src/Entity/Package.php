@@ -54,6 +54,15 @@ class Package
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
     private int $usageCount = 0;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $validityDurationDays = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $cancellationDelayMinutes = null;
+
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $applyValidityToExisting = false;
 
@@ -228,6 +237,42 @@ class Package
         return $this;
     }
 
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getValidityDurationDays(): ?int
+    {
+        return $this->validityDurationDays;
+    }
+
+    public function setValidityDurationDays(?int $validityDurationDays): static
+    {
+        $this->validityDurationDays = $validityDurationDays;
+
+        return $this;
+    }
+
+    public function getCancellationDelayMinutes(): ?int
+    {
+        return $this->cancellationDelayMinutes;
+    }
+
+    public function setCancellationDelayMinutes(?int $cancellationDelayMinutes): static
+    {
+        $this->cancellationDelayMinutes = $cancellationDelayMinutes;
+
+        return $this;
+    }
+
     public function isApplyValidityToExisting(): bool
     {
         return $this->applyValidityToExisting;
@@ -245,9 +290,23 @@ class Package
         return $this->createdAt;
     }
 
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
     }
 
     public function getDeletedAt(): ?\DateTimeImmutable
