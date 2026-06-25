@@ -20,7 +20,7 @@ class SchoolPageController extends AbstractController
     ) {
     }
 
-    #[Route('/{citySlug}/{schoolSlug}', name: 'app_school_page', methods: ['GET'], priority: -10,
+    #[Route('/ecoles-de-danse/{citySlug}/{schoolSlug}', name: 'app_school_page', methods: ['GET'],
         requirements: ['citySlug' => '[a-z0-9-]+', 'schoolSlug' => '[a-z0-9-]+'])]
     public function schoolPage(string $citySlug, string $schoolSlug): Response
     {

@@ -7,7 +7,7 @@ namespace App\Service\Member;
 use App\Entity\Profile;
 use App\Entity\Season;
 use App\Entity\School;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
@@ -29,62 +29,45 @@ class MemberService
     ) {
     }
 
-    public function createMember(School $school, ?Season $season, array $data): SchoolProfile
+    public function createMember(School $school, ?Season $season, array $data): SchoolUser
     {
-        $schoolProfile = null;
+        $schoolUser = null;
 
-        $this->em->wrapInTransaction(function () use ($school, $season, $data, &$schoolProfile): void {
-            // Create or reuse Profile
-            $profile = null;
+        $this->em->wrapInTransaction(function () use ($school, $season, $data, &$schoolUser): void {
+            /** @var User $user */
+            $user = $data['user'];
 
-            if (isset($data['profileId'])) {
-                $profile = $this->em->getRepository(Profile::class)->find($data['profileId']);
-            }
+            // Find or create a minimal Profile for this user
+            $profile = $user->getProfiles()
+                ->filter(fn(Profile $p) => $p->getDeletedAt() === null)
+                ->first();
 
-            if ($profile === null) {
+            if (!$profile instanceof Profile) {
                 $profile = new Profile();
-                $profile->setFirstName($data['firstName']);
-                $profile->setLastName($data['lastName']);
-
-                if (isset($data['dob'])) {
-                    $profile->setDob($data['dob']);
-                }
-                if (isset($data['phone'])) {
-                    $profile->setPhone($data['phone']);
-                }
-                if (isset($data['gender'])) {
-                    $profile->setGender($data['gender']);
-                }
-                if (isset($data['addressText'])) {
-                    $profile->setAddressText($data['addressText']);
-                }
-
-                // Associate with user if provided
-                if (isset($data['user']) && $data['user'] instanceof User) {
-                    $profile->setUser($data['user']);
-                }
-
+                $profile->setUser($user);
+                $profile->setFirstName('');
+                $profile->setLastName('');
                 $this->em->persist($profile);
                 $this->em->flush();
             }
 
-            // Create SchoolProfile
-            $schoolProfile = new SchoolProfile();
-            $schoolProfile->setSchool($school);
-            $schoolProfile->setProfile($profile);
-            $schoolProfile->setStatus(SchoolProfileStatus::Accepted);
+            // Create SchoolUser
+            $schoolUser = new SchoolUser();
+            $schoolUser->setSchool($school);
+            $schoolUser->setUser($user);
+            $schoolUser->setStatus(SchoolProfileStatus::Accepted);
 
             $role = $data['role'] ?? SchoolRole::Student;
-            $schoolProfile->setRole($role instanceof SchoolRole ? $role : SchoolRole::from($role));
+            $schoolUser->setRole($role instanceof SchoolRole ? $role : SchoolRole::from($role));
 
             if (isset($data['status'])) {
-                $schoolProfile->setStatus($data['status']);
+                $schoolUser->setStatus($data['status']);
             }
             if (isset($data['note'])) {
-                $schoolProfile->setNote($data['note'] ?: null);
+                $schoolUser->setNote($data['note'] ?: null);
             }
 
-            $this->em->persist($schoolProfile);
+            $this->em->persist($schoolUser);
             $this->em->flush();
 
             if ($season === null) {
@@ -93,7 +76,7 @@ class MemberService
 
             // Create SchoolProfileSeason for current season
             $tps = new SchoolProfileSeason();
-            $tps->setSchoolProfileId($schoolProfile->getId());
+            $tps->setSchoolProfileId($schoolUser->getId());
             $tps->setSeasonId($season->getId());
             $tps->setSchoolId($school->getId());
 
@@ -122,23 +105,18 @@ class MemberService
             $this->em->persist($tps);
         });
 
-        return $schoolProfile;
+        return $schoolUser;
     }
 
     public function exportCsv(School $school, Season $season): string
     {
-        /** @var array<array<string, mixed>> $rows */
-        $rows = $this->em->createQuery(
-            'SELECT tp, p, tps
-             FROM App\Entity\SchoolProfile tp
-             JOIN tp.profile p
-             LEFT JOIN App\Entity\SchoolProfileSeason tps
-                 WITH tps.schoolProfileId = tp.id AND tps.seasonId = :seasonId
-             WHERE tp.school = :school
-               AND tp.deletedAt IS NULL'
+        /** @var array<SchoolUser> $members */
+        $members = $this->em->createQuery(
+            'SELECT su, u FROM App\Entity\SchoolUser su
+             JOIN su.user u
+             WHERE su.school = :school AND su.deletedAt IS NULL'
         )
             ->setParameter('school', $school)
-            ->setParameter('seasonId', $season->getId())
             ->getResult();
 
         $handle = fopen('php://temp', 'r+');
@@ -163,21 +141,18 @@ class MemberService
             'injury_warning',
         ]);
 
-        /** @var SchoolProfile $tp */
-        foreach ($rows as $tp) {
-            $profile = $tp->getProfile();
+        /** @var SchoolUser $su */
+        foreach ($members as $su) {
+            $profile = $su->getProfile();
 
             // Fetch associated SchoolProfileSeason (may be null if member has no season entry)
             /** @var SchoolProfileSeason|null $tps */
             $tps = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
-                'schoolProfileId' => $tp->getId(),
-                'seasonId'      => $season->getId(),
+                'schoolProfileId' => $su->getId(),
+                'seasonId'        => $season->getId(),
             ]);
 
-            $email = null;
-            if ($profile !== null && $profile->getUser() !== null) {
-                $email = $profile->getUser()->getEmail();
-            }
+            $email = $su->getUser()->getEmail();
 
             $dob = $profile?->getDob()?->format('Y-m-d');
 
@@ -190,13 +165,13 @@ class MemberService
                 : '';
 
             fputcsv($handle, [
-                $tp->getId(),
+                $su->getId(),
                 $profile?->getFirstName() ?? '',
                 $profile?->getLastName() ?? '',
                 $email ?? '',
                 $profile?->getPhone() ?? '',
                 $dob ?? '',
-                $tp->getRole()->value,
+                $su->getRole()->value,
                 $tps?->getRegistrationStatus()->value ?? '',
                 $activityIds,
                 $tps?->getAgeGroupId() ?? '',
@@ -214,12 +189,12 @@ class MemberService
     }
 
     /**
-     * Recalculates users.roles from all active school_profiles.
-     * Preserves ROLE_ADMIN (set manually). Call after any SchoolProfile create/delete.
+     * Recalculates users.roles from all active school_users.
+     * Preserves ROLE_ADMIN (set manually). Call after any SchoolUser create/delete.
      */
     public function syncUserRoles(User $user): void
     {
-        // Mapping school_profiles.role → users.roles
+        // Mapping school_users.role → users.roles
         $roleMap = [
             SchoolRole::School->value  => 'ROLE_SCHOOL',
             SchoolRole::Teacher->value => 'ROLE_TEACHER',
@@ -227,11 +202,10 @@ class MemberService
         ];
 
         $rows = $this->em->createQueryBuilder()
-            ->select('DISTINCT tp.role')
-            ->from(SchoolProfile::class, 'tp')
-            ->join('tp.profile', 'p')
-            ->where('p.user = :user')
-            ->andWhere('tp.deletedAt IS NULL')
+            ->select('DISTINCT su.role')
+            ->from(SchoolUser::class, 'su')
+            ->where('su.user = :user')
+            ->andWhere('su.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->getQuery()
             ->getSingleColumnResult();

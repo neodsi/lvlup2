@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Teacher;
 
-use App\Entity\Profile;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\User;
 use App\Enum\SchoolRole;
@@ -33,19 +32,14 @@ final class TeacherController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $profileIds = $user->getProfiles()
-            ->filter(fn(Profile $p) => $p->getDeletedAt() === null)
-            ->map(fn(Profile $p) => $p->getId())
-            ->getValues();
-
-        $schoolProfiles = empty($profileIds) ? [] : $this->em->createQueryBuilder()
+        $schoolProfiles = $this->em->createQueryBuilder()
             ->select('sp', 's')
-            ->from(SchoolProfile::class, 'sp')
+            ->from(SchoolUser::class, 'sp')
             ->join('sp.school', 's')
-            ->where('sp.profile IN (:profileIds)')
+            ->where('sp.user = :user')
             ->andWhere('sp.role = :role')
             ->andWhere('sp.deletedAt IS NULL')
-            ->setParameter('profileIds', $profileIds)
+            ->setParameter('user', $user)
             ->setParameter('role', SchoolRole::Teacher)
             ->getQuery()
             ->getResult();
@@ -62,7 +56,7 @@ final class TeacherController extends AbstractController
         $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 

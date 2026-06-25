@@ -6,7 +6,7 @@ namespace App\Controller\Api;
 
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,7 +23,7 @@ class DocumentApiController extends AbstractController
      * @param object|null $imagineCacheManager Liip\ImagineBundle\Imagine\Cache\CacheManager (optional — injected when LiipImagineBundle is registered)
      */
     public function __construct(
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly string $projectDir,
         private readonly ?object $imagineCacheManager = null,
     ) {
@@ -52,9 +52,9 @@ class DocumentApiController extends AbstractController
         }
 
         // Verify school membership
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, (string) $schoolId);
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, (string) $schoolId);
 
-        if ($schoolProfile === null) {
+        if ($schoolUser === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 

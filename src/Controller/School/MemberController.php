@@ -10,7 +10,7 @@ use App\Entity\Package;
 use App\Entity\PaymentSchedule;
 use App\Entity\PriceModifier;
 use App\Entity\Season;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
@@ -31,6 +31,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 
@@ -44,6 +46,7 @@ final class MemberController extends AbstractController
         private readonly MemberService $memberService,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly EmailService $emailService,
+        private readonly TokenStorageInterface $tokenStorage,
     ) {
     }
 
@@ -55,7 +58,7 @@ final class MemberController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -102,12 +105,12 @@ final class MemberController extends AbstractController
         $filterOnlineMethod = (string) $request->query->get('online_method', '');
         $filterPastDue      = (string) $request->query->get('past_due', '');
 
-        // Build member query (eager-load profile + user to avoid N+1)
+        // Build member query (eager-load user + profile to avoid N+1)
         $qb = $this->em->createQueryBuilder()
-            ->select('tp', 'p', 'u')
-            ->from(SchoolProfile::class, 'tp')
-            ->join('tp.profile', 'p')
-            ->leftJoin('p.user', 'u')
+            ->select('tp', 'u', 'p')
+            ->from(SchoolUser::class, 'tp')
+            ->join('tp.user', 'u')
+            ->leftJoin('u.profiles', 'p', 'WITH', 'p.deletedAt IS NULL')
             ->where('tp.school = :school')
             ->andWhere('tp.deletedAt IS NULL')
             ->orderBy('p.lastName', 'ASC')
@@ -124,14 +127,14 @@ final class MemberController extends AbstractController
         }
 
         if ($filterHasUser === 'yes') {
-            $qb->andWhere('u IS NOT NULL');
+            $qb->andWhere('p IS NOT NULL');
         } elseif ($filterHasUser === 'no') {
-            $qb->andWhere('u IS NULL');
+            $qb->andWhere('p IS NULL');
         }
 
-        /** @var SchoolProfile[] $members */
+        /** @var SchoolUser[] $members */
         $members   = $qb->getQuery()->getResult();
-        $memberIds = array_map(static fn(SchoolProfile $m): string => $m->getId(), $members);
+        $memberIds = array_map(static fn(SchoolUser $m): string => $m->getId(), $members);
 
         // TPS map for the current season
         $tpsMap = [];
@@ -148,16 +151,16 @@ final class MemberController extends AbstractController
         if ($type === 'students' && $season !== null) {
             $members = array_values(array_filter(
                 $members,
-                static fn(SchoolProfile $m): bool => isset($tpsMap[$m->getId()])
+                static fn(SchoolUser $m): bool => isset($tpsMap[$m->getId()])
             ));
-            $memberIds = array_map(static fn(SchoolProfile $m): string => $m->getId(), $members);
+            $memberIds = array_map(static fn(SchoolUser $m): string => $m->getId(), $members);
         }
 
         // PHP-side TPS filters (registration status, injury, age group, activity)
         if ($filterStatus !== '' || $filterHasInjury !== '' || $filterAgeGroup !== '' || $filterActivity !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($tpsMap, $filterStatus, $filterHasInjury, $filterAgeGroup, $filterActivity): bool {
+                static function (SchoolUser $m) use ($tpsMap, $filterStatus, $filterHasInjury, $filterAgeGroup, $filterActivity): bool {
                     $tps = $tpsMap[$m->getId()] ?? null;
 
                     if ($filterStatus !== '' && ($tps === null || $tps->getRegistrationStatus()->value !== $filterStatus)) {
@@ -179,7 +182,7 @@ final class MemberController extends AbstractController
                     return true;
                 }
             ));
-            $memberIds = array_map(static fn(SchoolProfile $m): string => $m->getId(), $members);
+            $memberIds = array_map(static fn(SchoolUser $m): string => $m->getId(), $members);
         }
 
         // Financial data, packages, activities
@@ -486,7 +489,7 @@ final class MemberController extends AbstractController
         if ($filterPayStatus !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($financialMap, $filterPayStatus): bool {
+                static function (SchoolUser $m) use ($financialMap, $filterPayStatus): bool {
                     $fin = $financialMap[$m->getId()] ?? null;
 
                     return $fin === null ? $filterPayStatus === 'unpaid' : $fin['status'] === $filterPayStatus;
@@ -497,7 +500,7 @@ final class MemberController extends AbstractController
         if ($filterPayLoc !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($paymentMethodMap, $filterPayLoc): bool {
+                static function (SchoolUser $m) use ($paymentMethodMap, $filterPayLoc): bool {
                     foreach ($paymentMethodMap[$m->getId()] ?? [] as $method) {
                         $isOnline = str_starts_with((string) $method, 'online_');
                         if ($filterPayLoc === 'online' && $isOnline) {
@@ -516,7 +519,7 @@ final class MemberController extends AbstractController
         if ($filterPkgType !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($pkgTypesMap, $filterPkgType): bool {
+                static function (SchoolUser $m) use ($pkgTypesMap, $filterPkgType): bool {
                     return in_array($filterPkgType, $pkgTypesMap[$m->getId()] ?? [], true);
                 }
             ));
@@ -525,7 +528,7 @@ final class MemberController extends AbstractController
         if ($filterPastDue === 'yes') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($nextScheduleMap, $now): bool {
+                static function (SchoolUser $m) use ($nextScheduleMap, $now): bool {
                     $due = $nextScheduleMap[$m->getId()] ?? null;
 
                     return $due instanceof \DateTimeImmutable && $due < $now;
@@ -536,7 +539,7 @@ final class MemberController extends AbstractController
         if ($filterOnsiteMethod !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($paymentMethodMap, $filterOnsiteMethod): bool {
+                static function (SchoolUser $m) use ($paymentMethodMap, $filterOnsiteMethod): bool {
                     return in_array($filterOnsiteMethod, $paymentMethodMap[$m->getId()] ?? [], true);
                 }
             ));
@@ -545,7 +548,7 @@ final class MemberController extends AbstractController
         if ($filterOnlineMethod !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($paymentMethodMap, $filterOnlineMethod): bool {
+                static function (SchoolUser $m) use ($paymentMethodMap, $filterOnlineMethod): bool {
                     return in_array($filterOnlineMethod, $paymentMethodMap[$m->getId()] ?? [], true);
                 }
             ));
@@ -564,7 +567,7 @@ final class MemberController extends AbstractController
             );
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolProfile $m) use ($pkgMemberIds): bool {
+                static function (SchoolUser $m) use ($pkgMemberIds): bool {
                     return in_array($m->getId(), $pkgMemberIds, true);
                 }
             ));
@@ -660,13 +663,13 @@ final class MemberController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $member = $this->em->getRepository(SchoolProfile::class)->find($id);
+        $member = $this->em->getRepository(SchoolUser::class)->find($id);
 
         if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
             throw $this->createNotFoundException('Member not found.');
@@ -698,7 +701,7 @@ final class MemberController extends AbstractController
         ];
 
         $form = $this->createForm(MemberType::class, $initialData);
-        $form->get('email')->setData($profile?->getUser()?->getEmail());
+        $form->get('email')->setData($member->getUser()?->getEmail());
         $form->get('emergencyName')->setData($emergencyContact['name'] ?? null);
         $form->get('emergencyRelationship')->setData($emergencyContact['relationship'] ?? null);
         $form->get('emergencyEmail')->setData($emergencyContact['email'] ?? null);
@@ -721,13 +724,13 @@ final class MemberController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $member = $this->em->getRepository(SchoolProfile::class)->find($id);
+        $member = $this->em->getRepository(SchoolUser::class)->find($id);
 
         if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
             throw $this->createNotFoundException('Member not found.');
@@ -763,7 +766,7 @@ final class MemberController extends AbstractController
         $form = $this->createForm(MemberType::class, $initialData);
 
         // Pre-fill unmapped fields from existing data
-        $form->get('email')->setData($profile?->getUser()?->getEmail());
+        $form->get('email')->setData($member->getUser()?->getEmail());
         $form->get('emergencyName')->setData($emergencyContact['name'] ?? null);
         $form->get('emergencyRelationship')->setData($emergencyContact['relationship'] ?? null);
         $form->get('emergencyEmail')->setData($emergencyContact['email'] ?? null);
@@ -774,24 +777,6 @@ final class MemberController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-
-            // Update Profile
-            if ($profile !== null) {
-                $profile->setFirstName((string) ($data['firstName'] ?? ''));
-                $profile->setLastName((string) ($data['lastName'] ?? ''));
-                $profile->setPhone($data['phone'] ?: null);
-                $profile->setAddressText($data['addressText'] ?: null);
-
-                $genderVal = $data['gender'] ?? null;
-                $profile->setGender($genderVal ? Gender::from($genderVal) : null);
-
-                $dobVal = $data['dob'] ?? null;
-                if ($dobVal instanceof \DateTimeInterface) {
-                    $profile->setDob(\DateTimeImmutable::createFromInterface($dobVal));
-                } else {
-                    $profile->setDob(null);
-                }
-            }
 
             // Update note
             $member->setNote($data['note'] ?: null);
@@ -810,21 +795,9 @@ final class MemberController extends AbstractController
                 if ($regStatus) {
                     $tps->setRegistrationStatus(RegistrationStatus::from($regStatus));
                 }
-                $tps->setInjuryWarning($data['injuryWarning'] ?: null);
 
                 $accepted = $form->get('accepted')->getData();
                 $tps->setAccepted($accepted ?: null);
-
-                $ecName = $form->get('emergencyName')->getData();
-                $ecPhone = $form->get('emergencyPhone')->getData();
-                if ($ecName || $ecPhone) {
-                    $tps->setEmergencyContact([
-                        'name'         => $form->get('emergencyName')->getData() ?? '',
-                        'relationship' => $form->get('emergencyRelationship')->getData() ?? '',
-                        'email'        => $form->get('emergencyEmail')->getData() ?? '',
-                        'phone'        => $form->get('emergencyPhone')->getData() ?? '',
-                    ]);
-                }
             }
 
             $this->em->flush();
@@ -849,7 +822,7 @@ final class MemberController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -859,7 +832,7 @@ final class MemberController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $member = $this->em->getRepository(SchoolProfile::class)->find($id);
+        $member = $this->em->getRepository(SchoolUser::class)->find($id);
 
         if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
             throw $this->createNotFoundException('Member not found.');
@@ -896,172 +869,126 @@ final class MemberController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $school        = $this->schoolContext->getCurrentSchool();
-        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
+        $school      = $this->schoolContext->getCurrentSchool();
+        $schoolUser  = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolProfile === null) {
+        if ($school === null || $schoolUser === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $isStudent = $type === 'students';
-        $form = $this->createForm($isStudent ? MemberType::class : StaffMemberType::class, []);
-        $form->handleRequest($request);
+        $error = null;
+        $emailValue = '';
+        $noteValue  = '';
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $roleMap = [
-                'students' => SchoolRole::Student,
-                'teachers' => SchoolRole::Teacher,
-                'admins'   => SchoolRole::School,
-            ];
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('create_member', (string) $request->request->get('_token'))) {
+                $error = 'Token CSRF invalide.';
+            } else {
+                $roleMap = [
+                    'students' => SchoolRole::Student,
+                    'teachers' => SchoolRole::Teacher,
+                    'admins'   => SchoolRole::School,
+                ];
 
-            $season = null;
-            if ($isStudent) {
-                $seasonId = $school->getCurrentSeasonId();
-                $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
+                $memberEmail = trim((string) $request->request->get('email', ''));
+                $noteValue   = trim((string) $request->request->get('note', ''));
+                $emailValue  = $memberEmail;
 
-                if ($season === null) {
-                    throw $this->createNotFoundException('No active season found.');
+                if ($memberEmail === '' || !filter_var($memberEmail, FILTER_VALIDATE_EMAIL)) {
+                    $error = 'Veuillez saisir une adresse e-mail valide.';
+                } else {
+                    $season = null;
+                    if ($type === 'students') {
+                        $seasonId = $school->getCurrentSeasonId();
+                        $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
+                        if ($season === null) {
+                            $error = 'Aucune saison active trouvée.';
+                        }
+                    }
+
+                    if ($error === null) {
+                        $userAccount = $this->em->getRepository(User::class)->findOneBy(['email' => $memberEmail]);
+
+                        if ($userAccount !== null) {
+                            $roleLabels = ['students' => 'élève', 'teachers' => 'professeur', 'admins' => 'administrateur'];
+                            /** @var SchoolUser|null $existingMember */
+                            $existingMember = $this->em->createQueryBuilder()
+                                ->select('su')
+                                ->from(SchoolUser::class, 'su')
+                                ->where('su.school = :school')
+                                ->andWhere('su.user = :user')
+                                ->andWhere('su.role = :role')
+                                ->andWhere('su.deletedAt IS NULL')
+                                ->setParameter('school', $school)
+                                ->setParameter('user', $userAccount)
+                                ->setParameter('role', $roleMap[$type])
+                                ->setMaxResults(1)
+                                ->getQuery()
+                                ->getOneOrNullResult();
+
+                            if ($existingMember !== null) {
+                                $error = sprintf('Cet e-mail est déjà inscrit comme %s dans cette école.', $roleLabels[$type]);
+                            }
+                        }
+
+                        if ($error === null) {
+                            $isNewAccount = false;
+                            if ($userAccount === null) {
+                                $userAccount = new User();
+                                $userAccount->setEmail($memberEmail);
+                                $userAccount->setEmailVerified(true);
+                                $tempPassword = bin2hex(random_bytes(16));
+                                $userAccount->setPasswordHash($this->passwordHasher->hashPassword($userAccount, $tempPassword));
+                                $resetToken = Uuid::v4()->toRfc4122();
+                                $userAccount->setResetToken($resetToken);
+                                $userAccount->setResetTokenExpiresAt(new \DateTimeImmutable('+30 days'));
+                                $this->em->persist($userAccount);
+                                $this->em->flush();
+                                $isNewAccount = true;
+                            }
+
+                            $this->memberService->createMember($school, $season, [
+                                'note' => $noteValue ?: null,
+                                'role' => $roleMap[$type],
+                                'user' => $userAccount,
+                            ]);
+
+                            $this->memberService->syncUserRoles($userAccount);
+                            $this->em->flush();
+
+                            /** @var User $loggedIn */
+                            $loggedIn = $this->getUser();
+                            if ($loggedIn !== null && $loggedIn->getId() === $userAccount->getId()) {
+                                $newToken = new UsernamePasswordToken($userAccount, 'main', $userAccount->getRoles());
+                                $this->tokenStorage->setToken($newToken);
+                                $request->getSession()->set('_security_main', serialize($newToken));
+                            }
+
+                            try {
+                                $this->emailService->sendMemberWelcome($userAccount, $school, $isNewAccount);
+                            } catch (\Throwable) {
+                            }
+
+                            $this->addFlash('success', 'Membre ajouté avec succès.');
+
+                            return $this->redirectToRoute('school_members_list', ['type' => $type]);
+                        }
+                    }
                 }
             }
 
-            $data = $form->getData();
-
-            // Resolve Gender enum from string value
-            $genderVal = $data['gender'] ?? null;
-            $gender    = $genderVal ? Gender::tryFrom($genderVal) : null;
-
-            // Resolve dob: DateType returns a DateTimeInterface or null
-            $dobVal = $data['dob'] ?? null;
-            $dob    = null;
-            if ($dobVal instanceof \DateTimeInterface) {
-                $dob = \DateTimeImmutable::createFromInterface($dobVal);
+            if ($error !== null) {
+                $this->addFlash('error', $error);
             }
-
-            // Unmapped fields
-            $memberEmail = trim((string) ($form->get('email')->getData() ?? ''));
-
-            // Student-only season fields
-            $regStatusVal    = null;
-            $emergencyContact = null;
-            $accepted        = [];
-            if ($isStudent) {
-                $regStatus    = $data['registrationStatus'] ?? null;
-                $regStatusVal = $regStatus ? RegistrationStatus::tryFrom($regStatus) : null;
-
-                $accepted = $form->get('accepted')->getData() ?? [];
-
-                $ecName  = $form->get('emergencyName')->getData();
-                $ecPhone = $form->get('emergencyPhone')->getData();
-                if ($ecName || $ecPhone) {
-                    $emergencyContact = [
-                        'name'         => $form->get('emergencyName')->getData() ?? '',
-                        'relationship' => $form->get('emergencyRelationship')->getData() ?? '',
-                        'email'        => $form->get('emergencyEmail')->getData() ?? '',
-                        'phone'        => $form->get('emergencyPhone')->getData() ?? '',
-                    ];
-                }
-            }
-
-            // Create or reuse User account
-            $userRoleMap = [
-                'students' => 'ROLE_STUDENT',
-                'teachers' => 'ROLE_TEACHER',
-                'admins'   => 'ROLE_SCHOOL',
-            ];
-
-            $userAccount  = $this->em->getRepository(User::class)->findOneBy(['email' => $memberEmail]);
-            $isNewAccount = false;
-
-            // Block only if same email + same role already exists in this school
-            if ($userAccount !== null) {
-                $existingMember = $this->em->createQueryBuilder()
-                    ->select('COUNT(tp.id)')
-                    ->from(SchoolProfile::class, 'tp')
-                    ->join('tp.profile', 'p')
-                    ->where('tp.school = :school')
-                    ->andWhere('p.user = :user')
-                    ->andWhere('tp.role = :role')
-                    ->andWhere('tp.deletedAt IS NULL')
-                    ->setParameter('school', $school)
-                    ->setParameter('user', $userAccount)
-                    ->setParameter('role', $roleMap[$type])
-                    ->getQuery()
-                    ->getSingleScalarResult();
-
-                if ((int) $existingMember > 0) {
-                    $roleLabels = [
-                        'students' => 'élève',
-                        'teachers' => 'professeur',
-                        'admins'   => 'administrateur',
-                    ];
-                    $this->addFlash('error', sprintf(
-                        'Cet e-mail est déjà inscrit comme %s dans cette école.',
-                        $roleLabels[$type]
-                    ));
-
-                    return $this->render('school/members/create.html.twig', [
-                        'school' => $school,
-                        'type' => $type,
-                        'form' => $form->createView(),
-                    ]);
-                }
-            }
-
-            if ($userAccount === null) {
-                $userAccount = new User();
-                $userAccount->setEmail($memberEmail);
-                $userAccount->setRoles([$userRoleMap[$type]]);
-                $userAccount->setEmailVerified(true);
-
-                $tempPassword = bin2hex(random_bytes(16));
-                $userAccount->setPasswordHash($this->passwordHasher->hashPassword($userAccount, $tempPassword));
-
-                $resetToken = Uuid::v4()->toRfc4122();
-                $userAccount->setResetToken($resetToken);
-                $userAccount->setResetTokenExpiresAt(new \DateTimeImmutable('+30 days'));
-
-                $this->em->persist($userAccount);
-                $this->em->flush();
-                $isNewAccount = true;
-            }
-
-            $this->memberService->createMember($school, $season, [
-                'firstName'          => (string) ($data['firstName'] ?? ''),
-                'lastName'           => (string) ($data['lastName'] ?? ''),
-                'dob'                => $dob,
-                'phone'              => $data['phone'] ?: null,
-                'gender'             => $gender,
-                'addressText'        => $data['addressText'] ?: null,
-                'note'               => $data['note'] ?: null,
-                'registrationStatus' => $regStatusVal,
-                'injuryWarning'      => $isStudent ? ($data['injuryWarning'] ?: null) : null,
-                'emergencyContact'   => $emergencyContact,
-                'accepted'           => $accepted ?: null,
-                'role'               => $roleMap[$type],
-                'user'               => $userAccount,
-            ]);
-
-            // Recalculate users.roles from all active school memberships
-            $this->memberService->syncUserRoles($userAccount);
-            $this->em->flush();
-
-            try {
-                $this->emailService->sendMemberWelcome($userAccount, $school, $isNewAccount);
-            } catch (\Throwable) {
-                // Email failure is non-blocking
-            }
-
-            $this->addFlash('success', 'Membre ajouté avec succès.');
-
-            return $this->redirectToRoute('school_members_list', ['type' => $type]);
         }
 
         return $this->render('school/members/create.html.twig', [
             'school' => $school,
-            'type' => $type,
-            'form' => $form->createView(),
+            'type'   => $type,
+            'email'  => $emailValue,
+            'note'   => $noteValue,
         ]);
     }
 }

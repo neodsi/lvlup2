@@ -132,6 +132,26 @@ class EmailService
         );
     }
 
+    public function sendEmailChangeConfirmation(User $user): void
+    {
+        $confirmUrl = $this->urlGenerator->generate(
+            'app_profile_email_confirm',
+            ['token' => $user->getEmailChangeToken()],
+            UrlGeneratorInterface::ABSOLUTE_URL,
+        );
+
+        $this->sendTemplated(
+            (string) $user->getPendingEmail(),
+            'Confirmez votre nouvelle adresse e-mail – LVL UP',
+            'email_change',
+            [
+                'user'        => $user,
+                'confirm_url' => $confirmUrl,
+                'new_email'   => $user->getPendingEmail(),
+            ],
+        );
+    }
+
     public function sendOrderConfirmation(Order $order, Profile $profile): void
     {
         $email = $profile->getUser()?->getEmail();

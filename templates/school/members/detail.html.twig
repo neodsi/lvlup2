@@ -11,7 +11,7 @@
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_members_list', {type: _listType}) }}" class="hover:text-gray-700 transition">{{ _listLabel }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<span class="text-gray-700 font-medium">{{ member.profile.firstName }} {{ member.profile.lastName }}</span>
+<span class="text-gray-700 font-medium">{{ member.user ? member.user.email : member.profile.user.email }}</span>
 {% endblock %}
 
 {% block school_content %}
@@ -20,8 +20,25 @@
     <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ member.profile.firstName }} {{ member.profile.lastName }}</h1>
 
     {# email is in the form (used on create) but not editable here #}
+    {% set _genderLabel = {male: 'Homme', female: 'Femme', other: 'Autre'} %}
     {{ form_start(form, {'action': path('school_member_edit', {'id': member.id})}) }}
+    {# Champs lecture seule — non éditables par l'école #}
     {% do form.email.setRendered() %}
+    {% do form.firstName.setRendered() %}
+    {% do form.lastName.setRendered() %}
+    {% do form.dob.setRendered() %}
+    {% do form.gender.setRendered() %}
+    {% do form.phone.setRendered() %}
+    {% do form.addressText.setRendered() %}
+    {% do form.emergencyName.setRendered() %}
+    {% do form.emergencyRelationship.setRendered() %}
+    {% do form.emergencyEmail.setRendered() %}
+    {% do form.emergencyPhone.setRendered() %}
+    {% do form.injuryWarning.setRendered() %}
+    {% if member.role.value != 'student' %}
+        {% do form.registrationStatus.setRendered() %}
+        {% do form.accepted.setRendered() %}
+    {% endif %}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {# Left: avatar + badges #}
@@ -78,13 +95,13 @@
         {# Right: info + saison #}
         <div class="lg:col-span-2 space-y-4">
 
-            {# Informations personnelles #}
+            {# Informations personnelles — lecture seule #}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-                <div class="px-6 py-4 border-b border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
+                    <span class="text-xs text-gray-400">Modifiable par le membre uniquement</span>
                 </div>
                 <div class="px-6 py-5 space-y-4">
-                    <p class="text-xs text-gray-400 mb-4">Les champs marqués <span class="text-red-500 font-medium">*</span> sont obligatoires.</p>
                     {% if member.profile.user %}
                     <div>
                         <p class="block text-xs text-gray-500 mb-1">E-mail</p>
@@ -93,37 +110,31 @@
                     {% endif %}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label for="{{ form.firstName.vars.id }}" class="block text-xs text-gray-500 mb-1">Prénom <span class="text-red-500">*</span></label>
-                            {{ form_widget(form.firstName) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.firstName) }}</div>
+                            <p class="block text-xs text-gray-500 mb-1">Prénom</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ member.profile.firstName ?: '—' }}</p>
                         </div>
                         <div>
-                            <label for="{{ form.lastName.vars.id }}" class="block text-xs text-gray-500 mb-1">Nom <span class="text-red-500">*</span></label>
-                            {{ form_widget(form.lastName) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.lastName) }}</div>
+                            <p class="block text-xs text-gray-500 mb-1">Nom</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ member.profile.lastName ?: '—' }}</p>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            {{ form_label(form.dob) }}
-                            {{ form_widget(form.dob) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.dob) }}</div>
+                            <p class="block text-xs text-gray-500 mb-1">Date de naissance</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ member.profile.dob ? member.profile.dob|date('d/m/Y') : '—' }}</p>
                         </div>
                         <div>
-                            {{ form_label(form.gender) }}
-                            {{ form_widget(form.gender) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.gender) }}</div>
+                            <p class="block text-xs text-gray-500 mb-1">Genre</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ member.profile.gender ? (_genderLabel[member.profile.gender.value] ?? member.profile.gender.value) : '—' }}</p>
                         </div>
                         <div>
-                            {{ form_label(form.phone) }}
-                            {{ form_widget(form.phone) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.phone) }}</div>
+                            <p class="block text-xs text-gray-500 mb-1">Téléphone</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ member.profile.phone ?: '—' }}</p>
                         </div>
                     </div>
                     <div>
-                        {{ form_label(form.addressText) }}
-                        {{ form_widget(form.addressText) }}
-                        <div class="mt-1 text-xs text-red-500">{{ form_errors(form.addressText) }}</div>
+                        <p class="block text-xs text-gray-500 mb-1">Adresse</p>
+                        <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ member.profile.addressText ?: '—' }}</p>
                     </div>
                 </div>
             </div>
@@ -131,9 +142,9 @@
             {# Tailles — élèves uniquement #}
             {% if member.role.value == 'student' %}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-                <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h2 class="text-sm font-semibold text-gray-900">Tailles</h2>
-                    <span class="text-xs text-gray-400">galas &amp; certains cours</span>
+                    <span class="text-xs text-gray-400">Modifiable par le membre uniquement</span>
                 </div>
                 <div class="px-6 py-4 grid grid-cols-3 gap-4 text-sm">
                     <div>
@@ -152,7 +163,42 @@
             </div>
             {% endif %}
 
-            {# Saison actuelle #}
+            {# Contact d'urgence — élèves uniquement, lecture seule #}
+            {% if season and member.role.value == 'student' %}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-gray-900">Contact d'urgence</h2>
+                    <span class="text-xs text-gray-400">Modifiable par le membre uniquement</span>
+                </div>
+                <div class="px-6 py-5 space-y-4">
+                    {% set _ec = tps ? tps.emergencyContact : null %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <p class="block text-xs text-gray-500 mb-1">Nom</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ _ec.name ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="block text-xs text-gray-500 mb-1">Lien de parenté</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ _ec.relationship ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="block text-xs text-gray-500 mb-1">E-mail</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ _ec.email ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="block text-xs text-gray-500 mb-1">Téléphone</p>
+                            <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500">{{ _ec.phone ?? '—' }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="block text-xs text-gray-500 mb-1">Avertissement blessure</p>
+                        <p class="block w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-500 min-h-[2.75rem]">{{ tps ? (tps.injuryWarning ?: '—') : '—' }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Saison actuelle — élèves uniquement #}
             {% if season and member.role.value == 'student' %}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-100">
@@ -181,40 +227,6 @@
                             {% endfor %}
                         </div>
                         <div class="mt-1 text-xs text-red-500">{{ form_errors(form.accepted) }}</div>
-                    </div>
-
-                    {# Contact d'urgence #}
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 mb-2">Contact d'urgence</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                {{ form_label(form.emergencyName) }}
-                                {{ form_widget(form.emergencyName) }}
-                                <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyName) }}</div>
-                            </div>
-                            <div>
-                                {{ form_label(form.emergencyRelationship) }}
-                                {{ form_widget(form.emergencyRelationship) }}
-                                <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyRelationship) }}</div>
-                            </div>
-                            <div>
-                                {{ form_label(form.emergencyEmail) }}
-                                {{ form_widget(form.emergencyEmail) }}
-                                <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyEmail) }}</div>
-                            </div>
-                            <div>
-                                {{ form_label(form.emergencyPhone) }}
-                                {{ form_widget(form.emergencyPhone) }}
-                                <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyPhone) }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {# Avertissement blessure #}
-                    <div>
-                        {{ form_label(form.injuryWarning) }}
-                        {{ form_widget(form.injuryWarning) }}
-                        <div class="mt-1 text-xs text-red-500">{{ form_errors(form.injuryWarning) }}</div>
                     </div>
 
                 </div>

@@ -6,7 +6,7 @@ namespace App\Controller\App;
 
 use App\Entity\Profile;
 use App\Entity\School;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Enum\Gender;
 use App\Enum\SchoolRole;
 use App\Enum\SchoolStatus;
@@ -44,25 +44,23 @@ class HomeController extends AbstractController
         }
 
         if ($this->isGranted('ROLE_SCHOOL')) {
-            $profileIds = array_map(fn (Profile $p) => $p->getId(), $profiles);
-
-            /** @var SchoolProfile|null $schoolProfile */
-            $schoolProfile = $this->em->createQueryBuilder()
-                ->select('tp', 't')
-                ->from(SchoolProfile::class, 'tp')
-                ->join('tp.school', 't')
-                ->where('tp.profile IN (:profileIds)')
-                ->andWhere('tp.deletedAt IS NULL')
-                ->setParameter('profileIds', $profileIds)
+            /** @var SchoolUser|null $schoolUser */
+            $schoolUser = $this->em->createQueryBuilder()
+                ->select('su', 't')
+                ->from(SchoolUser::class, 'su')
+                ->join('su.school', 't')
+                ->where('su.user = :user')
+                ->andWhere('su.deletedAt IS NULL')
+                ->setParameter('user', $user)
                 ->setMaxResults(1)
                 ->getQuery()
                 ->getOneOrNullResult();
 
-            if ($schoolProfile === null) {
+            if ($schoolUser === null) {
                 return $this->redirectToRoute('app_create_school');
             }
 
-            $request->getSession()->set('currentSchoolId', (string) $schoolProfile->getSchool()->getId());
+            $request->getSession()->set('currentSchoolId', (string) $schoolUser->getSchool()->getId());
 
             return $this->redirectToRoute('school_home');
         }
@@ -81,17 +79,14 @@ class HomeController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        $profiles = $user->getProfiles()->filter(fn (Profile $p) => $p->getDeletedAt() === null)->getValues();
-        $profileIds = array_map(fn (Profile $p) => $p->getId(), $profiles);
-
         $tp = $this->em->createQueryBuilder()
-            ->select('tp')
-            ->from(SchoolProfile::class, 'tp')
-            ->where('tp.school = :schoolId')
-            ->andWhere('tp.profile IN (:profileIds)')
-            ->andWhere('tp.deletedAt IS NULL')
+            ->select('su')
+            ->from(SchoolUser::class, 'su')
+            ->where('su.school = :schoolId')
+            ->andWhere('su.user = :user')
+            ->andWhere('su.deletedAt IS NULL')
             ->setParameter('schoolId', $id)
-            ->setParameter('profileIds', $profileIds)
+            ->setParameter('user', $user)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -202,11 +197,11 @@ class HomeController extends AbstractController
             )->first();
 
             if ($primaryProfile !== false) {
-                $schoolProfile = new SchoolProfile();
-                $schoolProfile->setSchool($school);
-                $schoolProfile->setProfile($primaryProfile);
-                $schoolProfile->setRole(SchoolRole::School);
-                $this->em->persist($schoolProfile);
+                $schoolUser = new SchoolUser();
+                $schoolUser->setSchool($school);
+                $schoolUser->setUser($user);
+                $schoolUser->setRole(SchoolRole::School);
+                $this->em->persist($schoolUser);
             }
 
             if (!in_array('ROLE_SCHOOL', $user->getRoles(), true)) {

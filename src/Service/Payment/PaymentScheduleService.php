@@ -172,24 +172,19 @@ class PaymentScheduleService
     private function buildRecurringDueDates(PaymentScheduleTemplate $template): array
     {
         $nbPayments      = $template->getNbPayments() ?? 1;
-        $intervalDays    = $template->getIntervalDuration() ?? 30;
+        $intervalMonths  = $template->getIntervalDuration() ?? 1;
         $dayOfMonth      = $template->getDayOfMonth();
         $startsAt        = $template->getStartsAt() ?? new \DateTimeImmutable();
 
         $dates = [];
 
         for ($i = 0; $i < $nbPayments; $i++) {
-            if ($dayOfMonth !== null) {
-                // Snap to specific day-of-month
-                $base   = $startsAt->modify(sprintf('+%d months', $i));
-                $year   = (int) $base->format('Y');
-                $month  = (int) $base->format('n');
-                $maxDay = (int) $base->format('t');
-                $day    = min($dayOfMonth, $maxDay);
-                $dates[] = new \DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $day));
-            } else {
-                $dates[] = $startsAt->modify(sprintf('+%d days', $i * $intervalDays));
-            }
+            $base   = $startsAt->modify(sprintf('+%d months', $i * $intervalMonths));
+            $year   = (int) $base->format('Y');
+            $month  = (int) $base->format('n');
+            $maxDay = (int) $base->format('t');
+            $day    = $dayOfMonth !== null ? min($dayOfMonth, $maxDay) : (int) $base->format('j');
+            $dates[] = new \DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $day));
         }
 
         return $dates;

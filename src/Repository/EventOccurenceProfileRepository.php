@@ -6,7 +6,7 @@ namespace App\Repository;
 
 use App\Entity\EventOccurence;
 use App\Entity\EventOccurenceProfile;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -22,13 +22,13 @@ class EventOccurenceProfileRepository extends ServiceEntityRepository
 
     public function findOneByOccurenceAndSchoolProfile(
         EventOccurence $occurence,
-        SchoolProfile $schoolProfile
+        SchoolUser $schoolUser
     ): ?EventOccurenceProfile {
         return $this->createQueryBuilder('eop')
             ->where('eop.eventOccurence = :occurence')
             ->andWhere('eop.schoolProfile = :schoolProfile')
             ->setParameter('occurence', $occurence)
-            ->setParameter('schoolProfile', $schoolProfile)
+            ->setParameter('schoolProfile', $schoolUser)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();

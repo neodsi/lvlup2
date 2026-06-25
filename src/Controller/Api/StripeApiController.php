@@ -7,7 +7,7 @@ namespace App\Controller\Api;
 use App\Entity\School;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use App\Service\Payment\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,7 +18,7 @@ class StripeApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly StripeService $stripeService,
     ) {
     }
@@ -129,13 +129,13 @@ class StripeApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
 
-        if ($schoolProfile === null) {
+        if ($schoolUser === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::School, SchoolRole::School], true);
+        $isAdmin = \in_array($schoolUser->getRole(), [SchoolRole::School, SchoolRole::School], true);
 
         if (!$isAdmin) {
             return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);

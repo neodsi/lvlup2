@@ -6,10 +6,10 @@ namespace App\Controller\Api;
 
 use App\Entity\Season;
 use App\Entity\School;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use App\Service\Member\MemberService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,7 +22,7 @@ class MemberApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly MemberService $memberService,
     ) {
     }
@@ -86,20 +86,20 @@ class MemberApiController extends AbstractController
             return $authResponse;
         }
 
-        $schoolProfile = $this->em->getRepository(SchoolProfile::class)->find($id);
+        $schoolUser = $this->em->getRepository(SchoolUser::class)->find($id);
 
-        if ($schoolProfile === null) {
+        if ($schoolUser === null) {
             return new JsonResponse(['success' => false, 'error' => 'SchoolProfile not found.'], 404);
         }
 
         $school = $this->em->getRepository(School::class)->find($schoolId);
 
-        if ($school === null || $schoolProfile->getSchool()->getId() !== $schoolId) {
+        if ($school === null || $schoolUser->getSchool()->getId() !== $schoolId) {
             return new JsonResponse(['success' => false, 'error' => 'SchoolProfile does not belong to this school.'], 403);
         }
 
         $data    = json_decode($request->getContent(), true) ?? [];
-        $profile = $schoolProfile->getProfile();
+        $profile = $schoolUser->getProfile();
 
         try {
             if ($profile !== null) {
@@ -129,8 +129,8 @@ class MemberApiController extends AbstractController
                 $role = $data['role'] instanceof \App\Enum\SchoolRole
                     ? $data['role']
                     : \App\Enum\SchoolRole::from($data['role']);
-                $schoolProfile->setRole($role);
-                $this->em->persist($schoolProfile);
+                $schoolUser->setRole($role);
+                $this->em->persist($schoolUser);
             }
 
             $this->em->flush();
@@ -140,7 +140,7 @@ class MemberApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => $e->getMessage()], 400);
         }
 
-        return new JsonResponse(['success' => true, 'schoolProfileId' => $schoolProfile->getId()]);
+        return new JsonResponse(['success' => true, 'schoolProfileId' => $schoolUser->getId()]);
     }
 
     /**
@@ -187,13 +187,13 @@ class MemberApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
 
-        if ($schoolProfile === null) {
+        if ($schoolUser === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::School, SchoolRole::School], true);
+        $isAdmin = \in_array($schoolUser->getRole(), [SchoolRole::School, SchoolRole::School], true);
 
         if (!$isAdmin) {
             return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);

@@ -40,6 +40,12 @@ class PriceModifier
     #[ORM\Column(type: 'string', length: 50, enumType: PriceModifierType::class)]
     private PriceModifierType $type;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(type: 'string', length: 20, options: ['default' => 'public'])]
+    private string $visibility = 'public';
+
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $terms = null;
 
@@ -150,6 +156,30 @@ class PriceModifier
     public function setType(PriceModifierType $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getVisibility(): string
+    {
+        return $this->visibility;
+    }
+
+    public function setVisibility(string $visibility): static
+    {
+        $this->visibility = $visibility;
 
         return $this;
     }

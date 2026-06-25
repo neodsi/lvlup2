@@ -1,0 +1,21 @@
+{% extends 'email/base.html.twig' %}
+
+{% block title %}Confirmez votre nouvelle adresse e-mail – LVL UP{% endblock %}
+
+{% block body %}
+  <h1>Confirmez votre nouvelle adresse e-mail</h1>
+  <p>Bonjour,</p>
+  <p>Vous avez demandé à changer votre adresse e-mail sur <strong>LVL UP</strong>. Pour valider ce changement, cliquez sur le bouton ci-dessous.</p>
+  <p style="background:#f4f4f5; border-radius:8px; padding:12px 16px; font-size:14px; color:#3f3f46;">
+    Nouvelle adresse : <strong>{{ new_email }}</strong>
+  </p>
+  <div class="btn-wrap">
+    <a class="btn" href="{{ confirm_url }}">Confirmer ma nouvelle adresse e-mail</a>
+  </div>
+  <p>Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :</p>
+  <p style="word-break:break-all; font-size:13px; color:#71717a;">{{ confirm_url }}</p>
+  <p>Ce lien est valable <strong>48 heures</strong>.</p>
+  <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail — votre adresse actuelle ne sera pas modifiée.</p>
+{% endblock %}
+
+{% block footer_extra %}<br>Vous recevez cet e-mail car une demande de changement d'adresse a été effectuée sur votre compte LVL UP.{% endblock %}

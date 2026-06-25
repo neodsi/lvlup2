@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Season;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\SchoolProfileSeason;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -21,13 +21,13 @@ class SchoolProfileSeasonRepository extends ServiceEntityRepository
     }
 
     public function findOneBySchoolProfileAndSeason(
-        SchoolProfile $schoolProfile,
+        SchoolUser $schoolUser,
         Season $season
     ): ?SchoolProfileSeason {
         return $this->createQueryBuilder('tps')
             ->where('tps.schoolProfile = :schoolProfile')
             ->andWhere('tps.season = :season')
-            ->setParameter('schoolProfile', $schoolProfile)
+            ->setParameter('schoolProfile', $schoolUser)
             ->setParameter('season', $season)
             ->setMaxResults(1)
             ->getQuery()

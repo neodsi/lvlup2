@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Event;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\SchoolProfileGalaParticipation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -21,13 +21,13 @@ class SchoolProfileGalaParticipationRepository extends ServiceEntityRepository
     }
 
     public function findOneBySchoolProfileAndEvent(
-        SchoolProfile $schoolProfile,
+        SchoolUser $schoolUser,
         Event $event
     ): ?SchoolProfileGalaParticipation {
         return $this->createQueryBuilder('tpgp')
             ->where('tpgp.schoolProfile = :schoolProfile')
             ->andWhere('tpgp.event = :event')
-            ->setParameter('schoolProfile', $schoolProfile)
+            ->setParameter('schoolProfile', $schoolUser)
             ->setParameter('event', $event)
             ->setMaxResults(1)
             ->getQuery()

@@ -20,148 +20,49 @@
 
     {% include 'components/_flash.html.twig' %}
 
-    {{ form_start(form, {'action': path('school_members_create', {type: type}), 'attr': {'class': 'space-y-6'}}) }}
+    <form method="POST" action="{{ path('school_members_create', {type: type}) }}" class="space-y-6">
+        <input type="hidden" name="_token" value="{{ csrf_token('create_member') }}">
 
-        {# Informations personnelles #}
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
+                <h2 class="text-sm font-semibold text-gray-900">Coordonnées</h2>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    La personne recevra un e-mail pour
+                    {% if type == 'students' %}créer son compte et compléter son profil.{% else %}accéder à son espace.{% endif %}
+                    Si un compte existe déjà pour cet e-mail, il sera simplement rattaché à l'école.
+                </p>
             </div>
-            <div class="px-6 py-5 space-y-4">
-                <p class="text-xs text-gray-400 mb-4">Les champs marqués <span class="text-red-500 font-medium">*</span> sont obligatoires.</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label for="{{ form.firstName.vars.id }}" class="block text-xs text-gray-500 mb-1">Prénom <span class="text-red-500">*</span></label>
-                        {{ form_widget(form.firstName) }}
-                        <div class="mt-1 text-xs text-red-500">{{ form_errors(form.firstName) }}</div>
-                    </div>
-                    <div>
-                        <label for="{{ form.lastName.vars.id }}" class="block text-xs text-gray-500 mb-1">Nom <span class="text-red-500">*</span></label>
-                        {{ form_widget(form.lastName) }}
-                        <div class="mt-1 text-xs text-red-500">{{ form_errors(form.lastName) }}</div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        {{ form_label(form.dob) }}
-                        {{ form_widget(form.dob) }}
-                        <div class="mt-1 text-xs text-red-500">{{ form_errors(form.dob) }}</div>
-                    </div>
-                    <div>
-                        {{ form_label(form.gender) }}
-                        {{ form_widget(form.gender) }}
-                        <div class="mt-1 text-xs text-red-500">{{ form_errors(form.gender) }}</div>
-                    </div>
-                    <div>
-                        {{ form_label(form.phone) }}
-                        {{ form_widget(form.phone) }}
-                        <div class="mt-1 text-xs text-red-500">{{ form_errors(form.phone) }}</div>
-                    </div>
-                </div>
-
-                <div>
-                    <label for="{{ form.email.vars.id }}" class="block text-xs text-gray-500 mb-1">E-mail <span class="text-red-500">*</span></label>
-                    {{ form_widget(form.email) }}
-                    <div class="mt-1 text-xs text-red-500">{{ form_errors(form.email) }}</div>
-                </div>
-
-                <div>
-                    {{ form_label(form.addressText) }}
-                    {{ form_widget(form.addressText) }}
-                    <div class="mt-1 text-xs text-red-500">{{ form_errors(form.addressText) }}</div>
-                </div>
+            <div class="px-6 py-5">
+                <label for="member_email" class="block text-xs text-gray-500 mb-1">
+                    Adresse e-mail <span class="text-red-500">*</span>
+                </label>
+                <input id="member_email" type="email" name="email" required
+                       value="{{ email ?? '' }}"
+                       autocomplete="off"
+                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
             </div>
         </div>
 
-        {# Saison actuelle — élèves uniquement #}
-        {% if type == 'students' %}
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-sm font-semibold text-gray-900">Saison actuelle</h2>
-                <p class="text-xs text-gray-400 mt-0.5">Ces informations sont liées à la saison en cours.</p>
-            </div>
-            <div class="px-6 py-5 space-y-5">
-
-                <div class="sm:w-1/2">
-                    {{ form_label(form.registrationStatus) }}
-                    {{ form_widget(form.registrationStatus) }}
-                    <div class="mt-1 text-xs text-red-500">{{ form_errors(form.registrationStatus) }}</div>
-                </div>
-
-                {# Consentements #}
-                <div>
-                    <p class="text-sm font-medium text-gray-700 mb-2">Consentements signés</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {% for choice in form.accepted %}
-                        <label for="{{ choice.vars.id }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer select-none transition-colors [&:has(input:checked)]:border-indigo-300 [&:has(input:checked)]:bg-indigo-50">
-                            {{ form_widget(choice, {attr: {class: 'peer sr-only'}}) }}
-                            <span class="h-4 w-4 shrink-0 rounded border-2 border-gray-300 bg-white flex items-center justify-center transition-colors peer-checked:bg-indigo-600 peer-checked:border-indigo-600">
-                                <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                            </span>
-                            <span class="text-sm text-gray-700 leading-tight">{{ choice.vars.label }}</span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                    <div class="mt-1 text-xs text-red-500">{{ form_errors(form.accepted) }}</div>
-                </div>
-
-                {# Contact d'urgence #}
-                <div>
-                    <p class="text-sm font-medium text-gray-700 mb-2">Contact d'urgence</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            {{ form_label(form.emergencyName) }}
-                            {{ form_widget(form.emergencyName) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyName) }}</div>
-                        </div>
-                        <div>
-                            {{ form_label(form.emergencyRelationship) }}
-                            {{ form_widget(form.emergencyRelationship) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyRelationship) }}</div>
-                        </div>
-                        <div>
-                            {{ form_label(form.emergencyEmail) }}
-                            {{ form_widget(form.emergencyEmail) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyEmail) }}</div>
-                        </div>
-                        <div>
-                            {{ form_label(form.emergencyPhone) }}
-                            {{ form_widget(form.emergencyPhone) }}
-                            <div class="mt-1 text-xs text-red-500">{{ form_errors(form.emergencyPhone) }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    {{ form_label(form.injuryWarning) }}
-                    {{ form_widget(form.injuryWarning) }}
-                    <div class="mt-1 text-xs text-red-500">{{ form_errors(form.injuryWarning) }}</div>
-                </div>
-
-            </div>
-        </div>
-        {% endif %}
-
-        {# Note interne #}
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div class="px-6 py-4 border-b border-gray-100">
                 <h2 class="text-sm font-semibold text-gray-900">Note interne</h2>
                 <p class="text-xs text-gray-400 mt-0.5">Visible uniquement par les administrateurs.</p>
             </div>
             <div class="px-6 py-5">
-                {{ form_widget(form.note) }}
-                <div class="mt-1 text-xs text-red-500">{{ form_errors(form.note) }}</div>
+                <textarea name="note" rows="3" maxlength="500"
+                          placeholder="Note interne…"
+                          class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">{{ note ?? '' }}</textarea>
             </div>
         </div>
 
         <div class="flex items-center justify-between">
-            <a href="{{ path('school_members_list', {type: type}) }}" class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
-            <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+            <a href="{{ path('school_members_list', {type: type}) }}"
+               class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
+            <button type="submit"
+                    class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                 Ajouter
             </button>
         </div>
-
-    {{ form_end(form) }}
+    </form>
 </div>
 {% endblock %}

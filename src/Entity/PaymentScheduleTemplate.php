@@ -47,6 +47,15 @@ class PaymentScheduleTemplate
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $fixedFirstDateIsAtAttribution = false;
 
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $minAmount = null;
+
+    #[ORM\Column(type: 'string', length: 20, options: ['default' => 'public'])]
+    private string $visibility = 'public';
+
+    #[ORM\Column(type: 'string', length: 36, nullable: true)]
+    private ?string $priceModifierId = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -190,6 +199,42 @@ class PaymentScheduleTemplate
     public function setFixedFirstDateIsAtAttribution(bool $fixedFirstDateIsAtAttribution): static
     {
         $this->fixedFirstDateIsAtAttribution = $fixedFirstDateIsAtAttribution;
+
+        return $this;
+    }
+
+    public function getMinAmount(): ?int
+    {
+        return $this->minAmount;
+    }
+
+    public function setMinAmount(?int $minAmount): static
+    {
+        $this->minAmount = $minAmount;
+
+        return $this;
+    }
+
+    public function getVisibility(): string
+    {
+        return $this->visibility;
+    }
+
+    public function setVisibility(string $visibility): static
+    {
+        $this->visibility = $visibility;
+
+        return $this;
+    }
+
+    public function getPriceModifierId(): ?string
+    {
+        return $this->priceModifierId;
+    }
+
+    public function setPriceModifierId(?string $priceModifierId): static
+    {
+        $this->priceModifierId = $priceModifierId;
 
         return $this;
     }

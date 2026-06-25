@@ -180,7 +180,7 @@
                        href="{{ url('app_school_page', {citySlug: school.citySlug, schoolSlug: school.currentSlug}) }}"
                        target="_blank" rel="noopener"
                        class="mt-1 inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-mono transition">
-                        <span id="public-page-link-text">{{ app.request.schemeAndHttpHost }}/{{ school.citySlug }}/{{ school.currentSlug }}</span>
+                        <span id="public-page-link-text">{{ app.request.schemeAndHttpHost }}/ecoles-de-danse/{{ school.citySlug }}/{{ school.currentSlug }}</span>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     </a>
                     {% endif %}
@@ -290,7 +290,7 @@
         const slug  = document.getElementById('slug').value || document.getElementById('slug').placeholder || '…';
         const link = document.getElementById('public-page-link');
         if (link && city !== '…' && slug !== '…') {
-            const fullUrl = _baseUrl + '/' + city + '/' + slug;
+            const fullUrl = _baseUrl + '/ecoles-de-danse/' + city + '/' + slug;
             link.href = fullUrl;
             const txt = document.getElementById('public-page-link-text');
             if (txt) txt.textContent = fullUrl;

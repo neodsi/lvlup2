@@ -43,7 +43,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -140,7 +140,7 @@ final class SettingsController extends AbstractController
         $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->json(['success' => false, 'error' => 'Accès refusé.'], 403);
         }
 
@@ -204,7 +204,7 @@ final class SettingsController extends AbstractController
         $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->json(['success' => false, 'error' => 'Accès refusé.'], 403);
         }
 
@@ -243,7 +243,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -292,7 +292,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -308,7 +308,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -358,7 +358,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -401,7 +401,7 @@ final class SettingsController extends AbstractController
         $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -554,7 +554,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -605,7 +605,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -629,7 +629,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -651,7 +651,7 @@ final class SettingsController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -680,7 +680,7 @@ final class SettingsController extends AbstractController
         $school   = $this->schoolContext->getCurrentSchool();
         $season = $this->em->getRepository(Season::class)->find($id);
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -777,7 +777,7 @@ final class SettingsController extends AbstractController
         $school   = $this->schoolContext->getCurrentSchool();
         $season = $this->em->getRepository(Season::class)->find($id);
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 

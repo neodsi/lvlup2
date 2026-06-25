@@ -7,7 +7,7 @@ namespace App\Controller\School;
 use App\Entity\Event;
 use App\Entity\Season;
 use App\Entity\SchoolHomeKpiDaily;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\Order;
 use App\Entity\User;
 use App\Enum\SchoolRole;
@@ -44,7 +44,7 @@ final class SchoolController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -58,7 +58,7 @@ final class SchoolController extends AbstractController
 
         $countMembers = fn(SchoolRole $role) => (int) $this->em->createQueryBuilder()
             ->select('COUNT(tp.id)')
-            ->from(SchoolProfile::class, 'tp')
+            ->from(SchoolUser::class, 'tp')
             ->where('tp.school = :school')
             ->andWhere('tp.role = :role')
             ->andWhere('tp.deletedAt IS NULL')
@@ -101,7 +101,7 @@ final class SchoolController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -134,7 +134,7 @@ final class SchoolController extends AbstractController
         $user = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 

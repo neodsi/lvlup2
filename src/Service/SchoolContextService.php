@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\School;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -38,39 +38,30 @@ class SchoolContextService
         $request->getSession()->set(self::SESSION_KEY, $schoolId);
     }
 
-    public function getCurrentSchoolProfile(User $user): ?SchoolProfile
+    public function getCurrentSchoolUser(User $user): ?SchoolUser
     {
-        $profiles = $user->getProfiles()->filter(fn ($p) => $p->getDeletedAt() === null);
-
-        if ($profiles->isEmpty()) {
-            return null;
-        }
-
-        $profileIds = $profiles->map(fn ($p) => $p->getId())->toArray();
-        $schoolId     = $this->getCurrentSchoolId();
+        $schoolId = $this->getCurrentSchoolId();
 
         $qb = $this->em->createQueryBuilder()
-            ->select('tp', 't')
-            ->from(SchoolProfile::class, 'tp')
-            ->join('tp.school', 't')
-            ->join('tp.profile', 'p')
-            ->where('p.id IN (:profileIds)')
-            ->andWhere('tp.deletedAt IS NULL')
-            ->setParameter('profileIds', $profileIds)
+            ->select('su', 't')
+            ->from(SchoolUser::class, 'su')
+            ->join('su.school', 't')
+            ->where('su.user = :user')
+            ->andWhere('su.deletedAt IS NULL')
+            ->setParameter('user', $user)
             ->setMaxResults(1);
 
         if ($schoolId !== null) {
-            $qb->andWhere('tp.school = :schoolId')->setParameter('schoolId', $schoolId);
+            $qb->andWhere('su.school = :schoolId')->setParameter('schoolId', $schoolId);
         }
 
-        /** @var SchoolProfile|null $tp */
-        $tp = $qb->getQuery()->getOneOrNullResult();
+        $su = $qb->getQuery()->getOneOrNullResult();
 
-        if ($tp !== null && $schoolId === null) {
-            $this->requestStack->getSession()->set(self::SESSION_KEY, (string) $tp->getSchool()->getId());
+        if ($su !== null && $schoolId === null) {
+            $this->requestStack->getSession()->set(self::SESSION_KEY, (string) $su->getSchool()->getId());
         }
 
-        return $tp;
+        return $su;
     }
 
     public function getCurrentSchool(): ?School
@@ -84,7 +75,7 @@ class SchoolContextService
         // Auto-detect from the current authenticated user (single-school workflow)
         $user = $this->security->getUser();
         if ($user instanceof User) {
-            return $this->getCurrentSchoolProfile($user)?->getSchool();
+            return $this->getCurrentSchoolUser($user)?->getSchool();
         }
 
         return null;

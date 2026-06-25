@@ -6,14 +6,15 @@ namespace App\Entity;
 
 use App\Enum\SchoolProfileStatus;
 use App\Enum\SchoolRole;
+use App\Repository\SchoolUserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity(repositoryClass: \App\Repository\SchoolProfileRepository::class)]
-#[ORM\Table(name: 'school_profiles')]
-#[ORM\UniqueConstraint(name: 'uq_school_profile', columns: ['school_id', 'profile_id'])]
+#[ORM\Entity(repositoryClass: SchoolUserRepository::class)]
+#[ORM\Table(name: 'school_users')]
+#[ORM\UniqueConstraint(name: 'uq_school_user', columns: ['school_id', 'user_id', 'role'])]
 #[ORM\HasLifecycleCallbacks]
-class SchoolProfile
+class SchoolUser
 {
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36)]
@@ -23,9 +24,9 @@ class SchoolProfile
     #[ORM\JoinColumn(name: 'school_id', referencedColumnName: 'id', nullable: false)]
     private ?School $school = null;
 
-    #[ORM\ManyToOne(targetEntity: Profile::class, inversedBy: 'schoolProfiles')]
-    #[ORM\JoinColumn(name: 'profile_id', referencedColumnName: 'id', nullable: true)]
-    private ?Profile $profile = null;
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $user = null;
 
     #[ORM\Column(type: 'string', enumType: SchoolRole::class, length: 50)]
     private SchoolRole $role;
@@ -50,7 +51,7 @@ class SchoolProfile
 
     public function __construct()
     {
-        $this->id = Uuid::v4()->toRfc4122();
+        $this->id        = Uuid::v4()->toRfc4122();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -78,16 +79,34 @@ class SchoolProfile
         return $this;
     }
 
-    public function getProfile(): ?Profile
+    public function getUser(): ?User
     {
-        return $this->profile;
+        return $this->user;
     }
 
-    public function setProfile(?Profile $profile): static
+    public function setUser(?User $user): static
     {
-        $this->profile = $profile;
+        $this->user = $user;
 
         return $this;
+    }
+
+    /**
+     * Compatibility shim — returns the user's active primary Profile so that
+     * callers that previously did $schoolProfile->getProfile()->getFirstName()
+     * continue to work without changes throughout the codebase.
+     */
+    public function getProfile(): ?Profile
+    {
+        if ($this->user === null) {
+            return null;
+        }
+
+        $profile = $this->user->getProfiles()
+            ->filter(static fn (Profile $p) => $p->getDeletedAt() === null)
+            ->first();
+
+        return $profile instanceof Profile ? $profile : null;
     }
 
     public function getRole(): SchoolRole

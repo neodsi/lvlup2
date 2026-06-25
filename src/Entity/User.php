@@ -37,6 +37,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $resetTokenExpiresAt = null;
 
+    #[ORM\Column(type: 'string', length: 180, nullable: true)]
+    private ?string $pendingEmail = null;
+
+    #[ORM\Column(type: 'string', nullable: true)]
+    private ?string $emailChangeToken = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $emailChangeTokenExpiresAt = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -147,6 +156,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setResetTokenExpiresAt(?\DateTimeImmutable $resetTokenExpiresAt): static
     {
         $this->resetTokenExpiresAt = $resetTokenExpiresAt;
+
+        return $this;
+    }
+
+    public function getPendingEmail(): ?string
+    {
+        return $this->pendingEmail;
+    }
+
+    public function setPendingEmail(?string $pendingEmail): static
+    {
+        $this->pendingEmail = $pendingEmail;
+
+        return $this;
+    }
+
+    public function getEmailChangeToken(): ?string
+    {
+        return $this->emailChangeToken;
+    }
+
+    public function setEmailChangeToken(?string $emailChangeToken): static
+    {
+        $this->emailChangeToken = $emailChangeToken;
+
+        return $this;
+    }
+
+    public function getEmailChangeTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->emailChangeTokenExpiresAt;
+    }
+
+    public function setEmailChangeTokenExpiresAt(?\DateTimeImmutable $emailChangeTokenExpiresAt): static
+    {
+        $this->emailChangeTokenExpiresAt = $emailChangeTokenExpiresAt;
 
         return $this;
     }

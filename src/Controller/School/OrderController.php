@@ -33,10 +33,10 @@ final class OrderController extends AbstractController
     {
         /** @var User $user */
         $user        = $this->getUser();
-        $school        = $this->schoolContext->getCurrentSchool();
-        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
+        $school     = $this->schoolContext->getCurrentSchool();
+        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolProfile === null) {
+        if ($school === null || $schoolUser === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -62,7 +62,7 @@ final class OrderController extends AbstractController
         }
 
         $orders = $this->em->getRepository(Order::class)->findBy([
-            'schoolProfileId' => $schoolProfile->getId(),
+            'schoolProfileId' => $schoolUser->getId(),
             'schoolId'        => $school->getId(),
         ], ['createdAt' => 'DESC']);
 
@@ -80,7 +80,7 @@ final class OrderController extends AbstractController
         $user  = $this->getUser();
         $school  = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 

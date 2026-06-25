@@ -53,7 +53,7 @@ final class SeasonSettingsController extends AbstractController
         $school   = $this->schoolContext->getCurrentSchool();
         $season = $this->em->getRepository(Season::class)->find($id);
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolProfile($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -472,7 +472,7 @@ final class SeasonSettingsController extends AbstractController
             $tpl = new PaymentScheduleTemplate();
             $tpl->setSchoolId($school->getId());
             $tpl->setSeasonId($season->getId());
-            $this->applyPaymentSchedulerFromRequest($tpl, $request);
+            $this->applyPaymentSchedulerFromRequest($tpl, $request, $school->getId(), $season->getId());
             $this->em->persist($tpl);
             $this->em->flush();
             $this->addFlash('success', 'Échéancier créé.');
@@ -485,10 +485,21 @@ final class SeasonSettingsController extends AbstractController
             ['createdAt' => 'DESC'],
         );
 
+        $feeModifiers = [];
+        foreach ($templates as $tpl) {
+            if ($tpl->getPriceModifierId() !== null) {
+                $fm = $this->em->getRepository(PriceModifier::class)->find($tpl->getPriceModifierId());
+                if ($fm !== null) {
+                    $feeModifiers[$tpl->getId()] = $fm;
+                }
+            }
+        }
+
         return $this->render('school/settings/season/payment_schedulers.html.twig', [
-            'school'    => $school,
-            'season'    => $season,
-            'templates' => $templates,
+            'school'       => $school,
+            'season'       => $season,
+            'templates'    => $templates,
+            'feeModifiers' => $feeModifiers,
         ]);
     }
 
@@ -502,7 +513,7 @@ final class SeasonSettingsController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $this->applyPaymentSchedulerFromRequest($tpl, $request);
+        $this->applyPaymentSchedulerFromRequest($tpl, $request, $school->getId(), $season->getId());
         $this->em->flush();
         $this->addFlash('success', 'Échéancier mis à jour.');
 
@@ -531,9 +542,14 @@ final class SeasonSettingsController extends AbstractController
         return $this->redirectToRoute('school_season_payment_schedulers', ['id' => $id]);
     }
 
-    private function applyPaymentSchedulerFromRequest(PaymentScheduleTemplate $tpl, Request $request): void
+    private function applyPaymentSchedulerFromRequest(PaymentScheduleTemplate $tpl, Request $request, string $schoolId, string $seasonId): void
     {
         $tpl->setName((string) $request->request->get('name'));
+        $tpl->setVisibility($request->request->get('visibility') === 'private' ? 'private' : 'public');
+
+        $minAmountRaw = $request->request->get('minAmount');
+        $tpl->setMinAmount($minAmountRaw !== null && $minAmountRaw !== '' ? (int) round((float) $minAmountRaw * 100) : null);
+
         $type = ScheduleType::from((string) $request->request->get('type'));
         $tpl->setType($type);
 
@@ -545,14 +561,54 @@ final class SeasonSettingsController extends AbstractController
             $tpl->setFixedDates(null);
             $tpl->setFixedFirstDateIsAtAttribution(false);
         } else {
-            $raw = $request->request->get('fixedDates', '');
-            $dates = array_values(array_filter(array_map('trim', explode("\n", (string) $raw))));
+            $dates = $request->request->all('fixedDates');
+            $dates = array_values(array_filter(array_map('trim', $dates)));
+            sort($dates);
             $tpl->setFixedDates($dates ?: null);
             $tpl->setNbPayments(count($dates));
             $tpl->setFixedFirstDateIsAtAttribution((bool) $request->request->get('fixedFirstDateIsAtAttribution', false));
             $tpl->setIntervalDuration(null);
             $tpl->setDayOfMonth(null);
             $tpl->setStartsAt(null);
+        }
+
+        // --- Usage fee (frais d'utilisation) ---
+        $feeEnabled = (bool) $request->request->get('feeEnabled', false);
+
+        if ($feeEnabled) {
+            $feeValueType = ValueType::from($request->request->get('feeValueType') === 'fixed' ? 'fixed' : 'percentage');
+            $feeRaw       = (float) str_replace(',', '.', (string) $request->request->get('feeValue', '0'));
+            $feeValue     = (int) round($feeRaw * 100);
+
+            if ($tpl->getPriceModifierId() !== null) {
+                $feeModifier = $this->em->getRepository(PriceModifier::class)->find($tpl->getPriceModifierId());
+            } else {
+                $feeModifier = null;
+            }
+
+            if ($feeModifier === null) {
+                $feeModifier = new PriceModifier();
+                $feeModifier->setSchoolId($schoolId);
+                $feeModifier->setSeasonId($seasonId);
+                $feeModifier->setType(PriceModifierType::Cart);
+                $feeModifier->setOperation(Operation::Add);
+                $feeModifier->setVisibility('private');
+                $this->em->persist($feeModifier);
+            }
+
+            $feeModifier->setName('Frais d\'échéancier : ' . $tpl->getName());
+            $feeModifier->setValueType($feeValueType);
+            $feeModifier->setValue($feeValue);
+            $tpl->setPriceModifierId($feeModifier->getId());
+        } else {
+            // Remove existing fee modifier if disabled
+            if ($tpl->getPriceModifierId() !== null) {
+                $feeModifier = $this->em->getRepository(PriceModifier::class)->find($tpl->getPriceModifierId());
+                if ($feeModifier !== null) {
+                    $feeModifier->setDeletedAt(new \DateTimeImmutable());
+                }
+            }
+            $tpl->setPriceModifierId(null);
         }
     }
 
@@ -587,9 +643,16 @@ final class SeasonSettingsController extends AbstractController
             $modifier->setSchoolId($school->getId());
             $modifier->setSeasonId($season->getId());
             $modifier->setName((string) $request->request->get('name'));
+            $descRaw = $request->request->get('description');
+            $modifier->setDescription($descRaw !== null && $descRaw !== '' ? (string) $descRaw : null);
+            $visibility = $request->request->get('visibility') === 'private' ? 'private' : 'public';
+            $modifier->setVisibility($visibility);
             $modifier->setType(PriceModifierType::from((string) $request->request->get('type')));
             $modifier->setOperation(Operation::from((string) $request->request->get('operation')));
             $modifier->setValueType(ValueType::from((string) $request->request->get('valueType')));
+
+            $packageTypes = $request->request->all('package_types');
+            $modifier->setTerms(!empty($packageTypes) ? ['package_types' => $packageTypes] : null);
 
             $valueType = ValueType::from((string) $request->request->get('valueType'));
             $rawValue  = (float) str_replace(',', '.', (string) $request->request->get('value', '0'));
@@ -622,8 +685,15 @@ final class SeasonSettingsController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $modifier->setName((string) $request->request->get('name'));
+            $descRaw = $request->request->get('description');
+            $modifier->setDescription($descRaw !== null && $descRaw !== '' ? (string) $descRaw : null);
+            $visibility = $request->request->get('visibility') === 'private' ? 'private' : 'public';
+            $modifier->setVisibility($visibility);
             $modifier->setType(PriceModifierType::from((string) $request->request->get('type')));
             $modifier->setOperation(Operation::from((string) $request->request->get('operation')));
+
+            $packageTypes = $request->request->all('package_types');
+            $modifier->setTerms(!empty($packageTypes) ? ['package_types' => $packageTypes] : null);
 
             $valueType = ValueType::from((string) $request->request->get('valueType'));
             $modifier->setValueType($valueType);

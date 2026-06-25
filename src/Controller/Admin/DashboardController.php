@@ -6,7 +6,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Profile;
 use App\Entity\School;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\User;
 use App\Enum\SchoolRole;
 use App\Enum\SchoolStatus;
@@ -83,7 +83,7 @@ class DashboardController extends AbstractController
             $in        = implode(',', array_fill(0, count($schoolIds), '?'));
             $rows      = $this->em->getConnection()->executeQuery(
                 "SELECT school_id, CASE WHEN role IN ('admin','owner') THEN 'school' ELSE role END AS role, COUNT(*) AS cnt
-                 FROM school_profiles
+                 FROM school_users
                  WHERE school_id IN ({$in}) AND deleted_at IS NULL
                  GROUP BY school_id, role",
                 $schoolIds
@@ -113,10 +113,9 @@ class DashboardController extends AbstractController
         }
 
         $ownerProfile = $this->em->createQueryBuilder()
-            ->select('tp, p, u')
-            ->from(SchoolProfile::class, 'tp')
-            ->join('tp.profile', 'p')
-            ->join('p.user', 'u')
+            ->select('tp', 'u')
+            ->from(SchoolUser::class, 'tp')
+            ->join('tp.user', 'u')
             ->where('tp.school = :school')
             ->andWhere('tp.role = :role')
             ->andWhere('tp.deletedAt IS NULL')
@@ -127,7 +126,7 @@ class DashboardController extends AbstractController
 
         $memberCount = (int) $this->em->createQueryBuilder()
             ->select('COUNT(tp.id)')
-            ->from(SchoolProfile::class, 'tp')
+            ->from(SchoolUser::class, 'tp')
             ->where('tp.school = :school')
             ->setParameter('school', $school)
             ->getQuery()
@@ -181,7 +180,7 @@ class DashboardController extends AbstractController
 
         $memberCount = (int) $this->em->createQueryBuilder()
             ->select('COUNT(tp.id)')
-            ->from(SchoolProfile::class, 'tp')
+            ->from(SchoolUser::class, 'tp')
             ->where('tp.school = :school')
             ->setParameter('school', $school)
             ->getQuery()
@@ -232,12 +231,11 @@ class DashboardController extends AbstractController
             $conn  = $this->em->getConnection();
             $in    = implode(',', array_fill(0, count($userIds), '?'));
             $rows  = $conn->executeQuery(
-                "SELECT p.user_id AS userId, s.id AS schoolId, s.name AS schoolName,
+                "SELECT tp.user_id AS userId, s.id AS schoolId, s.name AS schoolName,
                         CASE WHEN tp.role IN ('admin','owner') THEN 'school' ELSE tp.role END AS role
-                 FROM school_profiles tp
-                 INNER JOIN profiles p   ON p.id = tp.profile_id
-                 INNER JOIN schools s    ON s.id = tp.school_id
-                 WHERE p.user_id IN ({$in})
+                 FROM school_users tp
+                 INNER JOIN schools s ON s.id = tp.school_id
+                 WHERE tp.user_id IN ({$in})
                    AND tp.deleted_at IS NULL
                  ORDER BY s.name ASC",
                 $userIds
@@ -270,12 +268,11 @@ class DashboardController extends AbstractController
             throw $this->createNotFoundException('Utilisateur introuvable.');
         }
 
-        $schoolProfiles = $this->em->createQueryBuilder()
-            ->select('tp, p, s')
-            ->from(SchoolProfile::class, 'tp')
-            ->join('tp.profile', 'p')
+        $schoolUsers = $this->em->createQueryBuilder()
+            ->select('tp', 's')
+            ->from(SchoolUser::class, 'tp')
             ->join('tp.school', 's')
-            ->where('p.user = :user')
+            ->where('tp.user = :user')
             ->andWhere('tp.deletedAt IS NULL')
             ->orderBy('s.name', 'ASC')
             ->setParameter('user', $user)
@@ -283,8 +280,8 @@ class DashboardController extends AbstractController
             ->getResult();
 
         return $this->render('admin/users/detail.html.twig', [
-            'user'           => $user,
-            'schoolProfiles' => $schoolProfiles,
+            'user'        => $user,
+            'schoolUsers' => $schoolUsers,
         ]);
     }
 
@@ -309,29 +306,27 @@ class DashboardController extends AbstractController
             return $this->redirectToRoute('app_admin_users');
         }
 
-        // Collect all SchoolProfile IDs linked to this user's profiles
-        $schoolProfileIds = array_column(
+        // Collect all SchoolUser IDs linked to this user
+        $schoolUserIds = array_column(
             $this->em->createQuery(
-                'SELECT tp.id FROM App\Entity\SchoolProfile tp
-                 JOIN tp.profile p
-                 WHERE p.user = :user'
+                'SELECT tp.id FROM App\Entity\SchoolUser tp WHERE tp.user = :user'
             )
             ->setParameter('user', $user)
             ->getArrayResult(),
             'id'
         );
 
-        if (!empty($schoolProfileIds)) {
+        if (!empty($schoolUserIds)) {
             $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileSeason tps WHERE tps.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolProfileIds)->execute();
+                ->setParameter('ids', $schoolUserIds)->execute();
             $this->em->createQuery('DELETE FROM App\Entity\SchoolProfilePackage tpp WHERE tpp.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolProfileIds)->execute();
+                ->setParameter('ids', $schoolUserIds)->execute();
             $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolProfileIds)->execute();
+                ->setParameter('ids', $schoolUserIds)->execute();
             $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileGalaParticipation tpgp WHERE tpgp.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolProfileIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfile tp WHERE tp.id IN (:ids)')
-                ->setParameter('ids', $schoolProfileIds)->execute();
+                ->setParameter('ids', $schoolUserIds)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolUser tp WHERE tp.id IN (:ids)')
+                ->setParameter('ids', $schoolUserIds)->execute();
         }
 
         // Delete profiles linked to this user

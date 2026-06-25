@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\Gender;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
@@ -64,15 +62,11 @@ class Profile
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
-    #[ORM\OneToMany(mappedBy: 'profile', targetEntity: SchoolProfile::class)]
-    private Collection $schoolProfiles;
-
     public function __construct()
     {
-        $this->id           = Uuid::v4()->toRfc4122();
-        $this->createdAt    = new \DateTimeImmutable();
-        $this->updatedAt    = new \DateTimeImmutable();
-        $this->schoolProfiles = new ArrayCollection();
+        $this->id        = Uuid::v4()->toRfc4122();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): string
@@ -258,32 +252,4 @@ class Profile
         return $this;
     }
 
-    /**
-     * @return Collection<int, SchoolProfile>
-     */
-    public function getSchoolProfiles(): Collection
-    {
-        return $this->schoolProfiles;
-    }
-
-    public function addSchoolProfile(SchoolProfile $schoolProfile): static
-    {
-        if (!$this->schoolProfiles->contains($schoolProfile)) {
-            $this->schoolProfiles->add($schoolProfile);
-            $schoolProfile->setProfile($this);
-        }
-
-        return $this;
-    }
-
-    public function removeSchoolProfile(SchoolProfile $schoolProfile): static
-    {
-        if ($this->schoolProfiles->removeElement($schoolProfile)) {
-            if ($schoolProfile->getProfile() === $this) {
-                $schoolProfile->setProfile(null);
-            }
-        }
-
-        return $this;
-    }
 }

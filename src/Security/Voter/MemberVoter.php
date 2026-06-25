@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Security\Voter;
 
 use App\Entity\School;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use App\Security\SchoolRoleHierarchy;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -22,7 +22,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  *   members:export_csv       – admin+
  *   school_profiles:export_csv – admin+
  *
- * Subject: School (school-scoped actions) or SchoolProfile (member-scoped actions).
+ * Subject: School (school-scoped actions) or SchoolUser (member-scoped actions).
  */
 final class MemberVoter extends Voter
 {
@@ -43,7 +43,7 @@ final class MemberVoter extends Voter
     ];
 
     public function __construct(
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
     ) {
     }
 
@@ -53,7 +53,7 @@ final class MemberVoter extends Voter
             return false;
         }
 
-        return $subject instanceof School || $subject instanceof SchoolProfile;
+        return $subject instanceof School || $subject instanceof SchoolUser;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -66,7 +66,7 @@ final class MemberVoter extends Voter
 
         $schoolId = match (true) {
             $subject instanceof School        => $subject->getId(),
-            $subject instanceof SchoolProfile => $subject->getSchool()?->getId(),
+            $subject instanceof SchoolUser => $subject->getSchool()?->getId(),
             default                         => null,
         };
 
@@ -93,8 +93,8 @@ final class MemberVoter extends Voter
 
     private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
 
-        return $schoolProfile?->getRole();
+        return $schoolUser?->getRole();
     }
 }

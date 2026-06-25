@@ -7,7 +7,7 @@ namespace App\Security\Voter;
 use App\Entity\Payment;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use App\Security\SchoolRoleHierarchy;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -31,7 +31,7 @@ final class PaymentVoter extends Voter
     ];
 
     public function __construct(
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
     ) {
     }
 
@@ -68,8 +68,8 @@ final class PaymentVoter extends Voter
 
     private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
 
-        return $schoolProfile?->getRole();
+        return $schoolUser?->getRole();
     }
 }

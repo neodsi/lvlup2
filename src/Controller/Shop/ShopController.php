@@ -6,7 +6,7 @@ namespace App\Controller\Shop;
 
 use App\Entity\Season;
 use App\Entity\School;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -85,12 +85,11 @@ class ShopController extends AbstractController
         $schoolProfileSeason = null;
 
         if ($user !== null && $season !== null) {
-            // Load the SchoolProfile that belongs to this user for this school.
+            // Load the SchoolUser that belongs to this user for this school.
             $schoolProfile = $this->em->createQueryBuilder()
                 ->select('tp')
-                ->from(SchoolProfile::class, 'tp')
-                ->join('tp.profile', 'p')
-                ->where('p.user = :user')
+                ->from(SchoolUser::class, 'tp')
+                ->where('tp.user = :user')
                 ->andWhere('tp.school = :school')
                 ->andWhere('tp.deletedAt IS NULL')
                 ->setParameter('user', $user)

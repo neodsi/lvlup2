@@ -93,6 +93,8 @@ class SeasonService
                 $mod->setSchoolId($school->getId());
                 $mod->setSeasonId($newSeason->getId());
                 $mod->setName($sourceMod->getName());
+                $mod->setDescription($sourceMod->getDescription());
+                $mod->setVisibility($sourceMod->getVisibility());
                 $mod->setValue($sourceMod->getValue());
                 $mod->setValueType($sourceMod->getValueType());
                 $mod->setOperation($sourceMod->getOperation());

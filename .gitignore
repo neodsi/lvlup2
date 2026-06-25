@@ -6,6 +6,7 @@
 .idea/
 .vscode/
 *.iml
+.todo.txt
 
 # Claude Code
 .claude/

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Entity\Profile;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Enum\SchoolRole;
 use App\Service\SchoolContextService;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -58,11 +58,11 @@ class AppExtension extends AbstractExtension
     }
 
     /**
-     * Returns true if the given SchoolProfile has role admin or owner.
+     * Returns true if the given SchoolUser has role admin or owner.
      */
-    public function isSchoolAdmin(SchoolProfile $schoolProfile): bool
+    public function isSchoolAdmin(SchoolUser $schoolUser): bool
     {
-        return in_array($schoolProfile->getRole(), [SchoolRole::School, SchoolRole::School], true);
+        return in_array($schoolUser->getRole(), [SchoolRole::School, SchoolRole::School], true);
     }
 
     /**
@@ -107,26 +107,26 @@ class AppExtension extends AbstractExtension
             return [];
         }
 
+        $mapping = [
+            'ROLE_SCHOOL'   => 'school',
+            'ROLE_TEACHER'  => 'teacher',
+            'ROLE_STUDENT'  => 'student',
+        ];
+
         $roles = [];
-        foreach ($user->getProfiles() as $profile) {
-            if ($profile->getDeletedAt() !== null) {
-                continue;
-            }
-            foreach ($profile->getSchoolProfiles() as $sp) {
-                if ($sp->getDeletedAt() !== null) {
-                    continue;
-                }
-                $roles[$sp->getRole()->value] = true;
+        foreach ($user->getRoles() as $role) {
+            if (isset($mapping[$role])) {
+                $roles[] = $mapping[$role];
             }
         }
 
-        return array_keys($roles);
+        return $roles;
     }
 
     /**
-     * Returns the current user's SchoolProfile for the current school (reads from session).
+     * Returns the current user's SchoolUser for the current school (reads from session).
      */
-    public function currentSchoolProfile(): ?SchoolProfile
+    public function currentSchoolProfile(): ?SchoolUser
     {
         $token = $this->tokenStorage->getToken();
         if ($token === null) {
@@ -138,6 +138,6 @@ class AppExtension extends AbstractExtension
             return null;
         }
 
-        return $this->schoolContextService->getCurrentSchoolProfile($user);
+        return $this->schoolContextService->getCurrentSchoolUser($user);
     }
 }

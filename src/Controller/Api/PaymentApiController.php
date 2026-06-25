@@ -10,7 +10,7 @@ use App\Entity\Profile;
 use App\Entity\School;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use App\Service\Payment\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,7 +22,7 @@ class PaymentApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly StripeService $stripeService,
     ) {
     }
@@ -94,13 +94,13 @@ class PaymentApiController extends AbstractController
         }
 
         // Verify user is admin of the school that owns the payment
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $payment->getSchoolId());
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $payment->getSchoolId());
 
-        if ($schoolProfile === null) {
+        if ($schoolUser === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($schoolProfile->getRole(), [SchoolRole::School, SchoolRole::School], true);
+        $isAdmin = \in_array($schoolUser->getRole(), [SchoolRole::School, SchoolRole::School], true);
 
         if (!$isAdmin) {
             return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);

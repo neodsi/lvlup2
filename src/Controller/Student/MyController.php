@@ -9,8 +9,7 @@ use App\Entity\EventOccurenceProfile;
 use App\Entity\Event;
 use App\Entity\PaymentSchedule;
 use App\Entity\Order;
-use App\Entity\Profile;
-use App\Entity\SchoolProfile;
+use App\Entity\SchoolUser;
 use App\Entity\SchoolProfileGalaParticipation;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\SchoolProfileSeason;
@@ -42,19 +41,14 @@ final class MyController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $profileIds = $user->getProfiles()
-            ->filter(fn(Profile $p) => $p->getDeletedAt() === null)
-            ->map(fn(Profile $p) => $p->getId())
-            ->getValues();
-
-        $schoolProfiles = empty($profileIds) ? [] : $this->em->createQueryBuilder()
+        $schoolProfiles = $this->em->createQueryBuilder()
             ->select('sp', 's')
-            ->from(SchoolProfile::class, 'sp')
+            ->from(SchoolUser::class, 'sp')
             ->join('sp.school', 's')
-            ->where('sp.profile IN (:profileIds)')
+            ->where('sp.user = :user')
             ->andWhere('sp.role = :role')
             ->andWhere('sp.deletedAt IS NULL')
-            ->setParameter('profileIds', $profileIds)
+            ->setParameter('user', $user)
             ->setParameter('role', SchoolRole::Student)
             ->getQuery()
             ->getResult();
@@ -69,17 +63,17 @@ final class MyController extends AbstractController
     {
         /** @var User $user */
         $user          = $this->getUser();
-        $school        = $this->schoolContext->getCurrentSchool();
-        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
+        $school     = $this->schoolContext->getCurrentSchool();
+        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolProfile === null) {
+        if ($school === null || $schoolUser === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
         $participations = $this->em->getRepository(SchoolProfileGalaParticipation::class)->findBy([
-            'schoolProfileId' => $schoolProfile->getId(),
+            'schoolProfileId' => $schoolUser->getId(),
         ]);
 
         return $this->render('school/my/gala.html.twig', [
@@ -93,17 +87,17 @@ final class MyController extends AbstractController
     {
         /** @var User $user */
         $user          = $this->getUser();
-        $school        = $this->schoolContext->getCurrentSchool();
-        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
+        $school     = $this->schoolContext->getCurrentSchool();
+        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolProfile === null) {
+        if ($school === null || $schoolUser === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
         $packages = $this->em->getRepository(SchoolProfilePackage::class)->findBy([
-            'schoolProfileId' => $schoolProfile->getId(),
+            'schoolProfileId' => $schoolUser->getId(),
             'schoolId'        => $school->getId(),
         ]);
 
@@ -118,10 +112,10 @@ final class MyController extends AbstractController
     {
         /** @var User $user */
         $user          = $this->getUser();
-        $school        = $this->schoolContext->getCurrentSchool();
-        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
+        $school     = $this->schoolContext->getCurrentSchool();
+        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolProfile === null) {
+        if ($school === null || $schoolUser === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -133,7 +127,7 @@ final class MyController extends AbstractController
             ->join(Order::class, 'o', 'WITH', 'o.id = ps.orderId')
             ->where('o.schoolProfileId = :tpId')
             ->andWhere('ps.schoolId = :schoolId')
-            ->setParameter('tpId', $schoolProfile->getId())
+            ->setParameter('tpId', $schoolUser->getId())
             ->setParameter('schoolId', $school->getId())
             ->orderBy('ps.dueAt', 'ASC')
             ->getQuery()
@@ -150,10 +144,10 @@ final class MyController extends AbstractController
     {
         /** @var User $user */
         $user          = $this->getUser();
-        $school        = $this->schoolContext->getCurrentSchool();
-        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
+        $school     = $this->schoolContext->getCurrentSchool();
+        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolProfile === null) {
+        if ($school === null || $schoolUser === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -163,7 +157,7 @@ final class MyController extends AbstractController
         $season              = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
         $schoolProfileSeason = $seasonId
             ? $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
-                'schoolProfileId' => $schoolProfile->getId(),
+                'schoolProfileId' => $schoolUser->getId(),
                 'seasonId'        => $seasonId,
             ])
             : null;
@@ -180,10 +174,10 @@ final class MyController extends AbstractController
     {
         /** @var User $user */
         $user          = $this->getUser();
-        $school        = $this->schoolContext->getCurrentSchool();
-        $schoolProfile = $this->schoolContext->getCurrentSchoolProfile($user);
+        $school     = $this->schoolContext->getCurrentSchool();
+        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolProfile === null) {
+        if ($school === null || $schoolUser === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -198,7 +192,7 @@ final class MyController extends AbstractController
             ->join(Event::class, 'e', 'WITH', 'e.id = eo.eventId')
             ->where('eop.schoolProfileId = :tpId')
             ->andWhere('e.schoolId = :schoolId')
-            ->setParameter('tpId', $schoolProfile->getId())
+            ->setParameter('tpId', $schoolUser->getId())
             ->setParameter('schoolId', $school->getId())
             ->orderBy('eo.occurenceAt', 'ASC');
 

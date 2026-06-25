@@ -7,7 +7,7 @@ namespace App\Security\Voter;
 use App\Entity\Order;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use App\Security\SchoolRoleHierarchy;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -34,7 +34,7 @@ final class OrderVoter extends Voter
     ];
 
     public function __construct(
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
     ) {
     }
 
@@ -78,15 +78,15 @@ final class OrderVoter extends Voter
         }
 
         // Otherwise the member may only view their own order.
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $order->getSchoolId());
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $order->getSchoolId());
 
-        return $schoolProfile !== null && $schoolProfile->getId() === $order->getSchoolProfileId();
+        return $schoolUser !== null && $schoolUser->getId() === $order->getSchoolProfileId();
     }
 
     private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
 
-        return $schoolProfile?->getRole();
+        return $schoolUser?->getRole();
     }
 }

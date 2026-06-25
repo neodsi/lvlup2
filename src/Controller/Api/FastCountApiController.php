@@ -7,7 +7,7 @@ namespace App\Controller\Api;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolProfileRepository;
+use App\Repository\SchoolUserRepository;
 use App\Service\Member\MemberService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,7 +19,7 @@ class FastCountApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly SchoolProfileRepository $schoolProfileRepository,
+        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly MemberService $memberService,
     ) {
     }
@@ -96,15 +96,15 @@ class FastCountApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        $schoolProfile = $this->schoolProfileRepository->findOneByUserAndSchool($user, $schoolId);
+        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
 
-        if ($schoolProfile === null) {
+        if ($schoolUser === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
         $allowed = [SchoolRole::Teacher, SchoolRole::School, SchoolRole::School];
 
-        if (!\in_array($schoolProfile->getRole(), $allowed, true)) {
+        if (!\in_array($schoolUser->getRole(), $allowed, true)) {
             return new JsonResponse(['success' => false, 'error' => 'teacher role or higher required.'], 403);
         }
 
