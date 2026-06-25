@@ -4,9 +4,29 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Entity\Activity;
+use App\Entity\Address;
+use App\Entity\Event;
+use App\Entity\EventOccurence;
+use App\Entity\EventOccurenceProfile;
+use App\Entity\IntentOrder;
+use App\Entity\Invoice;
+use App\Entity\Order;
+use App\Entity\OrderItem;
+use App\Entity\Package;
+use App\Entity\Payment;
+use App\Entity\PaymentSchedule;
+use App\Entity\PaymentScheduleTemplate;
+use App\Entity\PriceModifier;
 use App\Entity\Profile;
+use App\Entity\Room;
 use App\Entity\School;
+use App\Entity\SchoolHomeKpiDaily;
+use App\Entity\SchoolProfileGalaParticipation;
+use App\Entity\SchoolProfilePackage;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\SchoolUser;
+use App\Entity\Season;
 use App\Entity\User;
 use App\Enum\SchoolRole;
 use App\Enum\SchoolStatus;
@@ -178,23 +198,82 @@ class DashboardController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $memberCount = (int) $this->em->createQueryBuilder()
-            ->select('COUNT(tp.id)')
-            ->from(SchoolUser::class, 'tp')
-            ->where('tp.school = :school')
-            ->setParameter('school', $school)
+        $hasPayments = (bool) $this->em->createQueryBuilder()
+            ->select('COUNT(p.id)')
+            ->from(Payment::class, 'p')
+            ->where('p.schoolId = :sid')
+            ->setParameter('sid', $id)
             ->getQuery()
             ->getSingleScalarResult();
 
-        if ($memberCount > 0) {
-            $this->addFlash('error', 'Impossible de supprimer une école avec des membres.');
-            return $this->redirectToRoute('app_admin_school_detail', ['id' => $id]);
+        if ($hasPayments) {
+            $school->setDeletedAt(new \DateTimeImmutable());
+            $this->em->flush();
+            $this->addFlash('success', 'École archivée (paiements conservés).');
+            return $this->redirectToRoute('app_admin_schools');
         }
+
+        // Hard delete — OrderItem n'a pas de schoolId, on passe par orderId
+        $orderIds = array_column(
+            $this->em->createQueryBuilder()
+                ->select('o.id')
+                ->from(Order::class, 'o')
+                ->where('o.schoolId = :sid')
+                ->setParameter('sid', $id)
+                ->getQuery()
+                ->getArrayResult(),
+            'id'
+        );
+
+        if ($orderIds) {
+            $this->em->createQueryBuilder()
+                ->delete(OrderItem::class, 'e')
+                ->where('e.orderId IN (:ids)')
+                ->setParameter('ids', $orderIds)
+                ->getQuery()
+                ->execute();
+        }
+
+        foreach ([
+            SchoolHomeKpiDaily::class,
+            SchoolProfileGalaParticipation::class,
+            SchoolProfileSeason::class,
+            SchoolProfilePackage::class,
+            IntentOrder::class,
+            EventOccurenceProfile::class,
+            PaymentSchedule::class,
+            Invoice::class,
+            Order::class,
+            EventOccurence::class,
+            Event::class,
+            PriceModifier::class,
+            PaymentScheduleTemplate::class,
+            Room::class,
+            Activity::class,
+            Package::class,
+            Address::class,
+            Season::class,
+        ] as $cls) {
+            $this->em->createQueryBuilder()
+                ->delete($cls, 'e')
+                ->where('e.schoolId = :sid')
+                ->setParameter('sid', $id)
+                ->getQuery()
+                ->execute();
+        }
+
+        // SchoolUser a une FK ORM vers School — doit être supprimé avant School
+        $this->em->createQueryBuilder()
+            ->delete(SchoolUser::class, 'su')
+            ->where('su.school = :school')
+            ->setParameter('school', $school)
+            ->getQuery()
+            ->execute();
 
         $this->em->remove($school);
         $this->em->flush();
 
-        $this->addFlash('success', 'École supprimée.');
+        $this->addFlash('success', 'École et toutes ses données supprimées définitivement.');
         return $this->redirectToRoute('app_admin_schools');
     }
 
