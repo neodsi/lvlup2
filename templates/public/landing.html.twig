@@ -3,7 +3,52 @@
 {% block title %}Logiciel de gestion pour école de danse | LVL UP{% endblock %}
 
 {% block head %}
-<meta name="description" content="Gérez votre école de danse facilement avec LVL UP : inscriptions en ligne, paiements automatisés et planning centralisé. Démo gratuite.">
+{% set _seoTitle = 'Logiciel de gestion pour école de danse | LVL UP' %}
+{% set _seoDesc = 'Gérez votre école de danse facilement avec LVL UP : inscriptions en ligne, paiements automatisés et planning centralisé. Démo gratuite.' %}
+{% set _canonicalUrl = url('app_home') %}
+{% set _ogImage = absolute_url(asset('assets/screen-fr.jpg')) %}
+<meta name="description" content="{{ _seoDesc }}">
+<link rel="canonical" href="{{ _canonicalUrl }}">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ _seoTitle }}">
+<meta property="og:description" content="{{ _seoDesc }}">
+<meta property="og:url" content="{{ _canonicalUrl }}">
+<meta property="og:image" content="{{ _ogImage }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="LVL UP – Logiciel de gestion pour école de danse">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ _seoTitle }}">
+<meta name="twitter:description" content="{{ _seoDesc }}">
+<meta name="twitter:image" content="{{ _ogImage }}">
+<meta name="twitter:image:alt" content="LVL UP – Logiciel de gestion pour école de danse">
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "LVL UP",
+    "url": "{{ _canonicalUrl }}",
+    "description": "{{ _seoDesc }}",
+    "publisher": {
+        "@type": "Organization",
+        "name": "LVL UP",
+        "url": "{{ _canonicalUrl }}",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "{{ absolute_url(asset('assets/logo_lvl_up.png')) }}"
+        }
+    },
+    "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "{{ url('app_school_directory') }}?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+    }
+}
+</script>
 {% endblock %}
 
 {% block public_content %}
