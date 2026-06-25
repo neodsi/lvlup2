@@ -25,13 +25,14 @@
                 <p class="font-semibold text-gray-900">{{ profile.firstName }} {{ profile.lastName }}</p>
                 <p class="text-xs text-gray-400 mt-0.5">{{ app.user.email }}</p>
 
-                <label for="profile_edit_avatar" class="mt-4 cursor-pointer inline-flex items-center gap-2 w-full justify-center border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-3 py-2 rounded-lg transition">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    Changer la photo
+                <label for="avatar-input" id="avatar-label" class="mt-4 cursor-pointer inline-flex items-center gap-2 w-full justify-center border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-3 py-2 rounded-lg transition">
+                    <svg id="avatar-icon" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span id="avatar-label-text">Changer la photo</span>
                 </label>
-                {{ form_widget(form.avatar, {attr: {class: 'sr-only', accept: 'image/*'}}) }}
-                <p id="avatar-filename" class="mt-1.5 text-xs text-indigo-600 font-medium hidden"></p>
-                <div class="mt-1 text-xs text-red-600">{{ form_errors(form.avatar) }}</div>
+                <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" class="sr-only"
+                       data-url="{{ path('app_profile_avatar_upload') }}"
+                       data-token="{{ csrf_token('profile_avatar') }}">
+                <p id="avatar-error" class="mt-1.5 text-xs text-red-600 hidden"></p>
                 <p class="mt-1 text-xs text-gray-400">JPG, PNG, WebP — 2 Mo max.</p>
             </div>
         </div>
@@ -66,16 +67,17 @@
                             {% endif %}
 
                             <div x-show="open" x-transition class="mt-2">
-                                <form method="POST" action="{{ path('app_profile_email_change') }}" class="flex gap-2">
-                                    <input type="email" name="newEmail" required
+                                <div class="flex gap-2 items-center">
+                                    <input type="email" id="newEmailInput"
                                            placeholder="Nouvelle adresse e-mail"
                                            value="{{ app.user.pendingEmail ?? '' }}"
-                                           class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                                    <button type="submit"
-                                            class="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+                                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                                    <button type="button" id="emailChangeBtn"
+                                            data-url="{{ path('app_profile_email_change') }}"
+                                            class="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition">
                                         Envoyer
                                     </button>
-                                </form>
+                                </div>
                                 <p class="mt-1.5 text-xs text-gray-400">Un e-mail de confirmation sera envoyé à la nouvelle adresse. Le changement ne sera effectif qu'après validation.</p>
                             </div>
                         </div>
@@ -159,12 +161,77 @@
 </div>
 
 <script>
-document.getElementById('profile_edit_avatar').addEventListener('change', function() {
-    const label = document.getElementById('avatar-filename');
-    if (this.files[0]) {
-        label.textContent = this.files[0].name;
-        label.classList.remove('hidden');
+(function () {
+    const emailBtn = document.getElementById('emailChangeBtn');
+    if (emailBtn) {
+        emailBtn.addEventListener('click', function () {
+            const val = document.getElementById('newEmailInput').value.trim();
+            if (!val) return;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = this.dataset.url;
+            const input = document.createElement('input');
+            input.type  = 'hidden';
+            input.name  = 'newEmail';
+            input.value = val;
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        });
     }
-});
+})();
+
+(function () {
+    const input     = document.getElementById('avatar-input');
+    const labelText = document.getElementById('avatar-label-text');
+    const errorEl   = document.getElementById('avatar-error');
+
+    input.addEventListener('change', async function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        labelText.textContent = 'Envoi…';
+        input.disabled = true;
+        errorEl.classList.add('hidden');
+
+        const fd = new FormData();
+        fd.append('avatar', file);
+        fd.append('_token', input.dataset.token);
+
+        try {
+            const res  = await fetch(input.dataset.url, { method: 'POST', body: fd });
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                errorEl.textContent = data.error ?? 'Erreur lors de l\'envoi.';
+                errorEl.classList.remove('hidden');
+                labelText.textContent = 'Changer la photo';
+            } else {
+                const url     = data.url + '?t=' + Date.now();
+                const existing = document.querySelector('img.h-24.w-24.rounded-full');
+                if (existing) {
+                    existing.src = url;
+                } else {
+                    const placeholder = document.querySelector('div.h-24.w-24.rounded-full');
+                    if (placeholder) {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = '';
+                        img.className = 'h-24 w-24 rounded-full object-cover border-2 border-gray-200 mb-4';
+                        placeholder.replaceWith(img);
+                    }
+                }
+                labelText.textContent = 'Changer la photo';
+            }
+        } catch {
+            errorEl.textContent = 'Erreur réseau.';
+            errorEl.classList.remove('hidden');
+            labelText.textContent = 'Changer la photo';
+        }
+
+        input.disabled = false;
+        input.value = '';
+    });
+})();
 </script>
 {% endblock %}

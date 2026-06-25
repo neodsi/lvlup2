@@ -5,11 +5,9 @@ namespace App\Form\App;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
 class ProfileEditType extends AbstractType
@@ -83,19 +81,6 @@ class ProfileEditType extends AbstractType
                 'label_attr' => ['class' => $labelClass],
                 'attr'       => ['class' => $inputClass, 'placeholder' => 'ex: 42, 43…'],
                 'required'   => false,
-            ])
-            ->add('avatar', FileType::class, [
-                'label' => 'Photo de profil',
-                'label_attr' => ['class' => $labelClass],
-                'attr' => ['class' => $inputClass],
-                'required' => false,
-                'mapped' => false,
-                'constraints' => [
-                    new File([
-                        'maxSize' => '2M',
-                        'mimeTypes' => ['image/jpeg', 'image/png', 'image/webp'],
-                    ]),
-                ],
             ])
         ;
     }

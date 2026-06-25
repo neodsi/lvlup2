@@ -12,6 +12,7 @@ use App\Service\Email\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -50,11 +51,13 @@ class ProfileController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        $primaryProfile = $user->getProfiles()->filter(
-            fn (Profile $p) => $p->isPrimary() && $p->getDeletedAt() === null
-        )->first();
+        $primaryProfile = $this->em->getRepository(Profile::class)->findOneBy([
+            'user'      => $user,
+            'isPrimary' => true,
+            'deletedAt' => null,
+        ]);
 
-        if ($primaryProfile === false) {
+        if ($primaryProfile === null) {
             return $this->redirectToRoute('app_setup_profile');
         }
 
@@ -104,21 +107,6 @@ class ProfileController extends AbstractController
             $phone = $data['phone'] ?? '';
             $primaryProfile->setPhone($phone !== '' ? $phone : null);
 
-            // Avatar upload
-            /** @var UploadedFile|null $avatar */
-            $avatar = $form->get('avatar')->getData();
-            if ($avatar !== null && $avatar->isValid()) {
-                $avatarError = $this->processAvatarUpload($avatar, $primaryProfile);
-                if ($avatarError !== null) {
-                    $this->addFlash('error', $avatarError);
-
-                    return $this->render('app/profile/edit.html.twig', [
-                        'profile' => $primaryProfile,
-                        'form'    => $form->createView(),
-                    ]);
-                }
-            }
-
             $this->em->flush();
             $this->addFlash('success', 'Profil mis à jour avec succès.');
 
@@ -129,6 +117,39 @@ class ProfileController extends AbstractController
             'profile' => $primaryProfile,
             'form'    => $form->createView(),
         ]);
+    }
+
+    #[Route('/profile/avatar', name: 'app_profile_avatar_upload', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid('profile_avatar', (string) $request->request->get('_token'))) {
+            return new JsonResponse(['error' => 'Token invalide.'], 403);
+        }
+
+        /** @var User $user */
+        $user           = $this->getUser();
+        $primaryProfile = $this->em->getRepository(Profile::class)
+            ->findOneBy(['user' => $user, 'isPrimary' => true]);
+
+        if ($primaryProfile === null) {
+            return new JsonResponse(['error' => 'Profil introuvable.'], 404);
+        }
+
+        /** @var UploadedFile|null $file */
+        $file = $request->files->get('avatar');
+        if ($file === null || !$file->isValid()) {
+            return new JsonResponse(['error' => 'Fichier invalide.'], 400);
+        }
+
+        $error = $this->processAvatarUpload($file, $primaryProfile);
+        if ($error !== null) {
+            return new JsonResponse(['error' => $error], 422);
+        }
+
+        $this->em->flush();
+
+        return new JsonResponse(['url' => '/' . $primaryProfile->getAvatarPath()]);
     }
 
     #[Route('/profile/email', name: 'app_profile_email_change', methods: ['POST'])]

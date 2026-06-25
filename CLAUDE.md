@@ -1,5 +1,11 @@
 # Conventions UI — LVL UP
 
+## Git — commits et push
+
+Ne jamais faire de `git commit` ni de `git push` sans accord explicite de l'utilisateur. Préparer les changements, les décrire, et attendre la confirmation avant de committer.
+
+---
+
 ## Inputs / champs de formulaire
 
 Tous les inputs, selects et textareas doivent utiliser `bg-gray-50` (fond légèrement gris) pour créer du contraste sur les cartes blanches (`bg-white`). Ne jamais utiliser `bg-white` sur un input posé sur une carte blanche.
