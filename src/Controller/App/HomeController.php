@@ -38,9 +38,7 @@ class HomeController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        $profiles = $user->getProfiles()->filter(fn (Profile $p) => $p->getDeletedAt() === null)->getValues();
-
-        if (empty($profiles)) {
+        if ($user->getProfile() === null) {
             return $this->redirectToRoute('app_setup_you');
         }
 
@@ -125,11 +123,7 @@ class HomeController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        $hasPrimary = $user->getProfiles()->filter(
-            fn (Profile $p) => $p->isPrimary() && $p->getDeletedAt() === null
-        )->count() > 0;
-
-        if ($hasPrimary) {
+        if ($user->getProfile() !== null) {
             return $this->redirectToRoute('app_dashboard');
         }
 
@@ -143,7 +137,6 @@ class HomeController extends AbstractController
             $profile->setUser($user);
             $profile->setFirstName($data['firstName']);
             $profile->setLastName($data['lastName']);
-            $profile->setIsPrimary(true);
 
             if ($data['dob'] !== null) {
                 $profile->setDob($data['dob']);
@@ -193,11 +186,9 @@ class HomeController extends AbstractController
 
             $school->setStatus(SchoolStatus::Accepted);
 
-            $primaryProfile = $user->getProfiles()->filter(
-                fn (Profile $p) => $p->isPrimary() && $p->getDeletedAt() === null
-            )->first();
+            $primaryProfile = $user->getProfile();
 
-            if ($primaryProfile !== false) {
+            if ($primaryProfile !== null) {
                 $schoolUser = new SchoolUser();
                 $schoolUser->setSchool($school);
                 $schoolUser->setUser($user);

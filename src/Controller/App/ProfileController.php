@@ -51,11 +51,7 @@ class ProfileController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        $primaryProfile = $this->em->getRepository(Profile::class)->findOneBy([
-            'user'      => $user,
-            'isPrimary' => true,
-            'deletedAt' => null,
-        ]);
+        $primaryProfile = $user->getProfile();
 
         if ($primaryProfile === null) {
             return $this->redirectToRoute('app_setup_profile');
@@ -129,8 +125,7 @@ class ProfileController extends AbstractController
 
         /** @var User $user */
         $user           = $this->getUser();
-        $primaryProfile = $this->em->getRepository(Profile::class)
-            ->findOneBy(['user' => $user, 'isPrimary' => true]);
+        $primaryProfile = $user->getProfile();
 
         if ($primaryProfile === null) {
             return new JsonResponse(['error' => 'Profil introuvable.'], 404);

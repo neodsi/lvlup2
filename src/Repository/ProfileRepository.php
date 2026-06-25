@@ -19,28 +19,8 @@ class ProfileRepository extends ServiceEntityRepository
         parent::__construct($registry, Profile::class);
     }
 
-    /**
-     * @return Profile[]
-     */
-    public function findByUser(User $user): array
+    public function findByUser(User $user): ?Profile
     {
-        return $this->createQueryBuilder('p')
-            ->where('p.user = :user')
-            ->andWhere('p.deletedAt IS NULL')
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getResult();
-    }
-
-    public function findPrimaryByUser(User $user): ?Profile
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.user = :user')
-            ->andWhere('p.isPrimary = 1')
-            ->andWhere('p.deletedAt IS NULL')
-            ->setParameter('user', $user)
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        return $this->findOneBy(['user' => $user]);
     }
 }

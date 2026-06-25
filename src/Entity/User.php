@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -55,15 +53,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Profile::class)]
-    private Collection $profiles;
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Profile::class)]
+    private ?Profile $profile = null;
 
     public function __construct()
     {
         $this->id        = Uuid::v4()->toRfc4122();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        $this->profiles  = new ArrayCollection();
     }
 
     public function getId(): string
@@ -232,31 +229,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, Profile>
-     */
-    public function getProfiles(): Collection
+    public function getProfile(): ?Profile
     {
-        return $this->profiles;
+        return $this->profile;
     }
 
-    public function addProfile(Profile $profile): static
+    public function setProfile(?Profile $profile): static
     {
-        if (!$this->profiles->contains($profile)) {
-            $this->profiles->add($profile);
-            $profile->setUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removeProfile(Profile $profile): static
-    {
-        if ($this->profiles->removeElement($profile)) {
-            if ($profile->getUser() === $this) {
-                $profile->setUser(null);
-            }
-        }
+        $this->profile = $profile;
 
         return $this;
     }

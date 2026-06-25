@@ -11,10 +11,7 @@
 {% endblock %}
 
 {% block admin_content %}
-{% set _primaryProfile = null %}
-{% for p in user.profiles %}
-    {% if p.isPrimary() and not p.deletedAt %}{% set _primaryProfile = p %}{% endif %}
-{% endfor %}
+{% set _primaryProfile = user.profile %}
 
 <div class="py-8">
 
@@ -105,40 +102,35 @@
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h2 class="text-sm font-semibold text-gray-700">Profils</h2>
                 </div>
-                {% set _profiles = user.profiles|filter(p => not p.deletedAt) %}
-                {% if _profiles is empty %}
+                {% set _profile = user.profile %}
+                {% if _profile is null %}
                     <p class="px-6 py-5 text-sm text-gray-400">Aucun profil.</p>
                 {% else %}
-                    <div class="divide-y divide-gray-100">
-                        {% for profile in _profiles %}
-                            <div class="flex items-center gap-4 px-6 py-4">
-                                {% if profile.avatarPath %}
-                                    <img src="{{ profile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-10 w-10 rounded-full object-cover shrink-0">
-                                {% else %}
-                                    <span class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm shrink-0">
-                                        {{ profile.firstName|first|upper }}
-                                    </span>
+                    <div class="flex items-center gap-4 px-6 py-4">
+                        {% if _profile.avatarPath %}
+                            <img src="{{ _profile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-10 w-10 rounded-full object-cover shrink-0">
+                        {% else %}
+                            <span class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm shrink-0">
+                                {{ _profile.firstName|first|upper }}
+                            </span>
+                        {% endif %}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900">{{ _profile.firstName }} {{ _profile.lastName }}</p>
+                            <div class="flex items-center flex-wrap gap-x-4 gap-y-0.5 mt-0.5 text-xs text-gray-400">
+                                {% if _profile.dob %}<span>{{ _profile.dob|date('d/m/Y') }}</span>{% endif %}
+                                {% if _profile.phone %}<span>{{ _profile.phone }}</span>{% endif %}
+                                {% if _profile.gender %}
+                                    <span>{% if _profile.gender.value == 'male' %}Homme{% elseif _profile.gender.value == 'female' %}Femme{% else %}{{ _profile.gender.value }}{% endif %}</span>
                                 {% endif %}
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900">{{ profile.firstName }} {{ profile.lastName }}</p>
-                                    <div class="flex items-center flex-wrap gap-x-4 gap-y-0.5 mt-0.5 text-xs text-gray-400">
-                                        {% if profile.dob %}<span>{{ profile.dob|date('d/m/Y') }}</span>{% endif %}
-                                        {% if profile.phone %}<span>{{ profile.phone }}</span>{% endif %}
-                                        {% if profile.gender %}
-                                            <span>{% if profile.gender.value == 'male' %}Homme{% elseif profile.gender.value == 'female' %}Femme{% else %}{{ profile.gender.value }}{% endif %}</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
                             </div>
-                        {% endfor %}
+                        </div>
                     </div>
                 {% endif %}
             </div>
 
             {# Tailles — uniquement si ROLE_STUDENT #}
             {% if 'ROLE_STUDENT' in user.roles %}
-            {% set _primaryForSizes = null %}
-            {% for p in user.profiles %}{% if p.isPrimary() and not p.deletedAt %}{% set _primaryForSizes = p %}{% endif %}{% endfor %}
+            {% set _primaryForSizes = user.profile %}
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                     <h2 class="text-sm font-semibold text-gray-700">Tailles</h2>

@@ -80,13 +80,7 @@ class AppExtension extends AbstractExtension
             return null;
         }
 
-        foreach ($user->getProfiles() as $profile) {
-            if ($profile->isPrimary() && $profile->getDeletedAt() === null) {
-                return $profile;
-            }
-        }
-
-        return null;
+        return $user->getProfile();
     }
 
     /**

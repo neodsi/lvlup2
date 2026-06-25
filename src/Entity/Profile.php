@@ -16,7 +16,7 @@ class Profile
     #[ORM\Column(type: 'string', length: 36)]
     private string $id;
 
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'profiles')]
+    #[ORM\OneToOne(targetEntity: User::class, inversedBy: 'profile')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?User $user = null;
 
@@ -49,9 +49,6 @@ class Profile
 
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $sizeShoe = null;
-
-    #[ORM\Column(type: 'boolean', options: ['default' => true])]
-    private bool $isPrimary = true;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
@@ -203,18 +200,6 @@ class Profile
 
     public function getSizeShoe(): ?string { return $this->sizeShoe; }
     public function setSizeShoe(?string $v): static { $this->sizeShoe = $v; return $this; }
-
-    public function isPrimary(): bool
-    {
-        return $this->isPrimary;
-    }
-
-    public function setIsPrimary(bool $isPrimary): static
-    {
-        $this->isPrimary = $isPrimary;
-
-        return $this;
-    }
 
     public function getCreatedAt(): \DateTimeImmutable
     {

@@ -38,9 +38,7 @@ class MemberService
             $user = $data['user'];
 
             // Find or create a minimal Profile for this user
-            $profile = $user->getProfiles()
-                ->filter(fn(Profile $p) => $p->getDeletedAt() === null)
-                ->first();
+            $profile = $user->getProfile();
 
             if (!$profile instanceof Profile) {
                 $profile = new Profile();

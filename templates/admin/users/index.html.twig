@@ -84,10 +84,7 @@
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="py-4 pl-6 pr-3">
                                     <div class="flex items-center gap-3">
-                                        {% set _primaryProfile = null %}
-                                        {% for p in user.profiles %}
-                                            {% if p.isPrimary() and not p.deletedAt %}{% set _primaryProfile = p %}{% endif %}
-                                        {% endfor %}
+                                        {% set _primaryProfile = user.profile %}
                                         {% if _primaryProfile and _primaryProfile.avatarPath %}
                                             <img src="{{ _primaryProfile.avatarPath | imagine_filter('profile_avatar') }}" alt="" class="h-8 w-8 rounded-full object-cover shrink-0">
                                         {% else %}

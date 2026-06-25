@@ -102,11 +102,7 @@ class SchoolUser
             return null;
         }
 
-        $profile = $this->user->getProfiles()
-            ->filter(static fn (Profile $p) => $p->getDeletedAt() === null)
-            ->first();
-
-        return $profile instanceof Profile ? $profile : null;
+        return $this->user->getProfile();
     }
 
     public function getRole(): SchoolRole
