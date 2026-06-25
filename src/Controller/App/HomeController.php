@@ -8,6 +8,7 @@ use App\Entity\Profile;
 use App\Entity\School;
 use App\Entity\SchoolUser;
 use App\Enum\Gender;
+use App\Enum\SchoolProfileStatus;
 use App\Enum\SchoolRole;
 use App\Enum\SchoolStatus;
 use App\Form\App\CreateSchoolType;
@@ -201,6 +202,7 @@ class HomeController extends AbstractController
                 $schoolUser->setSchool($school);
                 $schoolUser->setUser($user);
                 $schoolUser->setRole(SchoolRole::School);
+                $schoolUser->setStatus(SchoolProfileStatus::Accepted);
                 $this->em->persist($schoolUser);
             }
 
