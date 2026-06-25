@@ -359,8 +359,8 @@ class DashboardController extends AbstractController
             ->getResult();
 
         return $this->render('admin/users/detail.html.twig', [
-            'user'        => $user,
-            'schoolUsers' => $schoolUsers,
+            'user'           => $user,
+            'schoolProfiles' => $schoolUsers,
         ]);
     }
 
