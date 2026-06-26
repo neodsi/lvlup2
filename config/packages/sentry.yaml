@@ -3,7 +3,9 @@ sentry:
     register_error_listener: true
     options:
         environment: '%kernel.environment%'
-
+        ignore_exceptions:
+            - Symfony\Component\Security\Core\Exception\AccessDeniedException
+            - Symfony\Component\HttpKernel\Exception\NotFoundHttpException
 when@dev:
     sentry:
         dsn: null
