@@ -55,6 +55,8 @@ final class SettingsController extends AbstractController
         if ($request->isMethod('POST')) {
             $school->setName((string) $request->request->get('name', $school->getName()));
             $school->setWebsiteUrl($request->request->get('websiteUrl') ?: null);
+            $school->setInstagramUrl($request->request->get('instagramUrl') ?: null);
+            $school->setFacebookUrl($request->request->get('facebookUrl') ?: null);
             $school->setContactEmail($request->request->get('contactEmail') ?: null);
             $school->setPhone($request->request->get('phone') ?: null);
 

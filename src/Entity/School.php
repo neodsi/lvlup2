@@ -73,6 +73,12 @@ class School
     private ?string $websiteUrl = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $instagramUrl = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $facebookUrl = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $contactEmail = null;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
@@ -377,6 +383,12 @@ class School
 
     public function getWebsiteUrl(): ?string { return $this->websiteUrl; }
     public function setWebsiteUrl(?string $v): static { $this->websiteUrl = $v; return $this; }
+
+    public function getInstagramUrl(): ?string { return $this->instagramUrl; }
+    public function setInstagramUrl(?string $v): static { $this->instagramUrl = $v; return $this; }
+
+    public function getFacebookUrl(): ?string { return $this->facebookUrl; }
+    public function setFacebookUrl(?string $v): static { $this->facebookUrl = $v; return $this; }
 
     public function getContactEmail(): ?string { return $this->contactEmail; }
     public function setContactEmail(?string $v): static { $this->contactEmail = $v; return $this; }
