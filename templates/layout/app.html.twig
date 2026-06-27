@@ -109,7 +109,8 @@
                  data-membres-url="{{ path('school_members_list', {type: 'students'}) }}"
                  data-orders-url="{{ path('school_orders_list') }}"
                  data-new-season-url="{{ path('school_settings_season_create') }}"
-                 data-default-season="{{ _sd.currentSeasonId }}">
+                 data-default-season="{{ _sd.currentSeasonId }}"
+                 data-school-id="{{ _sd.schoolId }}">
                 <div class="flex items-center gap-1 px-2 pt-2" style="padding-bottom:8px">
                     <select id="season-select"
                             class="flex-1 min-w-0 rounded-md border border-indigo-200 bg-white text-xs font-medium text-gray-800 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition cursor-pointer">
@@ -156,7 +157,7 @@
                             <span class="season-sub block leading-none mt-0.5 truncate empty:hidden {{ _commandesActive ? 'text-white/70' : 'text-indigo-400' }}" style="font-size:10px;line-height:1"></span>
                         </span>
                     </a>
-                    <a href="#"
+                    <a href="{{ path('school_settings_season_create') }}"
                        id="sidebar-config"
                        class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition
                               {{ _configActive ? 'bg-indigo-500 text-white' : 'text-indigo-700 hover:bg-gray-100' }}">
@@ -261,7 +262,8 @@
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script>
 (function () {
-    const STORAGE_KEY = 'lvlup_season';
+    const _schoolId   = (document.getElementById('season-group') || {}).dataset.schoolId || '';
+    const STORAGE_KEY = 'lvlup_season_' + _schoolId;
 
     function getSeasonFromUrl() {
         const m = window.location.pathname.match(/\/school\/settings\/season\/([^\/]+)/);
@@ -273,10 +275,11 @@
         if (!group) return;
 
         const select     = document.getElementById('season-select');
-        const configTpl  = group.dataset.configUrlTpl;
-        const membresUrl = group.dataset.membresUrl;
-        const ordersUrl  = group.dataset.ordersUrl;
-        const defaultId  = group.dataset.defaultSeason;
+        const configTpl    = group.dataset.configUrlTpl;
+        const membresUrl   = group.dataset.membresUrl;
+        const ordersUrl    = group.dataset.ordersUrl;
+        const defaultId    = group.dataset.defaultSeason;
+        const newSeasonUrl = group.dataset.newSeasonUrl;
 
         function getSeasonName(id) {
             const opt = select.querySelector('option[value="' + id + '"]');
@@ -301,16 +304,23 @@
             });
         }
 
-        const fromUrl = getSeasonFromUrl();
-        const stored  = localStorage.getItem(STORAGE_KEY);
-        const initial = fromUrl || stored || defaultId || (select.options[0] && select.options[0].value);
+        const fromUrl  = getSeasonFromUrl();
+        const stored   = localStorage.getItem(STORAGE_KEY);
+        const initial  = fromUrl || stored || defaultId || (select.options[0] && select.options[0].value);
+        const optValid = initial && !!select.querySelector('option[value="' + initial + '"]');
 
-        if (initial && select.querySelector('option[value="' + initial + '"]')) {
+        if (optValid) {
             select.value = initial;
-        }
-        if (initial) {
-            if (!fromUrl) localStorage.setItem(STORAGE_KEY, initial);
+            localStorage.setItem(STORAGE_KEY, initial);
             updateLinks(initial);
+        } else {
+            localStorage.removeItem(STORAGE_KEY);
+            const elMembres   = document.getElementById('sidebar-membres');
+            const elCommandes = document.getElementById('sidebar-commandes');
+            const elConfig    = document.getElementById('sidebar-config');
+            if (elMembres)   elMembres.href   = membresUrl;
+            if (elCommandes) elCommandes.href = ordersUrl;
+            if (elConfig)    elConfig.href    = newSeasonUrl;
         }
 
         select.addEventListener('change', function () {
@@ -328,6 +338,12 @@
     } else {
         init();
     }
+
+    document.querySelectorAll('a[href*="signout"], a[href*="logout"]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            localStorage.clear();
+        });
+    });
 })();
 </script>
 {% endblock %}

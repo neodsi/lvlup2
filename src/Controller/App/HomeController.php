@@ -171,6 +171,10 @@ class HomeController extends AbstractController
         /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
+        if ($user->getProfile() === null) {
+            return $this->redirectToRoute('app_setup_you');
+        }
+
         $form = $this->createForm(CreateSchoolType::class);
         $form->handleRequest($request);
 

@@ -658,13 +658,21 @@ final class SettingsController extends AbstractController
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
         if ($request->isMethod('POST')) {
-            $season = $this->seasonService->createSeason($school, [
-                'name'    => $request->request->get('name'),
-                'startAt' => new \DateTimeImmutable((string) $request->request->get('startAt')),
-                'endAt'   => new \DateTimeImmutable((string) $request->request->get('endAt')),
-            ]);
+            $name = trim((string) $request->request->get('name', ''));
+            if ($name === '') {
+                $name = 'Nouvelle saison';
+            }
 
-            $this->addFlash('success', 'Saison créée avec succès.');
+            $now   = new \DateTimeImmutable();
+            $year  = (int) $now->format('n') >= 9 ? (int) $now->format('Y') : (int) $now->format('Y') - 1;
+            $start = new \DateTimeImmutable($year . '-09-01');
+            $end   = new \DateTimeImmutable(($year + 1) . '-08-31');
+
+            $season = $this->seasonService->createSeason($school, [
+                'name'    => $name,
+                'startAt' => $start,
+                'endAt'   => $end,
+            ]);
 
             return $this->redirectToRoute('school_settings_season', ['id' => $season->getId()]);
         }

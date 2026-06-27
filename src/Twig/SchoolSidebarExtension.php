@@ -46,6 +46,7 @@ class SchoolSidebarExtension extends AbstractExtension
         return [
             'seasons'         => $seasons,
             'currentSeasonId' => $school->getCurrentSeasonId(),
+            'schoolId'        => $school->getId(),
         ];
     }
 }

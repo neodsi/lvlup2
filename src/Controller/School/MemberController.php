@@ -64,6 +64,10 @@ final class MemberController extends AbstractController
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
+        if ($school->getCurrentSeasonId() === null) {
+            return $this->redirectToRoute('school_settings_season_create');
+        }
+
         // Season resolution
         $session  = $request->getSession();
         $seasonId = $request->query->get('season');

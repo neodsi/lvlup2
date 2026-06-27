@@ -42,6 +42,10 @@ final class OrderController extends AbstractController
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
+        if ($school->getCurrentSeasonId() === null) {
+            return $this->redirectToRoute('school_settings_season_create');
+        }
+
         $session  = $request->getSession();
         $seasonId = $request->query->get('season');
 

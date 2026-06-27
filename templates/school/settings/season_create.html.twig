@@ -1,6 +1,6 @@
 {% extends 'layout/school.html.twig' %}
 
-{% block title %}Nouvelle saison — Paramètres — {{ school.name }}{% endblock %}
+{% block title %}Nouvelle saison — {{ school.name }}{% endblock %}
 
 {% block breadcrumb %}
 <a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
@@ -13,55 +13,31 @@
 {% block school_content %}
 <div class="py-8">
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Saisons</h1>
-    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Nouvelle saison</h1>
 
-    <div class="max-w-2xl">
+    <div class="max-w-lg">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="px-6 py-5 border-b border-gray-100">
-                <h2 class="text-base font-semibold text-gray-900">Nouvelle saison</h2>
-                <p class="text-sm text-gray-500 mt-0.5">Renseignez les informations de base pour créer la saison.</p>
+                <h2 class="text-base font-semibold text-gray-900">Créer votre première saison</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Donnez un nom à cette saison. Vous pourrez configurer les dates et les détails à l'étape suivante.</p>
             </div>
-            <form method="POST" action="{{ path('school_settings_season_create') }}" class="px-6 py-5 space-y-5">
+            <form method="POST" action="{{ path('school_settings_season_create') }}" class="px-6 py-5">
                 <input type="hidden" name="_token" value="{{ csrf_token('season_create') }}">
 
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
                         Nom de la saison <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" id="name" name="name" required
+                    <input type="text" id="name" name="name" required autofocus
                            class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
-                           placeholder="Ex: Saison 2025-2026">
-                    <p class="mt-1 text-xs text-gray-400">Un nom clair pour identifier facilement cette saison.</p>
+                           placeholder="Ex : Saison 2025-2026">
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label for="startAt" class="block text-sm font-medium text-gray-700 mb-1">
-                            Date de début <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" id="startAt" name="startAt" required
-                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    </div>
-                    <div>
-                        <label for="endAt" class="block text-sm font-medium text-gray-700 mb-1">
-                            Date de fin <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" id="endAt" name="endAt" required
-                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    </div>
-                </div>
-
-                <div class="pt-2 flex items-center justify-end gap-3">
-                    <a href="{{ path('school_settings_seasons') }}"
-                       class="text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium">
-                        Annuler
-                    </a>
+                <div class="pt-5 flex items-center justify-end gap-3">
                     <button type="submit"
                             class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Créer la saison
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        Créer et configurer
                     </button>
                 </div>
             </form>
