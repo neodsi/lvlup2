@@ -47,7 +47,7 @@ class ProfileEditType extends AbstractType
                 'attr' => ['class' => $inputClass, 'max' => date('Y-m-d'), 'data-dob' => 'true'],
                 'required' => true,
                 'widget' => 'single_text',
-                'input' => 'string',
+                'input' => 'datetime_immutable',
                 'html5' => true,
                 'constraints' => [new NotBlank(message: 'La date de naissance est obligatoire.')],
             ])

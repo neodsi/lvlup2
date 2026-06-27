@@ -61,7 +61,7 @@ class ProfileController extends AbstractController
             'firstName'  => $primaryProfile->getFirstName(),
             'lastName'   => $primaryProfile->getLastName(),
             'phone'      => $primaryProfile->getPhone() ?? '',
-            'dob'        => $primaryProfile->getDob()?->format('Y-m-d') ?? '',
+            'dob'        => $primaryProfile->getDob(),
             'gender'     => $primaryProfile->getGender()?->value ?? '',
             'sizeTop'    => $primaryProfile->getSizeTop() ?? '',
             'sizeBottom' => $primaryProfile->getSizeBottom() ?? '',
@@ -83,15 +83,8 @@ class ProfileController extends AbstractController
                 $primaryProfile->setSizeShoe($data['sizeShoe'] !== '' ? $data['sizeShoe'] : null);
             }
 
-            $dob = $data['dob'] ?? '';
-            if ($dob !== '' && $dob !== null) {
-                $dobDate = \DateTimeImmutable::createFromFormat('Y-m-d', $dob);
-                if ($dobDate !== false) {
-                    $primaryProfile->setDob($dobDate);
-                }
-            } else {
-                $primaryProfile->setDob(null);
-            }
+            $dob = $data['dob'] ?? null;
+            $primaryProfile->setDob($dob instanceof \DateTimeImmutable ? $dob : null);
 
             $genderValue = $data['gender'] ?? '';
             if ($genderValue !== '' && $genderValue !== null) {

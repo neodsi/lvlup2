@@ -26,8 +26,8 @@ class Profile
     #[ORM\Column(type: 'string', length: 100)]
     private string $lastName;
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $dob = null;
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTime $dob = null;
 
     #[ORM\Column(type: 'string', enumType: Gender::class, nullable: true)]
     private ?Gender $gender = null;
@@ -134,12 +134,14 @@ class Profile
 
     public function getDob(): ?\DateTimeImmutable
     {
-        return $this->dob;
+        if ($this->dob === null) return null;
+        if ($this->dob instanceof \DateTimeImmutable) return $this->dob;
+        return \DateTimeImmutable::createFromMutable($this->dob);
     }
 
     public function setDob(?\DateTimeImmutable $dob): static
     {
-        $this->dob = $dob;
+        $this->dob = $dob !== null ? \DateTime::createFromImmutable($dob) : null;
 
         return $this;
     }

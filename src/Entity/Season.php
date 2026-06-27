@@ -21,11 +21,11 @@ class Season
     #[ORM\Column(type: 'string', length: 255)]
     private string $name;
 
-    #[ORM\Column(type: 'datetime_immutable')]
-    private \DateTimeImmutable $startAt;
+    #[ORM\Column(type: 'date')]
+    private \DateTime $startAt;
 
-    #[ORM\Column(type: 'datetime_immutable')]
-    private \DateTimeImmutable $endAt;
+    #[ORM\Column(type: 'date')]
+    private \DateTime $endAt;
 
     #[ORM\Column(type: 'string', length: 36, nullable: true)]
     private ?string $registrationFeeId = null;
@@ -33,17 +33,17 @@ class Season
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $registrationPaymentCondition = null;
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $preRegistrationsStartAt = null;
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTime $preRegistrationsStartAt = null;
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $preRegistrationsEndAt = null;
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTime $preRegistrationsEndAt = null;
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $registrationsStartAt = null;
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTime $registrationsStartAt = null;
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    private ?\DateTimeImmutable $registrationsEndAt = null;
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTime $registrationsEndAt = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $registrationPublicDescription = null;
@@ -90,11 +90,11 @@ class Season
     public function getName(): string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }
 
-    public function getStartAt(): \DateTimeImmutable { return $this->startAt; }
-    public function setStartAt(\DateTimeImmutable $v): static { $this->startAt = $v; return $this; }
+    public function getStartAt(): \DateTimeImmutable { $d = $this->startAt; return $d instanceof \DateTimeImmutable ? $d : \DateTimeImmutable::createFromMutable($d); }
+    public function setStartAt(\DateTimeImmutable $v): static { $this->startAt = \DateTime::createFromImmutable($v); return $this; }
 
-    public function getEndAt(): \DateTimeImmutable { return $this->endAt; }
-    public function setEndAt(\DateTimeImmutable $v): static { $this->endAt = $v; return $this; }
+    public function getEndAt(): \DateTimeImmutable { $d = $this->endAt; return $d instanceof \DateTimeImmutable ? $d : \DateTimeImmutable::createFromMutable($d); }
+    public function setEndAt(\DateTimeImmutable $v): static { $this->endAt = \DateTime::createFromImmutable($v); return $this; }
 
     public function getRegistrationFeeId(): ?string { return $this->registrationFeeId; }
     public function setRegistrationFeeId(?string $v): static { $this->registrationFeeId = $v; return $this; }
@@ -102,17 +102,19 @@ class Season
     public function getRegistrationPaymentCondition(): ?string { return $this->registrationPaymentCondition; }
     public function setRegistrationPaymentCondition(?string $v): static { $this->registrationPaymentCondition = $v; return $this; }
 
-    public function getPreRegistrationsStartAt(): ?\DateTimeImmutable { return $this->preRegistrationsStartAt; }
-    public function setPreRegistrationsStartAt(?\DateTimeImmutable $v): static { $this->preRegistrationsStartAt = $v; return $this; }
+    private function toImmutable(?\DateTime $d): ?\DateTimeImmutable { return $d !== null ? ($d instanceof \DateTimeImmutable ? $d : \DateTimeImmutable::createFromMutable($d)) : null; }
 
-    public function getPreRegistrationsEndAt(): ?\DateTimeImmutable { return $this->preRegistrationsEndAt; }
-    public function setPreRegistrationsEndAt(?\DateTimeImmutable $v): static { $this->preRegistrationsEndAt = $v; return $this; }
+    public function getPreRegistrationsStartAt(): ?\DateTimeImmutable { return $this->toImmutable($this->preRegistrationsStartAt); }
+    public function setPreRegistrationsStartAt(?\DateTimeImmutable $v): static { $this->preRegistrationsStartAt = $v !== null ? \DateTime::createFromImmutable($v) : null; return $this; }
 
-    public function getRegistrationsStartAt(): ?\DateTimeImmutable { return $this->registrationsStartAt; }
-    public function setRegistrationsStartAt(?\DateTimeImmutable $v): static { $this->registrationsStartAt = $v; return $this; }
+    public function getPreRegistrationsEndAt(): ?\DateTimeImmutable { return $this->toImmutable($this->preRegistrationsEndAt); }
+    public function setPreRegistrationsEndAt(?\DateTimeImmutable $v): static { $this->preRegistrationsEndAt = $v !== null ? \DateTime::createFromImmutable($v) : null; return $this; }
 
-    public function getRegistrationsEndAt(): ?\DateTimeImmutable { return $this->registrationsEndAt; }
-    public function setRegistrationsEndAt(?\DateTimeImmutable $v): static { $this->registrationsEndAt = $v; return $this; }
+    public function getRegistrationsStartAt(): ?\DateTimeImmutable { return $this->toImmutable($this->registrationsStartAt); }
+    public function setRegistrationsStartAt(?\DateTimeImmutable $v): static { $this->registrationsStartAt = $v !== null ? \DateTime::createFromImmutable($v) : null; return $this; }
+
+    public function getRegistrationsEndAt(): ?\DateTimeImmutable { return $this->toImmutable($this->registrationsEndAt); }
+    public function setRegistrationsEndAt(?\DateTimeImmutable $v): static { $this->registrationsEndAt = $v !== null ? \DateTime::createFromImmutable($v) : null; return $this; }
 
     public function getRegistrationPublicDescription(): ?string { return $this->registrationPublicDescription; }
     public function setRegistrationPublicDescription(?string $v): static { $this->registrationPublicDescription = $v; return $this; }

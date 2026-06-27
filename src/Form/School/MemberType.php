@@ -38,6 +38,7 @@ class MemberType extends AbstractType
                 'label' => 'Date de naissance',
                 'required' => false,
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
                 'html5' => true,
                 'attr' => ['class' => $inputClass, 'max' => date('Y-m-d'), 'data-dob' => 'true'],
                 'label_attr' => ['class' => $labelClass],
