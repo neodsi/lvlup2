@@ -18,11 +18,13 @@ Thumbs.db
 # Node (Tailwind CLI)
 node_modules/
 
-# User uploads (images, documents)
-/public/uploads/
-
-# LiipImagine cache
-/public/media/cache/
+# User uploads & media (contenu ignoré, structure versionnée via .gitkeep)
+/public/uploads/*
+!/public/uploads/.gitkeep
+!/public/uploads/.gitignore
+/public/media/*
+!/public/media/.gitkeep
+!/public/media/.gitignore
 
 ###> symfony/framework-bundle ###
 /.env.local
