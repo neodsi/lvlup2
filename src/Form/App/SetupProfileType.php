@@ -46,7 +46,7 @@ class SetupProfileType extends AbstractType
                 'html5' => true,
                 'input' => 'datetime_immutable',
                 'constraints' => [new NotBlank(message: 'La date de naissance est obligatoire.')],
-                'attr' => ['class' => $inputClass],
+                'attr' => ['class' => $inputClass, 'max' => date('Y-m-d'), 'data-dob' => 'true'],
                 'label_attr' => ['class' => $labelClass],
             ])
             ->add('gender', ChoiceType::class, [

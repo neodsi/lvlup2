@@ -114,7 +114,7 @@ final class MemberController extends AbstractController
             ->select('tp', 'u', 'p')
             ->from(SchoolUser::class, 'tp')
             ->join('tp.user', 'u')
-            ->leftJoin('u.profiles', 'p', 'WITH', 'p.deletedAt IS NULL')
+            ->leftJoin('u.profile', 'p')
             ->where('tp.school = :school')
             ->andWhere('tp.deletedAt IS NULL')
             ->orderBy('p.lastName', 'ASC')

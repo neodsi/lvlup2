@@ -339,6 +339,35 @@
         init();
     }
 
+    // Limite l'année à 4 chiffres sur tous les champs date
+    document.addEventListener('change', function (e) {
+        var el = e.target;
+        if (el.type !== 'date' || !el.value) return;
+        var parts = el.value.split('-');
+        if (parts[0] && parts[0].length > 4) {
+            parts[0] = parts[0].slice(0, 4);
+            el.value = parts.join('-');
+        }
+    }, true);
+
+    // Champs date de naissance : ouvre le picker sur année courante - 18, laisse le champ vide si rien sélectionné
+    document.querySelectorAll('input[type="date"][data-dob]').forEach(function (el) {
+        var _d = new Date();
+        var dobDefault = (_d.getFullYear() - 18) + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0');
+        var userChanged = false;
+
+        el.addEventListener('focus', function () {
+            if (!this.value) this.value = dobDefault;
+        });
+        el.addEventListener('change', function () {
+            userChanged = true;
+        });
+        el.addEventListener('blur', function () {
+            if (!userChanged && this.value === dobDefault) this.value = '';
+            userChanged = false;
+        });
+    });
+
     document.querySelectorAll('a[href*="signout"], a[href*="logout"]').forEach(function (el) {
         el.addEventListener('click', function () {
             localStorage.clear();

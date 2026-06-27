@@ -39,7 +39,7 @@ class StaffMemberType extends AbstractType
                 'required' => false,
                 'widget' => 'single_text',
                 'html5' => true,
-                'attr' => ['class' => $inputClass],
+                'attr' => ['class' => $inputClass, 'max' => date('Y-m-d'), 'data-dob' => 'true'],
                 'label_attr' => ['class' => $labelClass],
             ])
             ->add('phone', TextType::class, [

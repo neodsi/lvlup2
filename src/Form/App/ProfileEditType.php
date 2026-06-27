@@ -44,7 +44,7 @@ class ProfileEditType extends AbstractType
             ->add('dob', DateType::class, [
                 'label' => 'Date de naissance',
                 'label_attr' => ['class' => $labelClass],
-                'attr' => ['class' => $inputClass],
+                'attr' => ['class' => $inputClass, 'max' => date('Y-m-d'), 'data-dob' => 'true'],
                 'required' => true,
                 'widget' => 'single_text',
                 'input' => 'string',
