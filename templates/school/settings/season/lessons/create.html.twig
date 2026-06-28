@@ -7,7 +7,7 @@
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<a href="{{ path('school_season_lessons', {id: season.id}) }}" class="hover:text-gray-700 transition">Cours</a>
+<a href="{{ path('school_season_events', {id: season.id}) }}" class="hover:text-gray-700 transition">Cours</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <span class="text-gray-700 font-medium">Nouveau cours</span>
 {% endblock %}
@@ -19,7 +19,7 @@
     <h1 class="text-2xl font-bold text-gray-900">Nouveau cours</h1>
 </div>
 
-<form method="POST" action="{{ path('school_season_lessons_create', {id: season.id}) }}"
+<form method="POST" action="{{ path('school_season_event_create', {id: season.id}) }}"
       class="space-y-6 max-w-2xl"
       x-data="lessonForm()">
     <input type="hidden" name="_token" value="{{ csrf_token('lesson_create') }}">
@@ -34,6 +34,12 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nom du cours <span class="text-red-500">*</span></label>
                 <input type="text" name="name" required placeholder="Ex : Gym artistique débutant"
                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Descriptif</label>
+                <textarea name="description" rows="3" placeholder="Description optionnelle du cours…"
+                          class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-none"></textarea>
             </div>
 
             <div>
@@ -80,12 +86,12 @@
 
             <div x-show="mode === 'weekly'" class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Début de récurrence <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">1er cours <span class="text-red-500">*</span></label>
                     <input type="date" name="recurStartDate" :required="mode === 'weekly'" @change="syncRecurUntil($event)"
                            class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fin de récurrence <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Dernier cours <span class="text-red-500">*</span></label>
                     <input type="date" name="recurUntil" :required="mode === 'weekly'" x-ref="recurUntil"
                            class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                 </div>
@@ -108,13 +114,24 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Salle</label>
-                <select name="roomId"
+                <select name="roomId" x-ref="roomSelect" @change="onRoomChange()"
                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="">— Aucune salle —</option>
+                    <option value="" data-capacity="">— Aucune salle —</option>
                     {% for room in rooms %}
-                        <option value="{{ room.id }}">{{ room.name }}{% if room.maxCapacity %} ({{ room.maxCapacity }} pers.){% endif %}</option>
+                        <option value="{{ room.id }}" data-capacity="{{ room.maxCapacity }}">{{ room.name }}{% if room.maxCapacity %} ({{ room.maxCapacity }} pers.){% endif %}</option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Participants maximum</label>
+                <input type="number" name="maxParticipants" min="1" x-ref="maxParticipants"
+                       :max="roomCapacity ?? ''"
+                       :placeholder="roomCapacity ? 'Max ' + roomCapacity + ' (capacité salle)' : 'Illimité'"
+                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                <p x-show="roomCapacity !== null" class="mt-1 text-xs text-gray-400">
+                    Limité à <span class="font-medium text-gray-600" x-text="roomCapacity"></span> par la capacité de la salle.
+                </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -134,7 +151,7 @@
                 <label class="flex items-center gap-3 cursor-pointer select-none">
                     <input type="checkbox" name="visible" value="1" checked
                            class="h-4 w-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                    <span class="text-sm text-gray-700">Visible (affiché dans le catalogue)</span>
+                    <span class="text-sm text-gray-700">Visible dans le planning</span>
                 </label>
             </div>
 
@@ -146,7 +163,7 @@
                 class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
             Créer le cours
         </button>
-        <a href="{{ path('school_season_lessons', {id: season.id}) }}"
+        <a href="{{ path('school_season_events', {id: season.id}) }}"
            class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
     </div>
 </form>
@@ -161,6 +178,7 @@ function lessonForm() {
     return {
         mode: 'weekly',
         selectedDays: [],
+        roomCapacity: null,
         dayOptions: [
             { code: 'MO', label: 'Lun' },
             { code: 'TU', label: 'Mar' },
@@ -184,6 +202,17 @@ function lessonForm() {
             until.min = e.target.value;
             if (!until.value || until.value < e.target.value) {
                 until.value = e.target.value;
+            }
+        },
+        onRoomChange() {
+            const select = this.$refs.roomSelect;
+            const capacity = select.options[select.selectedIndex].dataset.capacity;
+            this.roomCapacity = capacity ? parseInt(capacity) : null;
+            const field = this.$refs.maxParticipants;
+            if (this.roomCapacity) {
+                field.value = this.roomCapacity;
+            } else {
+                field.value = '';
             }
         },
     };

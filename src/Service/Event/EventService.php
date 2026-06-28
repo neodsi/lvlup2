@@ -56,6 +56,9 @@ class EventService
         if (array_key_exists('maxAge', $data)) {
             $event->setMaxAge($data['maxAge']);
         }
+        if (array_key_exists('description', $data)) {
+            $event->setDescription($data['description'] ?: null);
+        }
 
         $this->em->wrapInTransaction(function () use ($event, $season): void {
             $this->em->persist($event);
@@ -107,6 +110,9 @@ class EventService
         if (array_key_exists('maxAge', $data)) {
             $event->setMaxAge($data['maxAge']);
         }
+        if (array_key_exists('description', $data)) {
+            $event->setDescription($data['description'] ?: null);
+        }
 
         /** @var Season $season */
         $season = $this->em->getRepository(Season::class)->find($event->getSeasonId());
@@ -153,8 +159,8 @@ class EventService
         $config = new ArrayTransformerConfig();
         $config->enableLastDayOfMonthFix();
 
-        $transformer  = new ArrayTransformer();
-        $recurrences  = $transformer->transform($rule, $config);
+        $transformer  = new ArrayTransformer($config);
+        $recurrences  = $transformer->transform($rule);
 
         $this->em->wrapInTransaction(function () use ($event, $season, $recurrences, $closureRanges, $now): void {
             foreach ($recurrences as $recurrence) {

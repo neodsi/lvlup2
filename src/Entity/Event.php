@@ -27,6 +27,9 @@ class Event
     #[ORM\Column(type: 'string', length: 255)]
     private string $name;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
     #[ORM\Column(type: 'string', enumType: EventType::class, length: 50)]
     private EventType $type;
 
@@ -135,6 +138,18 @@ class Event
         return $this;
     }
 
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
     public function getType(): EventType
     {
         return $this->type;
@@ -219,6 +234,7 @@ class Event
         return $this;
     }
 
+
     public function getMaxParticipants(): ?int
     {
         return $this->maxParticipants;
@@ -284,9 +300,23 @@ class Event
         return $this->createdAt;
     }
 
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
     }
 
     public function getDeletedAt(): ?\DateTimeImmutable

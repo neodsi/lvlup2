@@ -7,7 +7,7 @@
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<a href="{{ path('school_season_lessons', {id: season.id}) }}" class="hover:text-gray-700 transition">Cours</a>
+<a href="{{ path('school_season_events', {id: season.id}) }}" class="hover:text-gray-700 transition">Cours</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <span class="text-gray-700 font-medium">Occurrences</span>
 {% endblock %}
@@ -44,11 +44,10 @@
                             <tr class="hover:bg-gray-50 transition-colors {% if occurence.isCancelled %}opacity-60{% endif %}">
                                 <td class="px-6 py-4 text-sm text-gray-400 font-mono">{{ idx + 1 }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900 font-medium">
-                                    {{ occurence.occurenceAt|date('d/m/Y') }}
-                                    <span class="ml-1 text-xs text-gray-400 capitalize">{{ occurence.occurenceAt|date('l')|lower }}</span>
+                                    {{ occurence.occurenceAt|format_date('full', locale='fr') }}
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-600">
-                                    {{ occurence.occurenceAt|date('H:i') }}
+                                    {{ lesson.startAt|date('H:i') }} – {{ lesson.endAt|date('H:i') }}
                                 </td>
                                 <td class="px-6 py-4">
                                     {% if occurence.isCancelled %}
@@ -79,4 +78,6 @@
             {% endif %}
         </div>
     </div>
+
+{% endblock %}
 

@@ -67,16 +67,16 @@ final class SeasonSettingsController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
-    // Lessons
+    // Events (cours)
     // -------------------------------------------------------------------------
 
-    #[Route('/lessons', name: 'school_season_lessons', methods: ['GET'])]
-    public function lessons(string $id): Response
+    #[Route('/events', name: 'school_season_events', methods: ['GET'])]
+    public function events(string $id): Response
     {
         [$school, $season] = $this->loadSeasonForAdmin($id);
 
-        $lessons = $this->em->getRepository(Event::class)->findBy(['seasonId' => $season->getId()]);
-        $rooms   = $this->em->getRepository(Room::class)->findBy(
+        $events = $this->em->getRepository(Event::class)->findBy(['seasonId' => $season->getId()]);
+        $rooms  = $this->em->getRepository(Room::class)->findBy(
             ['seasonId' => $season->getId(), 'deletedAt' => null],
             ['name' => 'ASC']
         );
@@ -84,13 +84,13 @@ final class SeasonSettingsController extends AbstractController
         return $this->render('school/settings/season/lessons/list.html.twig', [
             'school'  => $school,
             'season'  => $season,
-            'lessons' => $lessons,
+            'lessons' => $events,
             'rooms'   => $rooms,
         ]);
     }
 
-    #[Route('/lessons/create', name: 'school_season_lessons_create', methods: ['GET', 'POST'])]
-    public function lessonCreate(string $id, Request $request): Response
+    #[Route('/events/create', name: 'school_season_event_create', methods: ['GET', 'POST'])]
+    public function eventCreate(string $id, Request $request): Response
     {
         [$school, $season] = $this->loadSeasonForAdmin($id);
 
@@ -114,18 +114,21 @@ final class SeasonSettingsController extends AbstractController
             $startAt = new \DateTimeImmutable($startDate . 'T' . $startTime . ':00');
             $endAt   = new \DateTimeImmutable($startDate . 'T' . $endTime . ':00');
 
-            $minAge = $p->get('minAge');
-            $maxAge = $p->get('maxAge');
+            $minAge          = $p->get('minAge');
+            $maxAge          = $p->get('maxAge');
+            $maxParticipants = $p->get('maxParticipants');
 
             $data = [
-                'name'    => $p->get('name'),
-                'type'    => 'lesson',
-                'rrule'   => $rrule,
-                'startAt' => $startAt,
-                'endAt'   => $endAt,
-                'visible' => $p->has('visible'),
-                'minAge'  => ($minAge !== null && $minAge !== '') ? (int) $minAge : null,
-                'maxAge'  => ($maxAge !== null && $maxAge !== '') ? (int) $maxAge : null,
+                'name'            => $p->get('name'),
+                'type'            => 'lesson',
+                'rrule'           => $rrule,
+                'startAt'         => $startAt,
+                'endAt'           => $endAt,
+                'visible'         => $p->has('visible'),
+                'minAge'          => ($minAge !== null && $minAge !== '') ? (int) $minAge : null,
+                'maxAge'          => ($maxAge !== null && $maxAge !== '') ? (int) $maxAge : null,
+                'maxParticipants' => ($maxParticipants !== null && $maxParticipants !== '') ? (int) $maxParticipants : null,
+                'description'     => $p->get('description'),
             ];
 
             if ($p->get('roomId')) {
@@ -136,7 +139,7 @@ final class SeasonSettingsController extends AbstractController
             $this->denyAccessUnlessGranted(EventVoter::CREATE, $event);
             $this->addFlash('success', 'Cours créé.');
 
-            return $this->redirectToRoute('school_season_lessons', ['id' => $id]);
+            return $this->redirectToRoute('school_season_events', ['id' => $id]);
         }
 
         $rooms = $this->em->getRepository(Room::class)->findBy(
@@ -151,97 +154,178 @@ final class SeasonSettingsController extends AbstractController
         ]);
     }
 
-    #[Route('/lessons/{lessonId}', name: 'school_season_lesson_detail', methods: ['GET'])]
-    public function lessonDetail(string $id, string $lessonId): Response
+    #[Route('/events/{eventId}/edit', name: 'school_season_event_edit', methods: ['GET', 'POST'])]
+    public function eventEdit(string $id, string $eventId, Request $request): Response
     {
         [$school, $season] = $this->loadSeasonForAdmin($id);
 
-        $lesson = $this->em->getRepository(Event::class)->find($lessonId);
+        $event = $this->em->getRepository(Event::class)->find($eventId);
 
-        if ($lesson === null || $lesson->getSeasonId() !== $season->getId()) {
-            throw $this->createNotFoundException('Lesson not found.');
-        }
-
-        return $this->render('school/settings/season/lessons/detail.html.twig', [
-            'school'   => $school,
-            'season' => $season,
-            'lesson' => $lesson,
-        ]);
-    }
-
-    #[Route('/lessons/{lessonId}/edit', name: 'school_season_lesson_edit', methods: ['GET', 'POST'])]
-    public function lessonEdit(string $id, string $lessonId, Request $request): Response
-    {
-        [$school, $season] = $this->loadSeasonForAdmin($id);
-
-        $lesson = $this->em->getRepository(Event::class)->find($lessonId);
-
-        if ($lesson === null || $lesson->getSeasonId() !== $season->getId()) {
-            throw $this->createNotFoundException('Lesson not found.');
+        if ($event === null || $event->getSeasonId() !== $season->getId()) {
+            throw $this->createNotFoundException('Event not found.');
         }
 
         if ($request->isMethod('POST')) {
-            $this->eventService->updateEvent($lesson, $request->request->all());
+            $p = $request->request;
+
+            $mode      = $p->get('mode', 'unique');
+            $startTime = $p->get('startTime', '09:00');
+            $endTime   = $p->get('endTime', '10:00');
+
+            if ($mode === 'weekly') {
+                $startDate  = $p->get('recurStartDate');
+                $recurUntil = $p->get('recurUntil');
+                $days       = $p->all('days') ?: ['MO'];
+                $until      = (new \DateTimeImmutable($recurUntil))->format('Ymd') . 'T235959Z';
+                $rrule      = 'FREQ=WEEKLY;BYDAY=' . implode(',', $days) . ';UNTIL=' . $until;
+            } else {
+                $startDate = $p->get('eventDate');
+                $rrule     = 'FREQ=DAILY;COUNT=1';
+            }
+
+            $maxParticipants = $p->get('maxParticipants');
+            $minAge          = $p->get('minAge');
+            $maxAge          = $p->get('maxAge');
+
+            $data = [
+                'name'            => $p->get('name'),
+                'rrule'           => $rrule,
+                'startAt'         => new \DateTimeImmutable($startDate . 'T' . $startTime . ':00'),
+                'endAt'           => new \DateTimeImmutable($startDate . 'T' . $endTime . ':00'),
+                'roomId'          => $p->get('roomId') ?: null,
+                'visible'         => $p->has('visible'),
+                'maxParticipants' => ($maxParticipants !== null && $maxParticipants !== '') ? (int) $maxParticipants : null,
+                'minAge'          => ($minAge !== null && $minAge !== '') ? (int) $minAge : null,
+                'maxAge'          => ($maxAge !== null && $maxAge !== '') ? (int) $maxAge : null,
+                'description'     => $p->get('description'),
+            ];
+
+            $this->eventService->updateEvent($event, $data);
             $this->addFlash('success', 'Cours mis à jour.');
 
-            return $this->redirectToRoute('school_season_lesson_detail', ['id' => $id, 'lessonId' => $lessonId]);
+            return $this->redirectToRoute('school_season_event_edit', ['id' => $id, 'eventId' => $eventId]);
         }
 
+        $rrule       = $event->getRrule();
+        $parsedMode  = str_contains($rrule, 'FREQ=WEEKLY') ? 'weekly' : 'unique';
+        $parsedDays  = [];
+        $parsedUntil = '';
+
+        if ($parsedMode === 'weekly') {
+            if (preg_match('/BYDAY=([^;]+)/', $rrule, $m)) {
+                $parsedDays = explode(',', $m[1]);
+            }
+            if (preg_match('/UNTIL=(\d{8})/', $rrule, $m)) {
+                $parsedUntil = substr($m[1], 0, 4) . '-' . substr($m[1], 4, 2) . '-' . substr($m[1], 6, 2);
+            }
+        }
+
+        $rooms = $this->em->getRepository(Room::class)->findBy(
+            ['seasonId' => $season->getId(), 'deletedAt' => null],
+            ['name' => 'ASC']
+        );
+
         return $this->render('school/settings/season/lessons/edit.html.twig', [
-            'school'   => $school,
-            'season' => $season,
-            'lesson' => $lesson,
+            'school'      => $school,
+            'season'      => $season,
+            'lesson'      => $event,
+            'rooms'       => $rooms,
+            'parsedMode'  => $parsedMode,
+            'parsedDays'  => $parsedDays,
+            'parsedUntil' => $parsedUntil,
         ]);
     }
 
-    #[Route('/lessons/{lessonId}/occurences', name: 'school_season_lesson_occurences', methods: ['GET'])]
-    public function lessonOccurences(string $id, string $lessonId): Response
+    #[Route('/events/{eventId}/delete', name: 'school_season_event_delete', methods: ['POST'])]
+    public function eventDelete(string $id, string $eventId, Request $request): Response
     {
         [$school, $season] = $this->loadSeasonForAdmin($id);
 
-        $lesson = $this->em->getRepository(Event::class)->find($lessonId);
+        $event = $this->em->getRepository(Event::class)->find($eventId);
 
-        if ($lesson === null || $lesson->getSeasonId() !== $season->getId()) {
-            throw $this->createNotFoundException('Lesson not found.');
+        if ($event === null || $event->getSeasonId() !== $season->getId()) {
+            throw $this->createNotFoundException('Event not found.');
+        }
+
+        if (!$this->isCsrfTokenValid('event_delete_' . $eventId, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token invalide.');
+            return $this->redirectToRoute('school_season_event_edit', ['id' => $id, 'eventId' => $eventId]);
+        }
+
+        $hasEnrollments = $this->em->createQueryBuilder()
+            ->select('COUNT(eop.id)')
+            ->from(EventOccurenceProfile::class, 'eop')
+            ->join(EventOccurence::class, 'eo', 'WITH', 'eo.id = eop.eventOccurenceId')
+            ->where('eo.eventId = :eventId')
+            ->setParameter('eventId', $eventId)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
+
+        if ($hasEnrollments) {
+            $this->addFlash('error', 'Impossible de supprimer ce cours : des élèves y sont inscrits.');
+            return $this->redirectToRoute('school_season_event_edit', ['id' => $id, 'eventId' => $eventId]);
+        }
+
+        $this->em->wrapInTransaction(function () use ($event, $eventId): void {
+            $occurences = $this->em->getRepository(EventOccurence::class)->findBy(['eventId' => $eventId]);
+            foreach ($occurences as $occurence) {
+                $this->em->remove($occurence);
+            }
+            $this->em->remove($event);
+        });
+
+        $this->addFlash('success', 'Cours supprimé.');
+        return $this->redirectToRoute('school_season_events', ['id' => $id]);
+    }
+
+    #[Route('/events/{eventId}/occurences', name: 'school_season_event_occurences', methods: ['GET'])]
+    public function eventOccurences(string $id, string $eventId): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+
+        $event = $this->em->getRepository(Event::class)->find($eventId);
+
+        if ($event === null || $event->getSeasonId() !== $season->getId()) {
+            throw $this->createNotFoundException('Event not found.');
         }
 
         $occurences = $this->em->getRepository(EventOccurence::class)->findBy(
-            ['eventId' => $lesson->getId()],
+            ['eventId' => $event->getId()],
             ['occurenceAt' => 'ASC'],
         );
 
         return $this->render('school/settings/season/lessons/occurences.html.twig', [
-            'school'      => $school,
-            'season'    => $season,
-            'lesson'    => $lesson,
+            'school'     => $school,
+            'season'     => $season,
+            'lesson'     => $event,
             'occurences' => $occurences,
         ]);
     }
 
-    #[Route('/lessons/{lessonId}/participants', name: 'school_season_lesson_participants', methods: ['GET'])]
-    public function lessonParticipants(string $id, string $lessonId): Response
+    #[Route('/events/{eventId}/participants', name: 'school_season_event_participants', methods: ['GET'])]
+    public function eventParticipants(string $id, string $eventId): Response
     {
         [$school, $season] = $this->loadSeasonForAdmin($id);
 
-        $lesson = $this->em->getRepository(Event::class)->find($lessonId);
+        $event = $this->em->getRepository(Event::class)->find($eventId);
 
-        if ($lesson === null || $lesson->getSeasonId() !== $season->getId()) {
-            throw $this->createNotFoundException('Lesson not found.');
+        if ($event === null || $event->getSeasonId() !== $season->getId()) {
+            throw $this->createNotFoundException('Event not found.');
         }
 
         $participants = $this->em->createQueryBuilder()
             ->select('eop')
             ->from(EventOccurenceProfile::class, 'eop')
-            ->join(EventOccurence::class, 'eo', 'WITH', 'eo.id = eop.occurenceId')
+            ->join(EventOccurence::class, 'eo', 'WITH', 'eo.id = eop.eventOccurenceId')
             ->where('eo.eventId = :eventId')
-            ->setParameter('eventId', $lesson->getId())
+            ->setParameter('eventId', $event->getId())
             ->getQuery()
             ->getResult();
 
         return $this->render('school/settings/season/lessons/participants.html.twig', [
-            'school'         => $school,
+            'school'       => $school,
             'season'       => $season,
-            'lesson'       => $lesson,
+            'lesson'       => $event,
             'participants' => $participants,
         ]);
     }
