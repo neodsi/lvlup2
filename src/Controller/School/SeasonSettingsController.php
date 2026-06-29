@@ -137,20 +137,32 @@ final class SeasonSettingsController extends AbstractController
 
             $event = $this->eventService->createEvent($school, $season, $data);
             $this->denyAccessUnlessGranted(EventVoter::CREATE, $event);
+
+            $levelIds = array_values(array_filter((array) $p->all('levelIds')));
+            $levelRepo = $this->em->getRepository(\App\Entity\Level::class);
+            $levels = array_map(fn($lid) => $levelRepo->find($lid), $levelIds);
+            $event->syncLevels(array_filter($levels));
+            $this->em->flush();
+
             $this->addFlash('success', 'Cours créé.');
 
             return $this->redirectToRoute('school_season_events', ['id' => $id]);
         }
 
-        $rooms = $this->em->getRepository(Room::class)->findBy(
+        $rooms  = $this->em->getRepository(Room::class)->findBy(
+            ['seasonId' => $season->getId(), 'deletedAt' => null],
+            ['name' => 'ASC']
+        );
+        $levels = $this->em->getRepository(\App\Entity\Level::class)->findBy(
             ['seasonId' => $season->getId(), 'deletedAt' => null],
             ['name' => 'ASC']
         );
 
         return $this->render('school/settings/season/lessons/create.html.twig', [
-            'school' => $school,
-            'season' => $season,
-            'rooms'  => $rooms,
+            'school'  => $school,
+            'season'  => $season,
+            'rooms'   => $rooms,
+            'levels'  => $levels,
         ]);
     }
 
@@ -201,6 +213,13 @@ final class SeasonSettingsController extends AbstractController
             ];
 
             $this->eventService->updateEvent($event, $data);
+
+            $levelIds = array_values(array_filter((array) $p->all('levelIds')));
+            $levelRepo = $this->em->getRepository(\App\Entity\Level::class);
+            $levels = array_map(fn($lid) => $levelRepo->find($lid), $levelIds);
+            $event->syncLevels(array_filter($levels));
+            $this->em->flush();
+
             $this->addFlash('success', 'Cours mis à jour.');
 
             return $this->redirectToRoute('school_season_event_edit', ['id' => $id, 'eventId' => $eventId]);
@@ -224,12 +243,17 @@ final class SeasonSettingsController extends AbstractController
             ['seasonId' => $season->getId(), 'deletedAt' => null],
             ['name' => 'ASC']
         );
+        $levels = $this->em->getRepository(\App\Entity\Level::class)->findBy(
+            ['seasonId' => $season->getId(), 'deletedAt' => null],
+            ['name' => 'ASC']
+        );
 
         return $this->render('school/settings/season/lessons/edit.html.twig', [
             'school'      => $school,
             'season'      => $season,
             'lesson'      => $event,
             'rooms'       => $rooms,
+            'levels'      => $levels,
             'parsedMode'  => $parsedMode,
             'parsedDays'  => $parsedDays,
             'parsedUntil' => $parsedUntil,
@@ -954,6 +978,118 @@ final class SeasonSettingsController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
+    // Levels (niveaux)
+    // -------------------------------------------------------------------------
+
+    #[Route('/levels', name: 'school_season_levels', methods: ['GET'])]
+    public function levels(string $id): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+        $levels = $this->em->getRepository(\App\Entity\Level::class)->findBy(
+            ['seasonId' => $season->getId(), 'deletedAt' => null],
+            ['name' => 'ASC']
+        );
+
+        return $this->render('school/settings/season/levels.html.twig', [
+            'school'  => $school,
+            'season'  => $season,
+            'levels'  => $levels,
+        ]);
+    }
+
+    #[Route('/levels/create', name: 'school_season_level_create', methods: ['POST'])]
+    public function levelCreate(string $id, Request $request): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+
+        $name = trim((string) $request->request->get('name'));
+        if ($name !== '') {
+            $level = new \App\Entity\Level();
+            $level->setSchoolId($school->getId());
+            $level->setSeasonId($season->getId());
+            $level->setName($name);
+            $this->em->persist($level);
+            $this->em->flush();
+            $this->addFlash('success', 'Niveau ajouté.');
+        }
+
+        return $this->redirectToRoute('school_season_levels', ['id' => $id]);
+    }
+
+    #[Route('/levels/{levelId}/update', name: 'school_season_level_update', methods: ['POST'])]
+    public function levelUpdate(string $id, string $levelId, Request $request): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+        $level = $this->em->getRepository(\App\Entity\Level::class)->find($levelId);
+
+        if ($level === null || $level->getSeasonId() !== $season->getId()) {
+            throw $this->createNotFoundException('Niveau introuvable.');
+        }
+
+        $name = trim((string) $request->request->get('name'));
+        if ($name !== '') {
+            $level->setName($name);
+            $this->em->flush();
+            $this->addFlash('success', 'Niveau mis à jour.');
+        }
+
+        return $this->redirectToRoute('school_season_levels', ['id' => $id]);
+    }
+
+    #[Route('/levels/{levelId}/delete', name: 'school_season_level_delete', methods: ['POST'])]
+    public function levelDelete(string $id, string $levelId, Request $request): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+        $level = $this->em->getRepository(\App\Entity\Level::class)->find($levelId);
+
+        if ($level === null || $level->getSeasonId() !== $season->getId()) {
+            throw $this->createNotFoundException('Niveau introuvable.');
+        }
+
+        if (!$this->isCsrfTokenValid('level_delete_' . $levelId, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token invalide.');
+            return $this->redirectToRoute('school_season_levels', ['id' => $id]);
+        }
+
+        $level->setDeletedAt(new \DateTimeImmutable());
+        $this->em->flush();
+        $this->addFlash('success', 'Niveau supprimé.');
+
+        return $this->redirectToRoute('school_season_levels', ['id' => $id]);
+    }
+
+    #[Route('/levels/quick-create', name: 'school_season_level_quick_create', methods: ['POST'])]
+    public function levelQuickCreate(string $id, Request $request): \Symfony\Component\HttpFoundation\JsonResponse
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+
+        $name = trim((string) $request->request->get('name'));
+        if ($name === '') {
+            return $this->json(['success' => false, 'error' => 'Nom requis.'], 400);
+        }
+
+        $allLevels = $this->em->getRepository(\App\Entity\Level::class)->findBy([
+            'seasonId'  => $season->getId(),
+            'deletedAt' => null,
+        ]);
+        $normalizedNew = $this->normalizeLevelName($name);
+        foreach ($allLevels as $existing) {
+            if ($this->normalizeLevelName($existing->getName()) === $normalizedNew) {
+                return $this->json(['success' => false, 'error' => 'Ce niveau existe déjà.'], 409);
+            }
+        }
+
+        $level = new \App\Entity\Level();
+        $level->setSchoolId($school->getId());
+        $level->setSeasonId($season->getId());
+        $level->setName($name);
+        $this->em->persist($level);
+        $this->em->flush();
+
+        return $this->json(['success' => true, 'id' => $level->getId(), 'name' => $level->getName()]);
+    }
+
+    // -------------------------------------------------------------------------
     // Gala
     // -------------------------------------------------------------------------
 
@@ -972,5 +1108,13 @@ final class SeasonSettingsController extends AbstractController
             'season'         => $season,
             'participations' => $participations,
         ]);
+    }
+
+    private function normalizeLevelName(string $name): string
+    {
+        $name = mb_strtolower($name);
+        $name = \Normalizer::normalize($name, \Normalizer::NFD);
+        $name = preg_replace('/[\x{0300}-\x{036f}]/u', '', $name);
+        return trim($name);
     }
 }

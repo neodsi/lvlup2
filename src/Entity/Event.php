@@ -57,6 +57,14 @@ class Event
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $rruleDayOrder = null;
 
+    #[ORM\ManyToMany(targetEntity: Level::class)]
+    #[ORM\JoinTable(
+        name: 'event_levels',
+        joinColumns: [new ORM\JoinColumn(name: 'event_id', referencedColumnName: 'id')],
+        inverseJoinColumns: [new ORM\JoinColumn(name: 'level_id', referencedColumnName: 'id')]
+    )]
+    private Collection $levels;
+
     #[ORM\Column(type: 'boolean')]
     private bool $visible = true;
 
@@ -89,6 +97,7 @@ class Event
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         $this->packages = new ArrayCollection();
+        $this->levels   = new ArrayCollection();
     }
 
     #[ORM\PreUpdate]
@@ -256,6 +265,22 @@ class Event
     {
         $this->rruleDayOrder = $rruleDayOrder;
 
+        return $this;
+    }
+
+    public function getLevels(): Collection { return $this->levels; }
+
+    public function getLevelIds(): array
+    {
+        return $this->levels->map(fn(Level $l) => $l->getId())->toArray();
+    }
+
+    public function syncLevels(array $levelEntities): static
+    {
+        $this->levels->clear();
+        foreach ($levelEntities as $level) {
+            $this->levels->add($level);
+        }
         return $this;
     }
 
