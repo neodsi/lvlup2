@@ -1,6 +1,12 @@
 {% extends 'layout/school.html.twig' %}
 
-{% block title %}Nouveau cours — {{ season.name }}{% endblock %}
+{% set isDuplicate = source is defined %}
+{% set fe         = isDuplicate ? source : null %}
+{% set feMode     = isDuplicate ? parsedMode : 'weekly' %}
+{% set feDays     = isDuplicate ? parsedDays : [] %}
+{% set feUntil    = isDuplicate ? parsedUntil : season.endAt|date('Y-m-d') %}
+
+{% block title %}{{ isDuplicate ? 'Dupliquer' : 'Nouveau cours' }} — {{ season.name }}{% endblock %}
 
 {% block breadcrumb %}
 <a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
@@ -9,184 +15,35 @@
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
 <a href="{{ path('school_season_events', {id: season.id}) }}" class="hover:text-gray-700 transition">Cours</a>
 <svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-<span class="text-gray-700 font-medium">Nouveau cours</span>
+<span class="text-gray-700 font-medium">{{ isDuplicate ? 'Dupliquer' : 'Nouveau cours' }}</span>
 {% endblock %}
 
 {% block school_content %}
 <div class="py-8">
 
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Nouveau cours</h1>
+    <h1 class="text-2xl font-bold text-gray-900">{{ isDuplicate ? 'Dupliquer un cours' : 'Nouveau cours' }}</h1>
 </div>
 
 <form method="POST" action="{{ path('school_season_event_create', {id: season.id}) }}"
       class="space-y-6 max-w-2xl"
-      x-data="lessonForm('{{ season.startAt|date('Y-m-d') }}', '{{ season.endAt|date('Y-m-d') }}')">
+      x-data="lessonForm({
+          mode: '{{ feMode }}',
+          days: {{ feDays|json_encode }},
+          seasonStart: '{{ season.startAt|date('Y-m-d') }}',
+          seasonEnd: '{{ season.endAt|date('Y-m-d') }}',
+          roomId: '{{ fe and fe.roomId ? fe.roomId : '' }}',
+          roomsData: { {% for room in rooms %}'{{ room.id }}': {{ room.maxCapacity ?? 'null' }}{% if not loop.last %},{% endif %}{% endfor %} }
+      })">
     <input type="hidden" name="_token" value="{{ csrf_token('lesson_create') }}">
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div class="px-6 py-5 border-b border-gray-100">
-            <h2 class="text-base font-semibold text-gray-900">Informations</h2>
-        </div>
-        <div class="px-6 py-5 space-y-5">
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nom du cours <span class="text-red-500">*</span></label>
-                <input type="text" name="name" required placeholder="Ex : Gym artistique débutant"
-                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Descriptif</label>
-                <textarea name="description" rows="3" placeholder="Description optionnelle du cours…"
-                          class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition resize-none"></textarea>
-            </div>
-
-            <div>
-                <p class="text-sm font-medium text-gray-700 mb-2">Fréquence <span class="text-red-500">*</span></p>
-                <div class="flex gap-5">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="mode" value="weekly" x-model="mode"
-                               class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                        <span class="text-sm text-gray-700">Hebdomadaire</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="mode" value="unique" x-model="mode"
-                               class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                        <span class="text-sm text-gray-700">Séance unique</span>
-                    </label>
-                </div>
-            </div>
-
-            <div x-show="mode === 'weekly'">
-                <p class="text-sm font-medium text-gray-700 mb-2">Jours <span class="text-red-500">*</span></p>
-                <div class="flex flex-wrap gap-2">
-                    <template x-for="d in dayOptions" :key="d.code">
-                        <label class="flex items-center justify-center px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors select-none"
-                               :class="selectedDays.includes(d.code) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-300 text-gray-600 hover:border-indigo-400'">
-                            <input type="checkbox" name="days[]" :value="d.code" x-model="selectedDays" class="sr-only">
-                            <span x-text="d.label"></span>
-                        </label>
-                    </template>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Heure de début <span class="text-red-500">*</span></label>
-                    <input type="time" name="startTime" required @change="syncEndTime($event)"
-                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Heure de fin <span class="text-red-500">*</span></label>
-                    <input type="time" name="endTime" required x-ref="endTime"
-                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                </div>
-            </div>
-
-            <div x-show="mode === 'weekly'" class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">1er cours <span class="text-red-500">*</span></label>
-                    <input type="date" name="recurStartDate" :required="mode === 'weekly'"
-                           :min="seasonStart" :max="seasonEnd"
-                           value="{{ season.startAt|date('Y-m-d') }}"
-                           @change="syncRecurUntil($event)"
-                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Dernier cours <span class="text-red-500">*</span></label>
-                    <input type="date" name="recurUntil" :required="mode === 'weekly'" x-ref="recurUntil"
-                           :min="seasonStart" :max="seasonEnd"
-                           value="{{ season.endAt|date('Y-m-d') }}"
-                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                </div>
-            </div>
-
-            <div x-show="mode === 'unique'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Date <span class="text-red-500">*</span></label>
-                <input type="date" name="eventDate" :required="mode === 'unique'"
-                       :min="seasonStart" :max="seasonEnd"
-                       value="{{ season.startAt|date('Y-m-d') }}"
-                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-            </div>
-
-        </div>
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div class="px-6 py-5 border-b border-gray-100">
-            <h2 class="text-base font-semibold text-gray-900">Détails</h2>
-        </div>
-        <div class="px-6 py-5 space-y-5">
-
-            <div x-data="levelsManager('{{ path('school_season_level_quick_create', {id: season.id}) }}')"
-                 class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">Niveaux</label>
-                <select x-ref="levelSelect" name="levelIds[]" multiple size="{{ levels|length > 4 ? levels|length : 4 }}"
-                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    {% for level in levels %}
-                        <option value="{{ level.id }}">{{ level.name }}</option>
-                    {% endfor %}
-                </select>
-                <p class="text-xs text-gray-400">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs niveaux.</p>
-                <div class="flex items-center gap-2">
-                    <input type="text" x-model="newLevelName" placeholder="Nouveau niveau…"
-                           @keydown.enter.prevent="addLevel()"
-                           class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <button type="button" @click="addLevel()" :disabled="!newLevelName.trim() || creating"
-                            class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-40">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Créer
-                    </button>
-                </div>
-                <p x-show="createError" x-text="createError" class="text-xs text-red-500 mt-1"></p>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Salle</label>
-                <select name="roomId" x-ref="roomSelect" @change="onRoomChange()"
-                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" data-capacity="">— Aucune salle —</option>
-                    {% for room in rooms %}
-                        <option value="{{ room.id }}" data-capacity="{{ room.maxCapacity }}">{{ room.name }}{% if room.maxCapacity %} ({{ room.maxCapacity }} pers.){% endif %}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Participants maximum</label>
-                <input type="number" name="maxParticipants" min="1" x-ref="maxParticipants"
-                       :max="roomCapacity ?? ''"
-                       :placeholder="roomCapacity ? 'Max ' + roomCapacity + ' (capacité salle)' : 'Illimité'"
-                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                <p x-show="roomCapacity !== null" class="mt-1 text-xs text-gray-400">
-                    Limité à <span class="font-medium text-gray-600" x-text="roomCapacity"></span> par la capacité de la salle.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Âge minimum</label>
-                    <input type="number" name="minAge" min="0" max="99" placeholder="Pas de limite"
-                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Âge maximum</label>
-                    <input type="number" name="maxAge" min="0" max="99" placeholder="Pas de limite"
-                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                </div>
-            </div>
-
-            <div>
-                <label class="flex items-center gap-3 cursor-pointer select-none">
-                    <input type="checkbox" name="visible" value="1" checked
-                           class="h-4 w-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                    <span class="text-sm text-gray-700">Visible dans le planning</span>
-                </label>
-            </div>
-
-        </div>
-    </div>
+    {% include 'school/settings/season/lessons/_fields.html.twig' with {
+        fe: fe,
+        feUntil: feUntil,
+        isDuplicate: isDuplicate,
+        withBounds: true,
+        initMode: feMode
+    } %}
 
     <div class="flex items-center gap-3">
         <button type="submit"
@@ -203,85 +60,5 @@
 
 {% block scripts %}
 {{ parent() }}
-<script>
-function levelsManager(quickCreateUrl) {
-    return {
-        newLevelName: '',
-        creating: false,
-        createError: '',
-        async addLevel() {
-            const name = this.newLevelName.trim();
-            if (!name || this.creating) return;
-            this.creating = true;
-            this.createError = '';
-            try {
-                const fd = new FormData();
-                fd.append('name', name);
-                const res = await fetch(quickCreateUrl, { method: 'POST', body: fd });
-                const data = await res.json();
-                if (data.success) {
-                    const select = this.$refs.levelSelect;
-                    const opt = new Option(data.name, data.id, true, true);
-                    select.add(opt);
-                    select.size = select.options.length;
-                    this.newLevelName = '';
-                } else {
-                    this.createError = data.error || 'Erreur lors de la création.';
-                }
-            } catch {
-                this.createError = 'Erreur réseau.';
-            } finally {
-                this.creating = false;
-            }
-        },
-    };
-}
-
-function lessonForm(seasonStart, seasonEnd) {
-    return {
-        mode: 'weekly',
-        selectedDays: [],
-        roomCapacity: null,
-        seasonStart: seasonStart,
-        seasonEnd: seasonEnd,
-        dayOptions: [
-            { code: 'MO', label: 'Lun' },
-            { code: 'TU', label: 'Mar' },
-            { code: 'WE', label: 'Mer' },
-            { code: 'TH', label: 'Jeu' },
-            { code: 'FR', label: 'Ven' },
-            { code: 'SA', label: 'Sam' },
-            { code: 'SU', label: 'Dim' },
-        ],
-        syncEndTime(e) {
-            const end = this.$refs.endTime;
-            const val = e.target.value;
-            end.min = val;
-            if (!end.value || end.value <= val) {
-                const [h, m] = val.split(':').map(Number);
-                end.value = String((h + 1) % 24).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-            }
-        },
-        syncRecurUntil(e) {
-            const until = this.$refs.recurUntil;
-            const start = e.target.value;
-            until.min = start > this.seasonStart ? start : this.seasonStart;
-            if (!until.value || until.value < start) {
-                until.value = start <= this.seasonEnd ? start : this.seasonEnd;
-            }
-        },
-        onRoomChange() {
-            const select = this.$refs.roomSelect;
-            const capacity = select.options[select.selectedIndex].dataset.capacity;
-            this.roomCapacity = capacity ? parseInt(capacity) : null;
-            const field = this.$refs.maxParticipants;
-            if (this.roomCapacity) {
-                field.value = this.roomCapacity;
-            } else {
-                field.value = '';
-            }
-        },
-    };
-}
-</script>
+{{ include('school/settings/season/lessons/_js.html.twig') }}
 {% endblock %}

@@ -54,7 +54,22 @@
                                     </a>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="text-sm font-medium text-gray-900 capitalize">{{ lesson.startAt|format_date('full', pattern='EEEE', locale='fr') }}</span>
+                                    {% set dayLabels = { MO: 'Lun', TU: 'Mar', WE: 'Mer', TH: 'Jeu', FR: 'Ven', SA: 'Sam', SU: 'Dim' } %}
+                                    {% set byday = [] %}
+                                    {% if lesson.rrule %}
+                                        {% for part in lesson.rrule|split(';') %}
+                                            {% if part starts with 'BYDAY=' %}
+                                                {% set byday = part[6:]|split(',') %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if byday|length > 1 %}
+                                        <span class="text-sm font-medium text-gray-900">
+                                            {% for d in byday %}{{ dayLabels[d] ?? d }}{% if not loop.last %} · {% endif %}{% endfor %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-sm font-medium text-gray-900 capitalize">{{ lesson.startAt|format_date('full', pattern='EEEE', locale='fr') }}</span>
+                                    {% endif %}
                                     <span class="block text-xs text-gray-500">{{ lesson.startAt|date('H:i') }} – {{ lesson.endAt|date('H:i') }}</span>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-600">
@@ -70,6 +85,8 @@
                                            class="text-xs text-gray-500 hover:text-gray-700 transition-colors">Séances</a>
                                         <a href="{{ path('school_season_event_participants', {id: season.id, eventId: lesson.id}) }}"
                                            class="text-xs text-gray-500 hover:text-gray-700 transition-colors">Participants</a>
+                                        <a href="{{ path('school_season_event_duplicate', {id: season.id, eventId: lesson.id}) }}"
+                                           class="text-xs text-gray-500 hover:text-gray-700 transition-colors">Dupliquer</a>
                                         <a href="{{ path('school_season_event_edit', {id: season.id, eventId: lesson.id}) }}"
                                            class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors">Modifier</a>
                                     </div>

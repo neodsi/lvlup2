@@ -222,7 +222,7 @@ final class SeasonSettingsController extends AbstractController
 
             $this->addFlash('success', 'Cours mis à jour.');
 
-            return $this->redirectToRoute('school_season_event_edit', ['id' => $id, 'eventId' => $eventId]);
+            return $this->redirectToRoute('school_season_events', ['id' => $id]);
         }
 
         $rrule       = $event->getRrule();
@@ -254,6 +254,51 @@ final class SeasonSettingsController extends AbstractController
             'lesson'      => $event,
             'rooms'       => $rooms,
             'levels'      => $levels,
+            'parsedMode'  => $parsedMode,
+            'parsedDays'  => $parsedDays,
+            'parsedUntil' => $parsedUntil,
+        ]);
+    }
+
+    #[Route('/events/{eventId}/duplicate', name: 'school_season_event_duplicate', methods: ['GET'])]
+    public function eventDuplicate(string $id, string $eventId): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+
+        $source = $this->em->getRepository(Event::class)->find($eventId);
+        if ($source === null || $source->getSeasonId() !== $season->getId()) {
+            throw $this->createNotFoundException('Event not found.');
+        }
+
+        $rrule       = $source->getRrule();
+        $parsedMode  = str_contains($rrule, 'FREQ=WEEKLY') ? 'weekly' : 'unique';
+        $parsedDays  = [];
+        $parsedUntil = $season->getEndAt()->format('Y-m-d');
+
+        if ($parsedMode === 'weekly') {
+            if (preg_match('/BYDAY=([^;]+)/', $rrule, $m)) {
+                $parsedDays = explode(',', $m[1]);
+            }
+            if (preg_match('/UNTIL=(\d{8})/', $rrule, $m)) {
+                $parsedUntil = substr($m[1], 0, 4) . '-' . substr($m[1], 4, 2) . '-' . substr($m[1], 6, 2);
+            }
+        }
+
+        $rooms  = $this->em->getRepository(Room::class)->findBy(
+            ['seasonId' => $season->getId(), 'deletedAt' => null],
+            ['name' => 'ASC']
+        );
+        $levels = $this->em->getRepository(\App\Entity\Level::class)->findBy(
+            ['seasonId' => $season->getId(), 'deletedAt' => null],
+            ['name' => 'ASC']
+        );
+
+        return $this->render('school/settings/season/lessons/create.html.twig', [
+            'school'      => $school,
+            'season'      => $season,
+            'rooms'       => $rooms,
+            'levels'      => $levels,
+            'source'      => $source,
             'parsedMode'  => $parsedMode,
             'parsedDays'  => $parsedDays,
             'parsedUntil' => $parsedUntil,

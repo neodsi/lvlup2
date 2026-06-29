@@ -1,0 +1,123 @@
+<script>
+function levelsManager(quickCreateUrl) {
+    return {
+        newLevelName: '',
+        creating: false,
+        createError: '',
+        async addLevel() {
+            const name = this.newLevelName.trim();
+            if (!name || this.creating) return;
+            this.creating = true;
+            this.createError = '';
+            try {
+                const fd = new FormData();
+                fd.append('name', name);
+                const res = await fetch(quickCreateUrl, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    const select = this.$refs.levelSelect;
+                    const opt = new Option(data.name, data.id, true, true);
+                    select.add(opt);
+                    select.size = select.options.length;
+                    this.newLevelName = '';
+                } else {
+                    this.createError = data.error || 'Erreur lors de la création.';
+                }
+            } catch {
+                this.createError = 'Erreur réseau.';
+            } finally {
+                this.creating = false;
+            }
+        },
+    };
+}
+
+function lessonForm(config) {
+    const DAY_NUMBERS = { MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6, SU: 0 };
+
+    function fmtDate(d) {
+        return d.getFullYear() + '-'
+            + String(d.getMonth() + 1).padStart(2, '0') + '-'
+            + String(d.getDate()).padStart(2, '0');
+    }
+
+    function snapToDay(dateStr, dayCodes) {
+        if (!dayCodes.length || !dateStr) return dateStr;
+        const dayNums = dayCodes.map(c => DAY_NUMBERS[c]);
+        const base = new Date(dateStr + 'T12:00:00');
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(base);
+            d.setDate(base.getDate() + i);
+            if (dayNums.includes(d.getDay())) return fmtDate(d);
+        }
+        return dateStr;
+    }
+
+    const roomsData = config.roomsData || {};
+    const currentRoomId = config.roomId || null;
+    return {
+        mode: config.mode || 'weekly',
+        selectedDays: config.days || [],
+        seasonStart: config.seasonStart || '',
+        seasonEnd: config.seasonEnd || '',
+        roomCapacity: (currentRoomId && roomsData[currentRoomId]) ? roomsData[currentRoomId] : null,
+        dayOptions: [
+            { code: 'MO', label: 'Lun' },
+            { code: 'TU', label: 'Mar' },
+            { code: 'WE', label: 'Mer' },
+            { code: 'TH', label: 'Jeu' },
+            { code: 'FR', label: 'Ven' },
+            { code: 'SA', label: 'Sam' },
+            { code: 'SU', label: 'Dim' },
+        ],
+        init() {
+            this.$watch('selectedDays', (days) => {
+                if (this.mode !== 'weekly' || !days.length) return;
+                const input = this.$el.querySelector('[name="recurStartDate"]');
+                if (!input || !input.value) return;
+                const snapped = snapToDay(input.value, days);
+                if (snapped !== input.value) {
+                    input.value = snapped;
+                    this._syncUntilFrom(snapped);
+                }
+            });
+        },
+        snapAndSyncStart(e) {
+            let val = e.target.value;
+            if (this.mode === 'weekly' && this.selectedDays.length) {
+                val = snapToDay(val, this.selectedDays);
+                e.target.value = val;
+            }
+            this._syncUntilFrom(val);
+        },
+        _syncUntilFrom(start) {
+            const until = this.$refs.recurUntil;
+            if (!until) return;
+            if (this.seasonStart) {
+                until.min = start > this.seasonStart ? start : this.seasonStart;
+                if (!until.value || until.value < start) {
+                    until.value = start <= this.seasonEnd ? start : this.seasonEnd;
+                }
+            } else {
+                until.min = start;
+                if (!until.value || until.value < start) until.value = start;
+            }
+        },
+        syncEndTime(e) {
+            const end = this.$refs.endTime;
+            const val = e.target.value;
+            end.min = val;
+            if (!end.value || end.value <= val) {
+                const [h, m] = val.split(':').map(Number);
+                end.value = String((h + 1) % 24).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+            }
+        },
+        onRoomChange() {
+            const select = this.$refs.roomSelect;
+            const capacity = select.options[select.selectedIndex].dataset.capacity;
+            this.roomCapacity = capacity ? parseInt(capacity) : null;
+            this.$refs.maxParticipants.value = this.roomCapacity || '';
+        },
+    };
+}
+</script>
