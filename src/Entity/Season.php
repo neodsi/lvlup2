@@ -60,6 +60,9 @@ class Season
     #[ORM\Column(type: 'string', nullable: true)]
     private ?string $packagesImagePath = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $readAndCheck = null;
+
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $closures = null;
 
@@ -130,6 +133,9 @@ class Season
 
     public function getPackagesImagePath(): ?string { return $this->packagesImagePath; }
     public function setPackagesImagePath(?string $v): static { $this->packagesImagePath = $v; return $this; }
+
+    public function getReadAndCheck(): ?string { return $this->readAndCheck; }
+    public function setReadAndCheck(?string $v): static { $this->readAndCheck = $v; return $this; }
 
     public function getClosures(): ?array { return $this->closures; }
     public function setClosures(?array $v): static { $this->closures = $v; return $this; }

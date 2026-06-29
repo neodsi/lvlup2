@@ -128,10 +128,6 @@
             <div class="px-6 py-5 border-b border-gray-100">
                 <h2 class="text-base font-semibold text-gray-900">Localisation</h2>
                 <p class="text-sm text-gray-500 mt-0.5">La ville est extraite automatiquement de la carte pour construire l'URL publique.</p>
-                <p class="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                    Modifier l'adresse met à jour l'adresse de facturation — pensez à la vérifier dans les <a href="{{ path('school_settings_legal') }}" class="underline hover:text-amber-800 transition">informations légales</a>.
-                </p>
             </div>
             <div class="px-6 py-5 space-y-4">
                 <div class="flex gap-2">
@@ -233,7 +229,6 @@
             {id: 'description', label: 'Description',   name: 'description',   value: school.description,   hint: 'Présentation de votre école'},
             {id: 'schedule',    label: 'Horaires',       name: 'schedule',      value: school.schedule,      hint: 'Jours et heures d\'ouverture'},
             {id: 'pricing',     label: 'Tarifs',         name: 'pricing',       value: school.pricing,       hint: 'Grille tarifaire'},
-            {id: 'readAndCheck',label: 'CGU de l\'élève', name: 'readAndCheck', value: school.readAndCheck,  hint: 'Conditions générales à accepter lors de l\'inscription'},
         ] %}
 
         {% for field in wysiwygFields %}
@@ -268,7 +263,7 @@
 <script>
 (function () {
     // WYSIWYG editors
-    const fields = ['description', 'schedule', 'pricing', 'readAndCheck'];
+    const fields = ['description', 'schedule', 'pricing'];
     const editors = {};
 
     fields.forEach(function (id) {

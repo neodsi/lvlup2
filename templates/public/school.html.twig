@@ -310,6 +310,29 @@
                 </div>
                 {% endif %}
 
+                {% if season.readAndCheck %}
+                <div class="px-5 py-3 border-t border-gray-100 flex justify-end" x-data="{ open: false }">
+                    <button type="button" @click="open = true"
+                            class="text-xs text-gray-400 hover:text-indigo-600 underline transition">
+                        CGV de la saison
+                    </button>
+                    <div x-show="open" class="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4" style="display:none">
+                        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+                        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[96vh] overflow-hidden flex flex-col">
+                            <div class="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+                                <h3 class="text-base font-semibold text-gray-900">CGV — {{ season.name }}</h3>
+                                <button type="button" @click="open = false" class="text-gray-400 hover:text-gray-600 transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="px-8 py-7 overflow-y-auto prose prose-sm text-gray-700 flex-1 max-w-none">
+                                {{ season.readAndCheck|raw }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
             </div>
             {% endfor %}
         </div>
@@ -393,15 +416,6 @@
     </section>
     {% endif %}
 
-    {# CGU #}
-    {% if school.readAndCheck %}
-    <div class="text-center pb-2">
-        <button type="button" @click="$dispatch('open-cgu')"
-                class="text-sm text-gray-400 hover:text-indigo-600 underline transition">
-            Consulter les conditions d'utilisation
-        </button>
-    </div>
-    {% endif %}
 
 </main>
 
@@ -462,25 +476,6 @@
          class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
 </div>
 
-{# ── CGU modal ── #}
-{% if school.readAndCheck %}
-<div x-data="{ open: false }" @open-cgu.window="open = true">
-    <div x-show="open" class="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4" style="display:none">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[96vh] overflow-hidden flex flex-col">
-            <div class="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <h3 class="text-base font-semibold text-gray-900">Conditions d'utilisation</h3>
-                <button type="button" @click="open = false" class="text-gray-400 hover:text-gray-600 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="px-8 py-7 overflow-y-auto prose prose-sm text-gray-700 flex-1 max-w-none">
-                {{ school.readAndCheck|raw }}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 </div>{# end x-data="pageData()" #}
 {% endblock %}

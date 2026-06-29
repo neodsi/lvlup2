@@ -60,19 +60,14 @@ final class SettingsController extends AbstractController
             $school->setContactEmail($request->request->get('contactEmail') ?: null);
             $school->setPhone($request->request->get('phone') ?: null);
 
-            $addressText = $request->request->get('addressText') ?: null;
-            $school->setAddressText($addressText);
+            $school->setAddressText($request->request->get('addressText') ?: null);
             $school->setAddressLat($request->request->get('addressLat') ?: null);
             $school->setAddressLng($request->request->get('addressLng') ?: null);
             $school->setCitySlug($request->request->get('citySlug') ?: null);
-            if ($addressText) {
-                $school->setInvoiceAddress($addressText);
-            }
 
             $school->setDescription($request->request->get('description') ?: null);
             $school->setSchedule($request->request->get('schedule') ?: null);
             $school->setPricing($request->request->get('pricing') ?: null);
-            $school->setReadAndCheck($request->request->get('readAndCheck') ?: null);
 
             $slugRaw = $request->request->get('slug') ?: null;
             if ($slugRaw) {
@@ -734,6 +729,10 @@ final class SettingsController extends AbstractController
                 $raw = $request->request->get('closures', '[]');
                 $decoded = json_decode((string) $raw, true);
                 $season->setClosures(is_array($decoded) ? $decoded : []);
+            }
+
+            if ($section === 'cgv') {
+                $season->setReadAndCheck($request->request->get('readAndCheck') ?: null);
             }
 
             if ($section === 'images') {

@@ -214,6 +214,15 @@
                 <p class="text-sm text-gray-500 mt-0.5">Affichée sur les factures. L'adresse de géolocalisation se configure dans les paramètres généraux.</p>
             </div>
             <div class="px-6 py-5">
+                {% if school.addressText %}
+                <div class="mb-3">
+                    <button type="button" id="btn-copy-address"
+                            class="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium border border-indigo-200 rounded-lg px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        Utiliser l'adresse postale
+                    </button>
+                </div>
+                {% endif %}
                 <textarea id="invoiceAddress" name="invoiceAddress" rows="5"
                           class="block w-full sm:w-2/3 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition" style="resize:vertical">{{ school.invoiceAddress ?? '' }}</textarea>
                 <p class="mt-1 text-xs text-gray-400">Mise en forme libre.</p>
@@ -275,6 +284,13 @@
         });
     }
 })();
+
+const btnCopy = document.getElementById('btn-copy-address');
+if (btnCopy) {
+    btnCopy.addEventListener('click', function () {
+        document.getElementById('invoiceAddress').value = {{ school.addressText|json_encode|raw }};
+    });
+}
 
 window.lvlToggleVat = function () {
     const input = document.getElementById('isCollectingVat');
