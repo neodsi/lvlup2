@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\School;
 
+use App\Entity\Event;
 use App\Entity\Room;
 use App\Entity\Season;
 use App\Entity\School;
@@ -12,6 +13,7 @@ use App\Entity\User;
 use App\Enum\FeePaidBy;
 use App\Security\Voter\SeasonVoter;
 use App\Security\Voter\SchoolVoter;
+use App\Service\Event\EventService;
 use App\Service\Season\SeasonService;
 use App\Service\SchoolContextService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,6 +35,7 @@ final class SettingsController extends AbstractController
         private readonly SchoolContextService $schoolContext,
         private readonly EntityManagerInterface $em,
         private readonly SeasonService $seasonService,
+        private readonly EventService $eventService,
     ) {
     }
 
@@ -761,6 +764,17 @@ final class SettingsController extends AbstractController
 
             $season->setUpdatedAt(new \DateTimeImmutable());
             $this->em->flush();
+
+            if ($section === 'closures') {
+                $seasonEvents = $this->em->getRepository(Event::class)->findBy([
+                    'seasonId'  => $season->getId(),
+                    'deletedAt' => null,
+                ]);
+                foreach ($seasonEvents as $seasonEvent) {
+                    $this->eventService->generateOccurrences($seasonEvent, $season);
+                }
+            }
+
             $this->addFlash('success', 'Saison mise à jour.');
 
             return $this->redirectToRoute('school_settings_season', ['id' => $id]);

@@ -128,7 +128,8 @@ class EventService
 
     public function generateOccurrences(Event $event, Season $season): void
     {
-        $now = new \DateTimeImmutable();
+        $now         = new \DateTimeImmutable();
+        $seasonStart = \DateTimeImmutable::createFromMutable($season->getStartAt());
 
         // Build closure date ranges for exclusion check
         $closureRanges = [];
@@ -162,14 +163,19 @@ class EventService
         $transformer  = new ArrayTransformer($config);
         $recurrences  = $transformer->transform($rule);
 
-        $this->em->wrapInTransaction(function () use ($event, $season, $recurrences, $closureRanges, $now): void {
+        $this->em->wrapInTransaction(function () use ($event, $recurrences, $closureRanges, $now, $seasonStart): void {
             foreach ($recurrences as $recurrence) {
                 /** @var \DateTime $recStart */
                 $recStart = $recurrence->getStart();
                 $occurAt  = \DateTimeImmutable::createFromMutable($recStart);
 
-                // Skip past occurrences
+                // Skip past occurrences (preserve history)
                 if ($occurAt <= $now) {
+                    continue;
+                }
+
+                // Skip occurrences before season start
+                if ($occurAt < $seasonStart) {
                     continue;
                 }
 

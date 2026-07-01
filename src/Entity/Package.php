@@ -63,6 +63,12 @@ class Package
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $cancellationDelayMinutes = null;
 
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $ageMin = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $ageMax = null;
+
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $applyValidityToExisting = false;
 
@@ -269,6 +275,30 @@ class Package
     public function setCancellationDelayMinutes(?int $cancellationDelayMinutes): static
     {
         $this->cancellationDelayMinutes = $cancellationDelayMinutes;
+
+        return $this;
+    }
+
+    public function getAgeMin(): ?int
+    {
+        return $this->ageMin;
+    }
+
+    public function setAgeMin(?int $ageMin): static
+    {
+        $this->ageMin = $ageMin;
+
+        return $this;
+    }
+
+    public function getAgeMax(): ?int
+    {
+        return $this->ageMax;
+    }
+
+    public function setAgeMax(?int $ageMax): static
+    {
+        $this->ageMax = $ageMax;
 
         return $this;
     }

@@ -111,6 +111,32 @@ final class SeasonSettingsController extends AbstractController
                 $rrule     = 'FREQ=DAILY;COUNT=1';
             }
 
+            $seasonStart = \DateTimeImmutable::createFromMutable($season->getStartAt());
+            $seasonEnd   = \DateTimeImmutable::createFromMutable($season->getEndAt());
+
+            if ($mode === 'weekly') {
+                $firstDate = new \DateTimeImmutable($startDate);
+                $lastDate  = new \DateTimeImmutable($recurUntil);
+                if ($firstDate > $seasonEnd || $lastDate < $seasonStart) {
+                    $this->addFlash('error', sprintf(
+                        'Les dates du cours sont entièrement hors de la saison (%s – %s).',
+                        $season->getStartAt()->format('d/m/Y'),
+                        $season->getEndAt()->format('d/m/Y')
+                    ));
+                    return $this->redirectToRoute('school_season_event_create', ['id' => $id]);
+                }
+            } else {
+                $eventDateObj = new \DateTimeImmutable($startDate);
+                if ($eventDateObj < $seasonStart || $eventDateObj > $seasonEnd) {
+                    $this->addFlash('error', sprintf(
+                        'La date du cours est hors de la saison (%s – %s).',
+                        $season->getStartAt()->format('d/m/Y'),
+                        $season->getEndAt()->format('d/m/Y')
+                    ));
+                    return $this->redirectToRoute('school_season_event_create', ['id' => $id]);
+                }
+            }
+
             $startAt = new \DateTimeImmutable($startDate . 'T' . $startTime . ':00');
             $endAt   = new \DateTimeImmutable($startDate . 'T' . $endTime . ':00');
 
@@ -193,6 +219,32 @@ final class SeasonSettingsController extends AbstractController
             } else {
                 $startDate = $p->get('eventDate');
                 $rrule     = 'FREQ=DAILY;COUNT=1';
+            }
+
+            $seasonStart = \DateTimeImmutable::createFromMutable($season->getStartAt());
+            $seasonEnd   = \DateTimeImmutable::createFromMutable($season->getEndAt());
+
+            if ($mode === 'weekly') {
+                $firstDate = new \DateTimeImmutable($startDate);
+                $lastDate  = new \DateTimeImmutable($recurUntil);
+                if ($firstDate > $seasonEnd || $lastDate < $seasonStart) {
+                    $this->addFlash('error', sprintf(
+                        'Les dates du cours sont entièrement hors de la saison (%s – %s).',
+                        $season->getStartAt()->format('d/m/Y'),
+                        $season->getEndAt()->format('d/m/Y')
+                    ));
+                    return $this->redirectToRoute('school_season_event_edit', ['id' => $id, 'eventId' => $eventId]);
+                }
+            } else {
+                $eventDateObj = new \DateTimeImmutable($startDate);
+                if ($eventDateObj < $seasonStart || $eventDateObj > $seasonEnd) {
+                    $this->addFlash('error', sprintf(
+                        'La date du cours est hors de la saison (%s – %s).',
+                        $season->getStartAt()->format('d/m/Y'),
+                        $season->getEndAt()->format('d/m/Y')
+                    ));
+                    return $this->redirectToRoute('school_season_event_edit', ['id' => $id, 'eventId' => $eventId]);
+                }
             }
 
             $maxParticipants = $p->get('maxParticipants');
@@ -400,6 +452,87 @@ final class SeasonSettingsController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
+    // Closures
+    // -------------------------------------------------------------------------
+
+    #[Route('/closures/preview', name: 'school_season_closures_preview', methods: ['POST'])]
+    public function closuresPreview(string $id, Request $request): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
+
+        $data     = json_decode($request->getContent(), true);
+        $closures = $data['closures'] ?? [];
+
+        $now    = new \DateTimeImmutable();
+        $ranges = [];
+        foreach ($closures as $closure) {
+            if (!empty($closure['start_at']) && !empty($closure['end_at'])) {
+                $ranges[] = [
+                    'start' => new \DateTimeImmutable($closure['start_at'] . ' 00:00:00'),
+                    'end'   => new \DateTimeImmutable($closure['end_at'] . ' 23:59:59'),
+                ];
+            }
+        }
+
+        if (empty($ranges)) {
+            return $this->json(['groups' => [], 'total' => 0]);
+        }
+
+        $events = $this->em->getRepository(Event::class)->findBy([
+            'seasonId'  => $season->getId(),
+            'deletedAt' => null,
+        ]);
+
+        if (empty($events)) {
+            return $this->json(['groups' => [], 'total' => 0]);
+        }
+
+        $eventMap = [];
+        foreach ($events as $event) {
+            $eventMap[$event->getId()] = $event->getName();
+        }
+
+        $occurrences = $this->em->createQuery(
+            'SELECT o FROM App\Entity\EventOccurence o
+             WHERE o.eventId IN (:eventIds)
+               AND o.occurenceAt > :now
+               AND o.cancelled = false'
+        )
+            ->setParameter('eventIds', array_keys($eventMap))
+            ->setParameter('now', $now)
+            ->getResult();
+
+        $grouped = [];
+        foreach ($occurrences as $occ) {
+            $occurAt = $occ->getOccurenceAt();
+            foreach ($ranges as $range) {
+                if ($occurAt >= $range['start'] && $occurAt <= $range['end']) {
+                    $name = $eventMap[$occ->getEventId()];
+                    $grouped[$name][] = $occurAt->format('Y-m-d H:i');
+                    break;
+                }
+            }
+        }
+
+        $groups = [];
+        $total  = 0;
+        foreach ($grouped as $name => $sortKeys) {
+            sort($sortKeys);
+            $groups[] = [
+                'name'  => $name,
+                'dates' => array_map(function (string $k): string {
+                    $d = \DateTimeImmutable::createFromFormat('Y-m-d H:i', $k);
+                    return $d ? $d->format('d/m/Y H:i') : $k;
+                }, $sortKeys),
+            ];
+            $total += count($sortKeys);
+        }
+        usort($groups, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+        return $this->json(['groups' => $groups, 'total' => $total]);
+    }
+
+    // -------------------------------------------------------------------------
     // Packages
     // -------------------------------------------------------------------------
 
@@ -434,6 +567,10 @@ final class SeasonSettingsController extends AbstractController
             $cap = $request->request->get('classesQty');
             $package->setClassesQty($cap !== null && $cap !== '' ? (int) $cap : null);
             $package->setDescription($request->request->get('description') ?: null);
+            $ageMin = $request->request->get('ageMin');
+            $package->setAgeMin($ageMin !== null && $ageMin !== '' ? (int) $ageMin : null);
+            $ageMax = $request->request->get('ageMax');
+            $package->setAgeMax($ageMax !== null && $ageMax !== '' ? (int) $ageMax : null);
 
             if ($type === \App\Enum\PackageType::ALaCarte) {
                 $vdd = $request->request->get('validityDurationDays');
@@ -514,6 +651,10 @@ final class SeasonSettingsController extends AbstractController
             $cap = $request->request->get('classesQty');
             $package->setClassesQty($cap !== null && $cap !== '' ? (int) $cap : null);
             $package->setDescription($request->request->get('description') ?: null);
+            $ageMin = $request->request->get('ageMin');
+            $package->setAgeMin($ageMin !== null && $ageMin !== '' ? (int) $ageMin : null);
+            $ageMax = $request->request->get('ageMax');
+            $package->setAgeMax($ageMax !== null && $ageMax !== '' ? (int) $ageMax : null);
 
             if ($type === \App\Enum\PackageType::ALaCarte) {
                 $vdd = $request->request->get('validityDurationDays');
