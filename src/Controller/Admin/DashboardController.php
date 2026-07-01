@@ -25,10 +25,8 @@ use App\Entity\SchoolHomeKpiDaily;
 use App\Entity\SchoolProfileGalaParticipation;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\SchoolProfileSeason;
-use App\Entity\SchoolUser;
 use App\Entity\Season;
 use App\Entity\User;
-use App\Enum\SchoolRole;
 use App\Enum\SchoolStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -69,9 +67,9 @@ class DashboardController extends AbstractController
             ->getResult();
 
         return $this->render('admin/dashboard.html.twig', [
-            'totalSchools'     => (int) $totalSchools,
-            'totalUsers'     => (int) $totalUsers,
-            'schoolsByStatus'  => $schoolsByStatus,
+            'totalSchools'    => (int) $totalSchools,
+            'totalUsers'      => (int) $totalUsers,
+            'schoolsByStatus' => $schoolsByStatus,
         ]);
     }
 
@@ -96,15 +94,17 @@ class DashboardController extends AbstractController
 
         $schools = $qb->getQuery()->getResult();
 
-        // Member counts per school (student/teacher/school) in one native query
+        // Member counts per school via school_profile_seasons
         $memberCounts = [];
+        $ownersBySchool = [];
+
         if (!empty($schools)) {
             $schoolIds = array_map(static fn(School $s) => $s->getId(), $schools);
             $in        = implode(',', array_fill(0, count($schoolIds), '?'));
             $rows      = $this->em->getConnection()->executeQuery(
-                "SELECT school_id, CASE WHEN role IN ('admin','owner') THEN 'school' ELSE role END AS role, COUNT(*) AS cnt
-                 FROM school_users
-                 WHERE school_id IN ({$in}) AND deleted_at IS NULL
+                "SELECT school_id, role, COUNT(*) AS cnt
+                 FROM school_profile_seasons
+                 WHERE school_id IN ({$in})
                  GROUP BY school_id, role",
                 $schoolIds
             )->fetchAllAssociative();
@@ -112,13 +112,34 @@ class DashboardController extends AbstractController
             foreach ($rows as $row) {
                 $memberCounts[$row['school_id']][$row['role']] = (int) $row['cnt'];
             }
+
+            // Owner profiles (from ownerProfileId on School)
+            $ownerProfileIds = [];
+            foreach ($schools as $school) {
+                if ($school->getOwnerProfileId() !== null) {
+                    $ownerProfileIds[$school->getId()] = $school->getOwnerProfileId();
+                }
+            }
+            if (!empty($ownerProfileIds)) {
+                $profileList = $this->em->createQuery(
+                    'SELECT p FROM App\Entity\Profile p WHERE p.id IN (:ids)'
+                )->setParameter('ids', array_values($ownerProfileIds))->getResult();
+                $profilesById = [];
+                foreach ($profileList as $p) {
+                    $profilesById[$p->getId()] = $p;
+                }
+                foreach ($ownerProfileIds as $schoolId => $profileId) {
+                    $ownersBySchool[$schoolId] = $profilesById[$profileId] ?? null;
+                }
+            }
         }
 
         return $this->render('admin/schools/index.html.twig', [
-            'schools'      => $schools,
-            'memberCounts' => $memberCounts,
-            'statusFilter' => $statusFilter,
-            'statuses'     => SchoolStatus::cases(),
+            'schools'        => $schools,
+            'memberCounts'   => $memberCounts,
+            'ownersBySchool' => $ownersBySchool,
+            'statusFilter'   => $statusFilter,
+            'statuses'       => SchoolStatus::cases(),
         ]);
     }
 
@@ -132,31 +153,75 @@ class DashboardController extends AbstractController
             throw $this->createNotFoundException('School not found.');
         }
 
-        $ownerProfile = $this->em->createQueryBuilder()
-            ->select('tp', 'u')
-            ->from(SchoolUser::class, 'tp')
-            ->join('tp.user', 'u')
-            ->where('tp.school = :school')
-            ->andWhere('tp.role = :role')
-            ->andWhere('tp.deletedAt IS NULL')
-            ->setParameter('school', $school)
-            ->setParameter('role', SchoolRole::School)
-            ->getQuery()
-            ->getOneOrNullResult();
+        // Owner profile
+        $ownerProfile = null;
+        if ($school->getOwnerProfileId() !== null) {
+            $ownerProfile = $this->em->getRepository(Profile::class)->find($school->getOwnerProfileId());
+        }
 
-        $memberCount = (int) $this->em->createQueryBuilder()
-            ->select('COUNT(tp.id)')
-            ->from(SchoolUser::class, 'tp')
-            ->where('tp.school = :school')
-            ->setParameter('school', $school)
-            ->getQuery()
-            ->getSingleScalarResult();
+        // Distinct members with their most recent role, across all seasons
+        $spsRows = $this->em->getConnection()->executeQuery(
+            "SELECT sps.profile_id, sps.role, sps.season_id, s.name AS season_name
+             FROM school_profile_seasons sps
+             LEFT JOIN seasons s ON s.id = sps.season_id
+             WHERE sps.school_id = :schoolId
+             ORDER BY sps.created_at DESC",
+            ['schoolId' => $id]
+        )->fetchAllAssociative();
+
+        // Group by profile_id — collect distinct roles per profile
+        $byProfile = [];
+        foreach ($spsRows as $row) {
+            $pid  = $row['profile_id'];
+            $role = $row['role'];
+            if (!isset($byProfile[$pid])) {
+                $byProfile[$pid] = ['roles' => [], 'seasonName' => $row['season_name'] ?? null];
+            }
+            if (!in_array($role, $byProfile[$pid]['roles'], true)) {
+                $byProfile[$pid]['roles'][] = $role;
+            }
+        }
+
+        // Load profiles
+        $memberProfileIds = array_keys($byProfile);
+        $profilesById = [];
+        if (!empty($memberProfileIds)) {
+            $profileList = $this->em->createQuery(
+                'SELECT p FROM App\Entity\Profile p WHERE p.id IN (:ids)'
+            )->setParameter('ids', $memberProfileIds)->getResult();
+            foreach ($profileList as $p) {
+                $profilesById[$p->getId()] = $p;
+            }
+        }
+
+        $members = [];
+        foreach ($byProfile as $profileId => $data) {
+            $members[] = [
+                'profile'    => $profilesById[$profileId] ?? null,
+                'roles'      => $data['roles'],
+                'seasonName' => $data['seasonName'],
+                'isOwner'    => $school->getOwnerProfileId() === $profileId,
+            ];
+        }
+
+        // Owner with no SPS at all (no season created yet)
+        if ($ownerProfile !== null && !isset($byProfile[$ownerProfile->getId()])) {
+            array_unshift($members, [
+                'profile'    => $ownerProfile,
+                'roles'      => ['school'],
+                'seasonName' => null,
+                'isOwner'    => true,
+            ]);
+        }
+
+        usort($members, static fn($a, $b) => (int) $b['isOwner'] - (int) $a['isOwner']);
 
         return $this->render('admin/schools/detail.html.twig', [
             'school'       => $school,
             'statuses'     => SchoolStatus::cases(),
             'ownerProfile' => $ownerProfile,
-            'canDelete'    => $memberCount === 0,
+            'members'      => $members,
+            'canDelete'    => empty($spsProfileIds) && $ownerProfile === null,
         ]);
     }
 
@@ -213,7 +278,6 @@ class DashboardController extends AbstractController
             return $this->redirectToRoute('app_admin_schools');
         }
 
-        // Hard delete — OrderItem n'a pas de schoolId, on passe par orderId
         $orderIds = array_column(
             $this->em->createQueryBuilder()
                 ->select('o.id')
@@ -262,14 +326,6 @@ class DashboardController extends AbstractController
                 ->execute();
         }
 
-        // SchoolUser a une FK ORM vers School — doit être supprimé avant School
-        $this->em->createQueryBuilder()
-            ->delete(SchoolUser::class, 'su')
-            ->where('su.school = :school')
-            ->setParameter('school', $school)
-            ->getQuery()
-            ->execute();
-
         $this->em->remove($school);
         $this->em->flush();
 
@@ -302,30 +358,80 @@ class DashboardController extends AbstractController
 
         $users = $qb->getQuery()->getResult();
 
-        // 2nd query: fetch all school memberships for the listed users in one shot (native SQL to bypass enum hydration)
+        // Memberships per user via school_profile_seasons
         $memberships = [];
         if (!empty($users)) {
-            $userIds = array_map(static fn(User $u) => $u->getId(), $users);
+            $profileIds = [];
+            $profileToUser = [];
+            foreach ($users as $u) {
+                $pid = $u->getProfile()?->getId();
+                if ($pid !== null) {
+                    $profileIds[]           = $pid;
+                    $profileToUser[$pid]    = $u->getId();
+                }
+            }
 
-            $conn  = $this->em->getConnection();
-            $in    = implode(',', array_fill(0, count($userIds), '?'));
-            $rows  = $conn->executeQuery(
-                "SELECT tp.user_id AS userId, s.id AS schoolId, s.name AS schoolName,
-                        CASE WHEN tp.role IN ('admin','owner') THEN 'school' ELSE tp.role END AS role
-                 FROM school_users tp
-                 INNER JOIN schools s ON s.id = tp.school_id
-                 WHERE tp.user_id IN ({$in})
-                   AND tp.deleted_at IS NULL
-                 ORDER BY s.name ASC",
-                $userIds
-            )->fetchAllAssociative();
+            if (!empty($profileIds)) {
+                $conn = $this->em->getConnection();
+                $in   = implode(',', array_fill(0, count($profileIds), '?'));
 
-            foreach ($rows as $row) {
-                $memberships[$row['userId']][] = [
-                    'schoolId'   => $row['schoolId'],
-                    'schoolName' => $row['schoolName'],
-                    'role'       => $row['role'],
-                ];
+                // Schools owned by this user (via ownerProfileId on schools table)
+                $ownedRows = $conn->executeQuery(
+                    "SELECT id AS schoolId, name AS schoolName, owner_profile_id AS profileId
+                     FROM schools
+                     WHERE owner_profile_id IN ({$in}) AND deleted_at IS NULL
+                     ORDER BY name ASC",
+                    $profileIds
+                )->fetchAllAssociative();
+
+                $ownedByProfile = [];
+                foreach ($ownedRows as $row) {
+                    $ownedByProfile[$row['profileId']][$row['schoolId']] = true;
+                    $userId = $profileToUser[$row['profileId']] ?? null;
+                    if ($userId !== null) {
+                        $memberships[$userId][] = [
+                            'schoolId'   => $row['schoolId'],
+                            'schoolName' => $row['schoolName'],
+                            'role'       => 'school',
+                            'isOwner'    => true,
+                        ];
+                    }
+                }
+
+                // SPS memberships — one entry per (user, school, role)
+                $rows = $conn->executeQuery(
+                    "SELECT sps.profile_id AS profileId, s.id AS schoolId, s.name AS schoolName, sps.role AS role
+                     FROM school_profile_seasons sps
+                     INNER JOIN schools s ON s.id = sps.school_id
+                     WHERE sps.profile_id IN ({$in})
+                     ORDER BY s.name ASC",
+                    $profileIds
+                )->fetchAllAssociative();
+
+                // Deduplicate by (userId, schoolId, role) and skip role=school when already shown as owner
+                $seenSps = [];
+                foreach ($rows as $row) {
+                    $userId = $profileToUser[$row['profileId']] ?? null;
+                    if ($userId === null) {
+                        continue;
+                    }
+                    $isOwner = isset($ownedByProfile[$row['profileId']][$row['schoolId']]);
+                    // Skip role=school for owned schools (already shown as Owner entry)
+                    if ($isOwner && $row['role'] === 'school') {
+                        continue;
+                    }
+                    $dedupeKey = $userId . '|' . $row['schoolId'] . '|' . $row['role'];
+                    if (isset($seenSps[$dedupeKey])) {
+                        continue;
+                    }
+                    $seenSps[$dedupeKey] = true;
+                    $memberships[$userId][] = [
+                        'schoolId'   => $row['schoolId'],
+                        'schoolName' => $row['schoolName'],
+                        'role'       => $row['role'],
+                        'isOwner'    => false,
+                    ];
+                }
             }
         }
 
@@ -347,20 +453,23 @@ class DashboardController extends AbstractController
             throw $this->createNotFoundException('Utilisateur introuvable.');
         }
 
-        $schoolUsers = $this->em->createQueryBuilder()
-            ->select('tp', 's')
-            ->from(SchoolUser::class, 'tp')
-            ->join('tp.school', 's')
-            ->where('tp.user = :user')
-            ->andWhere('tp.deletedAt IS NULL')
-            ->orderBy('s.name', 'ASC')
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getResult();
+        $profile        = $user->getProfile();
+        $schoolProfiles = [];
+
+        if ($profile !== null) {
+            $schoolProfiles = $this->em->createQueryBuilder()
+                ->select('tps')
+                ->from(SchoolProfileSeason::class, 'tps')
+                ->where('tps.profileId = :profileId')
+                ->orderBy('tps.createdAt', 'DESC')
+                ->setParameter('profileId', $profile->getId())
+                ->getQuery()
+                ->getResult();
+        }
 
         return $this->render('admin/users/detail.html.twig', [
             'user'           => $user,
-            'schoolProfiles' => $schoolUsers,
+            'schoolProfiles' => $schoolProfiles,
         ]);
     }
 
@@ -385,30 +494,21 @@ class DashboardController extends AbstractController
             return $this->redirectToRoute('app_admin_users');
         }
 
-        // Collect all SchoolUser IDs linked to this user
-        $schoolUserIds = array_column(
-            $this->em->createQuery(
-                'SELECT tp.id FROM App\Entity\SchoolUser tp WHERE tp.user = :user'
-            )
-            ->setParameter('user', $user)
-            ->getArrayResult(),
-            'id'
-        );
+        $profile = $user->getProfile();
 
-        if (!empty($schoolUserIds)) {
-            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileSeason tps WHERE tps.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolUserIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfilePackage tpp WHERE tpp.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolUserIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolUserIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileGalaParticipation tpgp WHERE tpgp.schoolProfileId IN (:ids)')
-                ->setParameter('ids', $schoolUserIds)->execute();
-            $this->em->createQuery('DELETE FROM App\Entity\SchoolUser tp WHERE tp.id IN (:ids)')
-                ->setParameter('ids', $schoolUserIds)->execute();
+        if ($profile !== null) {
+            $profileId = $profile->getId();
+
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfilePackage tpp WHERE tpp.profileId = :id')
+                ->setParameter('id', $profileId)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.profileId = :id')
+                ->setParameter('id', $profileId)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileGalaParticipation tpgp WHERE tpgp.profileId = :id')
+                ->setParameter('id', $profileId)->execute();
+            $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileSeason tps WHERE tps.profileId = :id')
+                ->setParameter('id', $profileId)->execute();
         }
 
-        // Delete profiles linked to this user
         $this->em->createQuery('DELETE FROM App\Entity\Profile p WHERE p.user = :user')
             ->setParameter('user', $user)
             ->execute();

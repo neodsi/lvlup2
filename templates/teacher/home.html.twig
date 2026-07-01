@@ -10,7 +10,7 @@
         <p class="text-sm text-gray-500 mt-1">Espace enseignant</p>
     </div>
 
-    {% if schoolProfiles is empty %}
+    {% if schools is empty %}
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center">
         <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         <p class="text-sm font-medium text-gray-500">Vous n'êtes rattaché à aucune école en tant qu'enseignant.</p>
@@ -18,10 +18,8 @@
     {% else %}
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for sp in schoolProfiles %}
-        {% set school = sp.school %}
-        <a href="{{ path('app_select_school', {id: school.id}) }}"
-           class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4 hover:border-purple-300 hover:shadow-md transition group">
+        {% for school in schools %}
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-4">
             {% if school.logoPath %}
             <img src="{{ school.logoPath | imagine_filter('school_logo') }}" alt="{{ school.name }}"
                  class="h-12 w-12 rounded-lg object-contain border border-gray-100 shrink-0">
@@ -34,8 +32,7 @@
                 <p class="font-semibold text-gray-900 truncate">{{ school.name }}</p>
                 <p class="text-xs text-purple-500 mt-0.5">Enseignant</p>
             </div>
-            <svg class="w-4 h-4 text-gray-300 group-hover:text-purple-400 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-        </a>
+        </div>
         {% endfor %}
     </div>
 

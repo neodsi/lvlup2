@@ -33,6 +33,9 @@ class School
     #[ORM\Column(type: 'string', length: 36, nullable: true)]
     private ?string $currentSeasonId = null;
 
+    #[ORM\Column(type: 'string', length: 36, nullable: true)]
+    private ?string $ownerProfileId = null;
+
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $currentSlug = null;
 
@@ -197,6 +200,9 @@ class School
 
         return $this;
     }
+
+    public function getOwnerProfileId(): ?string { return $this->ownerProfileId; }
+    public function setOwnerProfileId(?string $ownerProfileId): static { $this->ownerProfileId = $ownerProfileId; return $this; }
 
     public function getCurrentSeasonId(): ?string
     {

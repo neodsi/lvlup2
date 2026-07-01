@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\RegistrationStatus;
+use App\Enum\SchoolProfileStatus;
+use App\Enum\SchoolRole;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'school_profile_seasons')]
-#[ORM\UniqueConstraint(name: 'uq_school_profile_season', columns: ['school_profile_id', 'season_id'])]
+#[ORM\UniqueConstraint(name: 'uq_school_profile_season', columns: ['profile_id', 'school_id', 'season_id', 'role'])]
 #[ORM\HasLifecycleCallbacks]
 class SchoolProfileSeason
 {
@@ -19,7 +20,7 @@ class SchoolProfileSeason
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $schoolProfileId;
+    private string $profileId;
 
     #[ORM\Column(type: 'string', length: 36)]
     private string $seasonId;
@@ -27,23 +28,17 @@ class SchoolProfileSeason
     #[ORM\Column(type: 'string', length: 36)]
     private string $schoolId;
 
-    #[ORM\Column(type: 'string', length: 50, enumType: RegistrationStatus::class, options: ['default' => 'not_registered'])]
-    private RegistrationStatus $registrationStatus = RegistrationStatus::NotRegistered;
+    #[ORM\Column(type: 'string', length: 50, enumType: SchoolRole::class)]
+    private SchoolRole $role;
 
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $activityIds = null;
+    #[ORM\Column(type: 'string', length: 50, enumType: SchoolProfileStatus::class, options: ['default' => 'waiting'])]
+    private SchoolProfileStatus $status = SchoolProfileStatus::Waiting;
 
-    #[ORM\Column(type: 'string', length: 36, nullable: true)]
-    private ?string $ageGroupId = null;
-
-    #[ORM\Column(type: 'string', length: 36, nullable: true)]
-    private ?string $levelId = null;
-
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $emergencyContact = null;
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $stripeCustomerId = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $injuryWarning = null;
+    private ?string $note = null;
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $accepted = null;
@@ -54,9 +49,12 @@ class SchoolProfileSeason
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $updatedAt;
 
+    // Non-mapped — hydrated manually by controllers after loading
+    private ?Profile $profile = null;
+
     public function __construct()
     {
-        $this->id = Uuid::v4()->toRfc4122();
+        $this->id        = Uuid::v4()->toRfc4122();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -67,143 +65,40 @@ class SchoolProfileSeason
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): string
-    {
-        return $this->id;
-    }
+    public function getId(): string { return $this->id; }
 
-    public function getSchoolProfileId(): string
-    {
-        return $this->schoolProfileId;
-    }
+    public function getProfileId(): string { return $this->profileId; }
+    public function setProfileId(string $profileId): static { $this->profileId = $profileId; return $this; }
 
-    public function setSchoolProfileId(string $schoolProfileId): static
-    {
-        $this->schoolProfileId = $schoolProfileId;
+    public function getSeasonId(): string { return $this->seasonId; }
+    public function setSeasonId(string $seasonId): static { $this->seasonId = $seasonId; return $this; }
 
-        return $this;
-    }
+    public function getSchoolId(): string { return $this->schoolId; }
+    public function setSchoolId(string $schoolId): static { $this->schoolId = $schoolId; return $this; }
 
-    public function getSeasonId(): string
-    {
-        return $this->seasonId;
-    }
+    public function getRole(): SchoolRole { return $this->role; }
+    public function setRole(SchoolRole $role): static { $this->role = $role; return $this; }
 
-    public function setSeasonId(string $seasonId): static
-    {
-        $this->seasonId = $seasonId;
+    public function getStatus(): SchoolProfileStatus { return $this->status; }
+    public function setStatus(SchoolProfileStatus $status): static { $this->status = $status; return $this; }
 
-        return $this;
-    }
+    public function getStripeCustomerId(): ?string { return $this->stripeCustomerId; }
+    public function setStripeCustomerId(?string $stripeCustomerId): static { $this->stripeCustomerId = $stripeCustomerId; return $this; }
 
-    public function getSchoolId(): string
-    {
-        return $this->schoolId;
-    }
-
-    public function setSchoolId(string $schoolId): static
-    {
-        $this->schoolId = $schoolId;
-
-        return $this;
-    }
-
-    public function getRegistrationStatus(): RegistrationStatus
-    {
-        return $this->registrationStatus;
-    }
-
-    public function setRegistrationStatus(RegistrationStatus $registrationStatus): static
-    {
-        $this->registrationStatus = $registrationStatus;
-
-        return $this;
-    }
-
-    public function getActivityIds(): ?array
-    {
-        return $this->activityIds;
-    }
-
-    public function setActivityIds(?array $activityIds): static
-    {
-        $this->activityIds = $activityIds;
-
-        return $this;
-    }
-
-    public function getAgeGroupId(): ?string
-    {
-        return $this->ageGroupId;
-    }
-
-    public function setAgeGroupId(?string $ageGroupId): static
-    {
-        $this->ageGroupId = $ageGroupId;
-
-        return $this;
-    }
-
-    public function getLevelId(): ?string
-    {
-        return $this->levelId;
-    }
-
-    public function setLevelId(?string $levelId): static
-    {
-        $this->levelId = $levelId;
-
-        return $this;
-    }
-
-    public function getEmergencyContact(): ?array
-    {
-        return $this->emergencyContact;
-    }
-
-    public function setEmergencyContact(?array $emergencyContact): static
-    {
-        $this->emergencyContact = $emergencyContact;
-
-        return $this;
-    }
-
-    public function getInjuryWarning(): ?string
-    {
-        return $this->injuryWarning;
-    }
-
-    public function setInjuryWarning(?string $injuryWarning): static
-    {
-        $this->injuryWarning = $injuryWarning;
-
-        return $this;
-    }
+    public function getNote(): ?string { return $this->note; }
+    public function setNote(?string $note): static { $this->note = $note; return $this; }
 
     public function getAccepted(): ?array { return $this->accepted; }
     public function setAccepted(?array $accepted): static { $this->accepted = $accepted; return $this; }
 
-    public function getCreatedAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static { $this->createdAt = $createdAt; return $this; }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
-    {
-        $this->createdAt = $createdAt;
+    public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static { $this->updatedAt = $updatedAt; return $this; }
 
-        return $this;
-    }
+    public function getProfile(): ?Profile { return $this->profile; }
+    public function setProfile(?Profile $profile): static { $this->profile = $profile; return $this; }
 
-    public function getUpdatedAt(): \DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
-    {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
-    }
+    public function getUser(): ?User { return $this->profile?->getUser(); }
 }

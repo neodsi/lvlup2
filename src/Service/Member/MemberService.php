@@ -7,7 +7,6 @@ namespace App\Service\Member;
 use App\Entity\Profile;
 use App\Entity\Season;
 use App\Entity\School;
-use App\Entity\SchoolUser;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
@@ -29,11 +28,11 @@ class MemberService
     ) {
     }
 
-    public function createMember(School $school, ?Season $season, array $data): SchoolUser
+    public function createMember(School $school, Season $season, array $data): SchoolProfileSeason
     {
-        $schoolUser = null;
+        $sps = null;
 
-        $this->em->wrapInTransaction(function () use ($school, $season, $data, &$schoolUser): void {
+        $this->em->wrapInTransaction(function () use ($school, $season, $data, &$sps): void {
             /** @var User $user */
             $user = $data['user'];
 
@@ -49,133 +48,76 @@ class MemberService
                 $this->em->flush();
             }
 
-            // Create SchoolUser
-            $schoolUser = new SchoolUser();
-            $schoolUser->setSchool($school);
-            $schoolUser->setUser($user);
-            $schoolUser->setStatus(SchoolProfileStatus::Accepted);
-
             $role = $data['role'] ?? SchoolRole::Student;
-            $schoolUser->setRole($role instanceof SchoolRole ? $role : SchoolRole::from($role));
+            $role = $role instanceof SchoolRole ? $role : SchoolRole::from($role);
 
-            if (isset($data['status'])) {
-                $schoolUser->setStatus($data['status']);
-            }
+            $status = $data['status'] ?? SchoolProfileStatus::Accepted;
+            $status = $status instanceof SchoolProfileStatus ? $status : SchoolProfileStatus::from($status);
+
+            $sps = new SchoolProfileSeason();
+            $sps->setProfileId($profile->getId());
+            $sps->setSeasonId($season->getId());
+            $sps->setSchoolId($school->getId());
+            $sps->setRole($role);
+            $sps->setStatus($status);
+
             if (isset($data['note'])) {
-                $schoolUser->setNote($data['note'] ?: null);
-            }
-
-            $this->em->persist($schoolUser);
-            $this->em->flush();
-
-            if ($season === null) {
-                return;
-            }
-
-            // Create SchoolProfileSeason for current season
-            $tps = new SchoolProfileSeason();
-            $tps->setSchoolProfileId($schoolUser->getId());
-            $tps->setSeasonId($season->getId());
-            $tps->setSchoolId($school->getId());
-
-            if (isset($data['registrationStatus'])) {
-                $tps->setRegistrationStatus($data['registrationStatus']);
-            }
-            if (isset($data['activityIds'])) {
-                $tps->setActivityIds($data['activityIds']);
-            }
-            if (isset($data['ageGroupId'])) {
-                $tps->setAgeGroupId($data['ageGroupId']);
-            }
-            if (isset($data['levelId'])) {
-                $tps->setLevelId($data['levelId']);
-            }
-            if (isset($data['emergencyContact'])) {
-                $tps->setEmergencyContact($data['emergencyContact']);
-            }
-            if (isset($data['injuryWarning'])) {
-                $tps->setInjuryWarning($data['injuryWarning']);
+                $sps->setNote($data['note'] ?: null);
             }
             if (isset($data['accepted'])) {
-                $tps->setAccepted($data['accepted'] ?: null);
+                $sps->setAccepted($data['accepted'] ?: null);
             }
 
-            $this->em->persist($tps);
+            $this->em->persist($sps);
         });
 
-        return $schoolUser;
+        return $sps;
     }
 
     public function exportCsv(School $school, Season $season): string
     {
-        /** @var array<SchoolUser> $members */
-        $members = $this->em->createQuery(
-            'SELECT su, u FROM App\Entity\SchoolUser su
-             JOIN su.user u
-             WHERE su.school = :school AND su.deletedAt IS NULL'
+        /** @var SchoolProfileSeason[] $tpsList */
+        $tpsList = $this->em->createQuery(
+            'SELECT tps FROM App\Entity\SchoolProfileSeason tps
+             WHERE tps.schoolId = :schoolId AND tps.seasonId = :seasonId'
         )
-            ->setParameter('school', $school)
+            ->setParameter('schoolId', $school->getId())
+            ->setParameter('seasonId', $season->getId())
             ->getResult();
+
+        $profileIds = array_map(fn(SchoolProfileSeason $tps) => $tps->getProfileId(), $tpsList);
+        $profilesById = [];
+        if (!empty($profileIds)) {
+            $profileList = $this->em->createQuery(
+                'SELECT p FROM App\Entity\Profile p WHERE p.id IN (:ids)'
+            )->setParameter('ids', array_unique($profileIds))->getResult();
+            foreach ($profileList as $p) {
+                $profilesById[$p->getId()] = $p;
+            }
+        }
 
         $handle = fopen('php://temp', 'r+');
         if ($handle === false) {
             throw new \RuntimeException('Could not open temp stream for CSV export.');
         }
 
-        // Header row
-        fputcsv($handle, [
-            'id',
-            'first_name',
-            'last_name',
-            'email',
-            'phone',
-            'dob',
-            'role',
-            'registration_status',
-            'activity_ids',
-            'age_group',
-            'level',
-            'emergency_contact',
-            'injury_warning',
-        ]);
+        fputcsv($handle, ['id', 'first_name', 'last_name', 'email', 'phone', 'dob', 'role', 'status', 'note']);
 
-        /** @var SchoolUser $su */
-        foreach ($members as $su) {
-            $profile = $su->getProfile();
-
-            // Fetch associated SchoolProfileSeason (may be null if member has no season entry)
-            /** @var SchoolProfileSeason|null $tps */
-            $tps = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
-                'schoolProfileId' => $su->getId(),
-                'seasonId'        => $season->getId(),
-            ]);
-
-            $email = $su->getUser()->getEmail();
-
-            $dob = $profile?->getDob()?->format('Y-m-d');
-
-            $activityIds = $tps?->getActivityIds() !== null
-                ? implode('|', $tps->getActivityIds())
-                : '';
-
-            $emergencyContact = $tps?->getEmergencyContact() !== null
-                ? json_encode($tps->getEmergencyContact(), \JSON_UNESCAPED_UNICODE)
-                : '';
+        foreach ($tpsList as $tps) {
+            $profile = $profilesById[$tps->getProfileId()] ?? null;
+            $email   = $profile?->getUser()?->getEmail();
+            $dob     = $profile?->getDob()?->format('Y-m-d');
 
             fputcsv($handle, [
-                $su->getId(),
+                $tps->getId(),
                 $profile?->getFirstName() ?? '',
                 $profile?->getLastName() ?? '',
                 $email ?? '',
                 $profile?->getPhone() ?? '',
                 $dob ?? '',
-                $su->getRole()->value,
-                $tps?->getRegistrationStatus()->value ?? '',
-                $activityIds,
-                $tps?->getAgeGroupId() ?? '',
-                $tps?->getLevelId() ?? '',
-                $emergencyContact,
-                $tps?->getInjuryWarning() ?? '',
+                $tps->getRole()->value,
+                $tps->getStatus()->value,
+                $tps->getNote() ?? '',
             ]);
         }
 
@@ -187,24 +129,27 @@ class MemberService
     }
 
     /**
-     * Recalculates users.roles from all active school_users.
-     * Preserves ROLE_ADMIN (set manually). Call after any SchoolUser create/delete.
+     * Recalculates users.roles from all SchoolProfileSeasons.
+     * Preserves ROLE_ADMIN (set manually). Call after any SchoolProfileSeason create/delete.
      */
     public function syncUserRoles(User $user): void
     {
-        // Mapping school_users.role → users.roles
         $roleMap = [
             SchoolRole::School->value  => 'ROLE_SCHOOL',
             SchoolRole::Teacher->value => 'ROLE_TEACHER',
             SchoolRole::Student->value => 'ROLE_STUDENT',
         ];
 
+        $profile = $user->getProfile();
+        if ($profile === null) {
+            return;
+        }
+
         $rows = $this->em->createQueryBuilder()
-            ->select('DISTINCT su.role')
-            ->from(SchoolUser::class, 'su')
-            ->where('su.user = :user')
-            ->andWhere('su.deletedAt IS NULL')
-            ->setParameter('user', $user)
+            ->select('DISTINCT tps.role')
+            ->from(SchoolProfileSeason::class, 'tps')
+            ->where('tps.profileId = :profileId')
+            ->setParameter('profileId', $profile->getId())
             ->getQuery()
             ->getSingleColumnResult();
 
@@ -216,10 +161,24 @@ class MemberService
             }
         }
 
-        // Always preserve ROLE_ADMIN if already set
+        // Preserve roles not managed by SPS derivation
         $current = array_filter($user->getRoles(), static fn(string $r) => $r !== 'ROLE_USER');
-        if (in_array('ROLE_ADMIN', $current, true)) {
-            $derived[] = 'ROLE_ADMIN';
+        $managed = ['ROLE_SCHOOL', 'ROLE_TEACHER', 'ROLE_STUDENT'];
+        foreach ($current as $r) {
+            if (!in_array($r, $managed, true)) {
+                $derived[] = $r;
+            }
+        }
+
+        // Also grant ROLE_SCHOOL if this user owns any school (ownerProfileId, without needing an SPS)
+        if ($profile !== null) {
+            $ownsSchool = (int) $this->em->createQuery(
+                'SELECT COUNT(s.id) FROM App\Entity\School s WHERE s.ownerProfileId = :profileId'
+            )->setParameter('profileId', $profile->getId())->getSingleScalarResult() > 0;
+
+            if ($ownsSchool) {
+                $derived[] = 'ROLE_SCHOOL';
+            }
         }
 
         $user->setRoles(array_values(array_unique($derived)));
@@ -243,7 +202,6 @@ class MemberService
             }
         }
 
-        // Recalculate status
         $this->recalculatePackageStatus($package);
 
         $this->em->persist($package);
@@ -256,14 +214,12 @@ class MemberService
     {
         $now = new \DateTimeImmutable();
 
-        // Check expiry first
         if ($package->getExpiresAt() !== null && $package->getExpiresAt() < $now) {
             $package->setStatus(PackageStatus::Expired);
 
             return;
         }
 
-        // Check exhaustion for a_la_carte type
         if (
             $package->getType() === 'a_la_carte'
             && $package->getClassesQty() !== null
@@ -274,7 +230,6 @@ class MemberService
             return;
         }
 
-        // Default: keep active if it was active or set to active
         if ($package->getStatus() === PackageStatus::Exhausted || $package->getStatus() === PackageStatus::Expired) {
             $package->setStatus(PackageStatus::Active);
         }

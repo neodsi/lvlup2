@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Security\Voter;
 
 use App\Entity\Event;
+use App\Entity\School;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolUserRepository;
 use App\Security\SchoolRoleHierarchy;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -34,7 +36,7 @@ final class EventVoter extends Voter
     ];
 
     public function __construct(
-        private readonly SchoolUserRepository $schoolUserRepository,
+        private readonly EntityManagerInterface $em,
     ) {
     }
 
@@ -72,8 +74,28 @@ final class EventVoter extends Voter
 
     private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
+        $profile = $user->getProfile();
+        if ($profile === null) {
+            return null;
+        }
 
-        return $schoolUser?->getRole();
+        $school = $this->em->getRepository(School::class)->find($schoolId);
+        if ($school !== null && $school->getOwnerProfileId() !== null && $school->getOwnerProfileId() === $profile->getId()) {
+            return SchoolRole::School;
+        }
+
+        $sps = $this->em->createQueryBuilder()
+            ->select('sps')
+            ->from(SchoolProfileSeason::class, 'sps')
+            ->where('sps.profileId = :profileId')
+            ->andWhere('sps.schoolId = :schoolId')
+            ->orderBy('sps.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('profileId', $profile->getId())
+            ->setParameter('schoolId', $schoolId)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $sps?->getRole();
     }
 }

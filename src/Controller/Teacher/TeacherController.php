@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Teacher;
 
-use App\Entity\SchoolUser;
 use App\Entity\SchoolProfilePackage;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
 use App\Security\Voter\SchoolVoter;
@@ -32,20 +32,30 @@ final class TeacherController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $schoolProfiles = $this->em->createQueryBuilder()
-            ->select('sp', 's')
-            ->from(SchoolUser::class, 'sp')
-            ->join('sp.school', 's')
-            ->where('sp.user = :user')
-            ->andWhere('sp.role = :role')
-            ->andWhere('sp.deletedAt IS NULL')
-            ->setParameter('user', $user)
+        $profile = $user->getProfile();
+
+        $schools = [];
+
+        if ($profile !== null) {
+            $schoolIds = $this->em->createQuery(
+                'SELECT DISTINCT sps.schoolId FROM App\Entity\SchoolProfileSeason sps
+                 WHERE sps.profileId = :profileId AND sps.role = :role'
+            )
+            ->setParameter('profileId', $profile->getId())
             ->setParameter('role', SchoolRole::Teacher)
-            ->getQuery()
-            ->getResult();
+            ->getSingleColumnResult();
+
+            if (!empty($schoolIds)) {
+                $schools = $this->em->createQuery(
+                    'SELECT s FROM App\Entity\School s WHERE s.id IN (:ids) ORDER BY s.name ASC'
+                )
+                ->setParameter('ids', $schoolIds)
+                ->getResult();
+            }
+        }
 
         return $this->render('teacher/home.html.twig', [
-            'schoolProfiles' => $schoolProfiles,
+            'schools' => $schools,
         ]);
     }
 

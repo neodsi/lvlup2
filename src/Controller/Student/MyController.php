@@ -9,7 +9,6 @@ use App\Entity\EventOccurenceProfile;
 use App\Entity\Event;
 use App\Entity\PaymentSchedule;
 use App\Entity\Order;
-use App\Entity\SchoolUser;
 use App\Entity\SchoolProfileGalaParticipation;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\SchoolProfileSeason;
@@ -39,22 +38,31 @@ final class MyController extends AbstractController
     public function home(): Response
     {
         /** @var User $user */
-        $user = $this->getUser();
+        $user    = $this->getUser();
+        $profile = $user->getProfile();
 
-        $schoolProfiles = $this->em->createQueryBuilder()
-            ->select('sp', 's')
-            ->from(SchoolUser::class, 'sp')
-            ->join('sp.school', 's')
-            ->where('sp.user = :user')
-            ->andWhere('sp.role = :role')
-            ->andWhere('sp.deletedAt IS NULL')
-            ->setParameter('user', $user)
+        $schools = [];
+
+        if ($profile !== null) {
+            $schoolIds = $this->em->createQuery(
+                'SELECT DISTINCT sps.schoolId FROM App\Entity\SchoolProfileSeason sps
+                 WHERE sps.profileId = :profileId AND sps.role = :role'
+            )
+            ->setParameter('profileId', $profile->getId())
             ->setParameter('role', SchoolRole::Student)
-            ->getQuery()
-            ->getResult();
+            ->getSingleColumnResult();
+
+            if (!empty($schoolIds)) {
+                $schools = $this->em->createQuery(
+                    'SELECT s FROM App\Entity\School s WHERE s.id IN (:ids) ORDER BY s.name ASC'
+                )
+                ->setParameter('ids', $schoolIds)
+                ->getResult();
+            }
+        }
 
         return $this->render('student/home.html.twig', [
-            'schoolProfiles' => $schoolProfiles,
+            'schools' => $schools,
         ]);
     }
 
@@ -62,19 +70,22 @@ final class MyController extends AbstractController
     public function myGala(): Response
     {
         /** @var User $user */
-        $user          = $this->getUser();
-        $school     = $this->schoolContext->getCurrentSchool();
-        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
+        $user    = $this->getUser();
+        $school  = $this->schoolContext->getCurrentSchool();
+        $member  = $this->schoolContext->getCurrentSchoolMember($user);
 
-        if ($school === null || $schoolUser === null) {
+        if ($school === null || $member === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $participations = $this->em->getRepository(SchoolProfileGalaParticipation::class)->findBy([
-            'schoolProfileId' => $schoolUser->getId(),
-        ]);
+        $profile = $user->getProfile();
+        $participations = $profile !== null
+            ? $this->em->getRepository(SchoolProfileGalaParticipation::class)->findBy([
+                'profileId' => $profile->getId(),
+            ])
+            : [];
 
         return $this->render('school/my/gala.html.twig', [
             'school'         => $school,
@@ -86,24 +97,43 @@ final class MyController extends AbstractController
     public function myPackages(): Response
     {
         /** @var User $user */
-        $user          = $this->getUser();
-        $school     = $this->schoolContext->getCurrentSchool();
-        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+        $member = $this->schoolContext->getCurrentSchoolMember($user);
 
-        if ($school === null || $schoolUser === null) {
+        if ($school === null || $member === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $packages = $this->em->getRepository(SchoolProfilePackage::class)->findBy([
-            'schoolProfileId' => $schoolUser->getId(),
-            'schoolId'        => $school->getId(),
-        ]);
+        $profile  = $user->getProfile();
+        $packages = $profile !== null
+            ? $this->em->getRepository(SchoolProfilePackage::class)->findBy(
+                ['profileId' => $profile->getId(), 'schoolId' => $school->getId()],
+                ['createdAt' => 'DESC']
+            )
+            : [];
+
+        // Load Package definitions for names
+        $packageIds = array_unique(array_filter(array_map(
+            fn(SchoolProfilePackage $p) => $p->getPackageId(),
+            $packages
+        )));
+        $packageById = [];
+        if (!empty($packageIds)) {
+            $pkgDefs = $this->em->createQuery(
+                'SELECT p FROM App\Entity\Package p WHERE p.id IN (:ids)'
+            )->setParameter('ids', $packageIds)->getResult();
+            foreach ($pkgDefs as $pkgDef) {
+                $packageById[$pkgDef->getId()] = $pkgDef;
+            }
+        }
 
         return $this->render('school/my/packages.html.twig', [
-            'school'   => $school,
-            'packages' => $packages,
+            'school'      => $school,
+            'packages'    => $packages,
+            'packageById' => $packageById,
         ]);
     }
 
@@ -111,27 +141,32 @@ final class MyController extends AbstractController
     public function myPaymentSchedules(): Response
     {
         /** @var User $user */
-        $user          = $this->getUser();
-        $school     = $this->schoolContext->getCurrentSchool();
-        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+        $member = $this->schoolContext->getCurrentSchoolMember($user);
 
-        if ($school === null || $schoolUser === null) {
+        if ($school === null || $member === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $schedules = $this->em->createQueryBuilder()
-            ->select('ps')
-            ->from(PaymentSchedule::class, 'ps')
-            ->join(Order::class, 'o', 'WITH', 'o.id = ps.orderId')
-            ->where('o.schoolProfileId = :tpId')
-            ->andWhere('ps.schoolId = :schoolId')
-            ->setParameter('tpId', $schoolUser->getId())
-            ->setParameter('schoolId', $school->getId())
-            ->orderBy('ps.dueAt', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $profile   = $user->getProfile();
+        $schedules = [];
+
+        if ($profile !== null) {
+            $schedules = $this->em->createQueryBuilder()
+                ->select('ps')
+                ->from(PaymentSchedule::class, 'ps')
+                ->join(Order::class, 'o', 'WITH', 'o.id = ps.orderId')
+                ->where('o.profileId = :profileId')
+                ->andWhere('ps.schoolId = :schoolId')
+                ->setParameter('profileId', $profile->getId())
+                ->setParameter('schoolId', $school->getId())
+                ->orderBy('ps.dueAt', 'ASC')
+                ->getQuery()
+                ->getResult();
+        }
 
         return $this->render('school/my/payment_schedules.html.twig', [
             'school'    => $school,
@@ -143,22 +178,23 @@ final class MyController extends AbstractController
     public function mySeason(): Response
     {
         /** @var User $user */
-        $user          = $this->getUser();
-        $school     = $this->schoolContext->getCurrentSchool();
-        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+        $member = $this->schoolContext->getCurrentSchoolMember($user);
 
-        if ($school === null || $schoolUser === null) {
+        if ($school === null || $member === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
+        $profile             = $user->getProfile();
         $seasonId            = $school->getCurrentSeasonId();
         $season              = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
-        $schoolProfileSeason = $seasonId
+        $schoolProfileSeason = ($seasonId !== null && $profile !== null)
             ? $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
-                'schoolProfileId' => $schoolUser->getId(),
-                'seasonId'        => $seasonId,
+                'profileId' => $profile->getId(),
+                'seasonId'  => $seasonId,
             ])
             : null;
 
@@ -173,34 +209,39 @@ final class MyController extends AbstractController
     public function myCourses(string $event_type): Response
     {
         /** @var User $user */
-        $user          = $this->getUser();
-        $school     = $this->schoolContext->getCurrentSchool();
-        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
+        $member = $this->schoolContext->getCurrentSchoolMember($user);
 
-        if ($school === null || $schoolUser === null) {
+        if ($school === null || $member === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $type = EventType::tryFrom($event_type);
+        $profile = $user->getProfile();
+        $type    = EventType::tryFrom($event_type);
 
-        $qb = $this->em->createQueryBuilder()
-            ->select('eop', 'eo')
-            ->from(EventOccurenceProfile::class, 'eop')
-            ->join(EventOccurence::class, 'eo', 'WITH', 'eo.id = eop.occurenceId')
-            ->join(Event::class, 'e', 'WITH', 'e.id = eo.eventId')
-            ->where('eop.schoolProfileId = :tpId')
-            ->andWhere('e.schoolId = :schoolId')
-            ->setParameter('tpId', $schoolUser->getId())
-            ->setParameter('schoolId', $school->getId())
-            ->orderBy('eo.occurenceAt', 'ASC');
+        $occurrences = [];
 
-        if ($type !== null) {
-            $qb->andWhere('e.type = :type')->setParameter('type', $type);
+        if ($profile !== null) {
+            $qb = $this->em->createQueryBuilder()
+                ->select('eop', 'eo')
+                ->from(EventOccurenceProfile::class, 'eop')
+                ->join(EventOccurence::class, 'eo', 'WITH', 'eo.id = eop.occurenceId')
+                ->join(Event::class, 'e', 'WITH', 'e.id = eo.eventId')
+                ->where('eop.profileId = :profileId')
+                ->andWhere('e.schoolId = :schoolId')
+                ->setParameter('profileId', $profile->getId())
+                ->setParameter('schoolId', $school->getId())
+                ->orderBy('eo.occurenceAt', 'ASC');
+
+            if ($type !== null) {
+                $qb->andWhere('e.type = :type')->setParameter('type', $type);
+            }
+
+            $occurrences = $qb->getQuery()->getResult();
         }
-
-        $occurrences = $qb->getQuery()->getResult();
 
         return $this->render('school/my/courses.html.twig', [
             'school'      => $school,

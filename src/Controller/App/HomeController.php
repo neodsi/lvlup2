@@ -6,7 +6,7 @@ namespace App\Controller\App;
 
 use App\Entity\Profile;
 use App\Entity\School;
-use App\Entity\SchoolUser;
+use App\Entity\SchoolProfileSeason;
 use App\Enum\Gender;
 use App\Enum\SchoolProfileStatus;
 use App\Enum\SchoolRole;
@@ -43,23 +43,45 @@ class HomeController extends AbstractController
         }
 
         if ($this->isGranted('ROLE_SCHOOL')) {
-            /** @var SchoolUser|null $schoolUser */
-            $schoolUser = $this->em->createQueryBuilder()
-                ->select('su', 't')
-                ->from(SchoolUser::class, 'su')
-                ->join('su.school', 't')
-                ->where('su.user = :user')
-                ->andWhere('su.deletedAt IS NULL')
-                ->setParameter('user', $user)
-                ->setMaxResults(1)
-                ->getQuery()
-                ->getOneOrNullResult();
+            $profile = $user->getProfile();
 
-            if ($schoolUser === null) {
+            // Find a school owned by this user
+            $school = $profile !== null
+                ? $this->em->createQueryBuilder()
+                    ->select('s')
+                    ->from(School::class, 's')
+                    ->where('s.ownerProfileId = :profileId')
+                    ->andWhere('s.deletedAt IS NULL')
+                    ->setMaxResults(1)
+                    ->setParameter('profileId', $profile->getId())
+                    ->getQuery()
+                    ->getOneOrNullResult()
+                : null;
+
+            // Fall back to any school via SchoolProfileSeason with School role
+            if ($school === null && $profile !== null) {
+                $sps = $this->em->createQueryBuilder()
+                    ->select('sps')
+                    ->from(SchoolProfileSeason::class, 'sps')
+                    ->where('sps.profileId = :profileId')
+                    ->andWhere('sps.role = :role')
+                    ->orderBy('sps.createdAt', 'DESC')
+                    ->setMaxResults(1)
+                    ->setParameter('profileId', $profile->getId())
+                    ->setParameter('role', SchoolRole::School)
+                    ->getQuery()
+                    ->getOneOrNullResult();
+
+                if ($sps !== null) {
+                    $school = $this->em->getRepository(School::class)->find($sps->getSchoolId());
+                }
+            }
+
+            if ($school === null) {
                 return $this->redirectToRoute('app_create_school');
             }
 
-            $request->getSession()->set('currentSchoolId', (string) $schoolUser->getSchool()->getId());
+            $request->getSession()->set('currentSchoolId', (string) $school->getId());
 
             return $this->redirectToRoute('school_home');
         }
@@ -76,27 +98,45 @@ class HomeController extends AbstractController
     public function selectSchool(string $id, Request $request): Response
     {
         /** @var \App\Entity\User $user */
-        $user = $this->getUser();
+        $user    = $this->getUser();
+        $profile = $user->getProfile();
 
-        $tp = $this->em->createQueryBuilder()
-            ->select('su')
-            ->from(SchoolUser::class, 'su')
-            ->where('su.school = :schoolId')
-            ->andWhere('su.user = :user')
-            ->andWhere('su.deletedAt IS NULL')
-            ->setParameter('schoolId', $id)
-            ->setParameter('user', $user)
+        if ($profile === null) {
+            throw $this->createAccessDeniedException('No profile.');
+        }
+
+        // Find the user's role in this school (any season)
+        $school = $this->em->getRepository(School::class)->find($id);
+        if ($school === null) {
+            throw $this->createNotFoundException('School not found.');
+        }
+
+        // Check ownership first
+        if ($school->getOwnerProfileId() === $profile->getId()) {
+            $request->getSession()->set('currentSchoolId', $id);
+            return $this->redirectToRoute('school_home');
+        }
+
+        // Find any SchoolProfileSeason for this profile+school
+        $sps = $this->em->createQueryBuilder()
+            ->select('sps')
+            ->from(SchoolProfileSeason::class, 'sps')
+            ->where('sps.profileId = :profileId')
+            ->andWhere('sps.schoolId = :schoolId')
+            ->orderBy('sps.createdAt', 'DESC')
             ->setMaxResults(1)
+            ->setParameter('profileId', $profile->getId())
+            ->setParameter('schoolId', $id)
             ->getQuery()
             ->getOneOrNullResult();
 
-        if ($tp === null) {
+        if ($sps === null) {
             throw $this->createAccessDeniedException('Not a member of this school.');
         }
 
         $request->getSession()->set('currentSchoolId', $id);
 
-        return match ($tp->getRole()) {
+        return match ($sps->getRole()) {
             SchoolRole::Teacher => $this->redirectToRoute('teacher_fast_count'),
             SchoolRole::Student => $this->redirectToRoute('student_home'),
             default             => $this->redirectToRoute('school_home'),
@@ -193,12 +233,7 @@ class HomeController extends AbstractController
             $primaryProfile = $user->getProfile();
 
             if ($primaryProfile !== null) {
-                $schoolUser = new SchoolUser();
-                $schoolUser->setSchool($school);
-                $schoolUser->setUser($user);
-                $schoolUser->setRole(SchoolRole::School);
-                $schoolUser->setStatus(SchoolProfileStatus::Accepted);
-                $this->em->persist($schoolUser);
+                $school->setOwnerProfileId($primaryProfile->getId());
             }
 
             if (!in_array('ROLE_SCHOOL', $user->getRoles(), true)) {

@@ -18,7 +18,7 @@ class SchoolProfilePackage
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $schoolProfileId;
+    private string $profileId;
 
     #[ORM\Column(type: 'string', length: 36)]
     private string $packageId;
@@ -83,14 +83,14 @@ class SchoolProfilePackage
         return $this->id;
     }
 
-    public function getSchoolProfileId(): string
+    public function getProfileId(): string
     {
-        return $this->schoolProfileId;
+        return $this->profileId;
     }
 
-    public function setSchoolProfileId(string $schoolProfileId): static
+    public function setProfileId(string $profileId): static
     {
-        $this->schoolProfileId = $schoolProfileId;
+        $this->profileId = $profileId;
 
         return $this;
     }

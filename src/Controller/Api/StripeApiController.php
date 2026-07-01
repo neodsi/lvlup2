@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Entity\School;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolUserRepository;
 use App\Service\Payment\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,7 +18,6 @@ class StripeApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly StripeService $stripeService,
     ) {
     }
@@ -129,15 +128,30 @@ class StripeApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
         }
 
-        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
-
-        if ($schoolUser === null) {
+        $profile = $user->getProfile();
+        if ($profile === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $isAdmin = \in_array($schoolUser->getRole(), [SchoolRole::School, SchoolRole::School], true);
+        if ($school->getOwnerProfileId() !== null && $school->getOwnerProfileId() === $profile->getId()) {
+            return null;
+        }
 
-        if (!$isAdmin) {
+        $sps = $this->em->createQueryBuilder()
+            ->select('sps')
+            ->from(SchoolProfileSeason::class, 'sps')
+            ->where('sps.profileId = :profileId')
+            ->andWhere('sps.schoolId = :schoolId')
+            ->andWhere('sps.role = :role')
+            ->orderBy('sps.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('profileId', $profile->getId())
+            ->setParameter('schoolId', $schoolId)
+            ->setParameter('role', SchoolRole::School)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($sps === null) {
             return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);
         }
 

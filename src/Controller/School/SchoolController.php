@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Controller\School;
 
 use App\Entity\Event;
+use App\Entity\Order;
 use App\Entity\Season;
 use App\Entity\SchoolHomeKpiDaily;
-use App\Entity\SchoolUser;
-use App\Entity\Order;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
 use App\Security\Voter\SchoolVoter;
@@ -57,12 +57,11 @@ final class SchoolController extends AbstractController
         );
 
         $countMembers = fn(SchoolRole $role) => (int) $this->em->createQueryBuilder()
-            ->select('COUNT(tp.id)')
-            ->from(SchoolUser::class, 'tp')
-            ->where('tp.school = :school')
-            ->andWhere('tp.role = :role')
-            ->andWhere('tp.deletedAt IS NULL')
-            ->setParameter('school', $school)
+            ->select('COUNT(sps.id)')
+            ->from(SchoolProfileSeason::class, 'sps')
+            ->where('sps.schoolId = :schoolId')
+            ->andWhere('sps.role = :role')
+            ->setParameter('schoolId', $school->getId())
             ->setParameter('role', $role)
             ->getQuery()->getSingleScalarResult();
 

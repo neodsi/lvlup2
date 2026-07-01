@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\School;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
-use App\Enum\SchoolRole;
-use App\Repository\SchoolUserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,7 +24,7 @@ class DocumentApiController extends AbstractController
      * @param object|null $imagineCacheManager Liip\ImagineBundle\Imagine\Cache\CacheManager (optional — injected when LiipImagineBundle is registered)
      */
     public function __construct(
-        private readonly SchoolUserRepository $schoolUserRepository,
+        private readonly EntityManagerInterface $em,
         private readonly string $projectDir,
         private readonly ?object $imagineCacheManager = null,
     ) {
@@ -52,9 +53,17 @@ class DocumentApiController extends AbstractController
         }
 
         // Verify school membership
-        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, (string) $schoolId);
+        $profile = $user->getProfile();
+        $school  = $profile !== null ? $this->em->getRepository(School::class)->find((string) $schoolId) : null;
+        $isMember = $profile !== null && $school !== null && (
+            ($school->getOwnerProfileId() !== null && $school->getOwnerProfileId() === $profile->getId()) ||
+            $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                'profileId' => $profile->getId(),
+                'schoolId'  => (string) $schoolId,
+            ]) !== null
+        );
 
-        if ($schoolUser === null) {
+        if (!$isMember) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 

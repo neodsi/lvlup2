@@ -4,23 +4,19 @@ declare(strict_types=1);
 
 namespace App\Controller\School;
 
-use App\Entity\Activity;
 use App\Entity\Order;
 use App\Entity\Package;
 use App\Entity\PaymentSchedule;
+use App\Entity\Profile;
 use App\Entity\PriceModifier;
 use App\Entity\Season;
-use App\Entity\SchoolUser;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
-use App\Enum\Gender;
 use App\Enum\PackageStatus;
-use App\Enum\RegistrationStatus;
 use App\Enum\ScheduleStatus;
 use App\Enum\SchoolRole;
 use App\Form\School\MemberType;
-use App\Form\School\StaffMemberType;
 use App\Security\Voter\SchoolVoter;
 use App\Service\Email\EmailService;
 use App\Service\Member\MemberService;
@@ -55,10 +51,10 @@ final class MemberController extends AbstractController
     public function list(string $type, Request $request): Response
     {
         /** @var User $user */
-        $user = $this->getUser();
+        $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolMember($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -95,98 +91,115 @@ final class MemberController extends AbstractController
         ];
 
         // Filters
-        $search             = trim((string) $request->query->get('q', ''));
-        $filterStatus       = (string) $request->query->get('registration_status', '');
-        $filterHasUser      = (string) $request->query->get('has_user', '');
-        $filterHasInjury    = (string) $request->query->get('has_injury', '');
-        $filterPayStatus    = (string) $request->query->get('payment_status', '');
-        $filterAgeGroup     = '';
-        $filterActivity     = (string) $request->query->get('activity', '');
-        $filterPkgType      = (string) $request->query->get('package_type', '');
-        $filterPackageId    = (string) $request->query->get('package_id', '');
-        $filterPayLoc       = (string) $request->query->get('payment_location', '');
-        $filterOnsiteMethod = (string) $request->query->get('onsite_method', '');
-        $filterOnlineMethod = (string) $request->query->get('online_method', '');
-        $filterPastDue      = (string) $request->query->get('past_due', '');
+        $search                   = trim((string) $request->query->get('q', ''));
+        $filterHasUser            = (string) $request->query->get('has_user', '');
+        $filterRegistrationStatus = (string) $request->query->get('registration_status', '');
+        $filterActivity           = (string) $request->query->get('activity', '');
+        $filterPayStatus          = (string) $request->query->get('payment_status', '');
+        $filterPkgType            = (string) $request->query->get('package_type', '');
+        $filterPackageId          = (string) $request->query->get('package_id', '');
+        $filterPayLoc             = (string) $request->query->get('payment_location', '');
+        $filterOnsiteMethod       = (string) $request->query->get('onsite_method', '');
+        $filterOnlineMethod       = (string) $request->query->get('online_method', '');
+        $filterPastDue            = (string) $request->query->get('past_due', '');
+        $filterHasInjury          = (string) $request->query->get('has_injury', '');
 
-        // Build member query (eager-load user + profile to avoid N+1)
+        // Build SchoolProfileSeason query
         $qb = $this->em->createQueryBuilder()
-            ->select('tp', 'u', 'p')
-            ->from(SchoolUser::class, 'tp')
-            ->join('tp.user', 'u')
-            ->leftJoin('u.profile', 'p')
-            ->where('tp.school = :school')
-            ->andWhere('tp.deletedAt IS NULL')
-            ->orderBy('p.lastName', 'ASC')
-            ->addOrderBy('p.firstName', 'ASC')
-            ->setParameter('school', $school);
+            ->select('tps')
+            ->from(SchoolProfileSeason::class, 'tps')
+            ->where('tps.schoolId = :schoolId')
+            ->setParameter('schoolId', $school->getId());
+
+        if ($season !== null) {
+            $qb->andWhere('tps.seasonId = :seasonId')
+               ->setParameter('seasonId', $season->getId());
+        }
 
         if ($type !== 'all') {
-            $qb->andWhere('tp.role = :role')->setParameter('role', $roleMap[$type]);
+            $qb->andWhere('tps.role = :role')
+               ->setParameter('role', $roleMap[$type]);
         }
 
-        if ($search !== '') {
-            $qb->andWhere('LOWER(p.firstName) LIKE :q OR LOWER(p.lastName) LIKE :q OR p.phone LIKE :q')
-               ->setParameter('q', '%' . mb_strtolower($search) . '%');
-        }
-
-        if ($filterHasUser === 'yes') {
-            $qb->andWhere('p IS NOT NULL');
-        } elseif ($filterHasUser === 'no') {
-            $qb->andWhere('p IS NULL');
-        }
-
-        /** @var SchoolUser[] $members */
-        $members   = $qb->getQuery()->getResult();
-        $memberIds = array_map(static fn(SchoolUser $m): string => $m->getId(), $members);
-
-        // TPS map for the current season
-        $tpsMap = [];
-        if ($season !== null && count($memberIds) > 0) {
-            $tpsList = $this->em->getRepository(SchoolProfileSeason::class)->findBy([
-                'seasonId' => $season->getId(),
-            ]);
-            foreach ($tpsList as $tps) {
-                $tpsMap[$tps->getSchoolProfileId()] = $tps;
+        if ($filterRegistrationStatus !== '') {
+            $statusEnum = \App\Enum\SchoolProfileStatus::tryFrom($filterRegistrationStatus);
+            if ($statusEnum !== null) {
+                $qb->andWhere('tps.status = :status')
+                   ->setParameter('status', $statusEnum);
             }
         }
 
-        // Students must have a TPS entry for the selected season
-        if ($type === 'students' && $season !== null) {
-            $members = array_values(array_filter(
-                $members,
-                static fn(SchoolUser $m): bool => isset($tpsMap[$m->getId()])
-            ));
-            $memberIds = array_map(static fn(SchoolUser $m): string => $m->getId(), $members);
+        $qb->orderBy('tps.createdAt', 'ASC');
+
+        /** @var SchoolProfileSeason[] $members */
+        $members = $qb->getQuery()->getResult();
+
+        // Load and attach profiles
+        $profileIds = array_unique(array_map(fn(SchoolProfileSeason $m) => $m->getProfileId(), $members));
+        $profilesById = [];
+        if (!empty($profileIds)) {
+            $profileList = $this->em->createQuery(
+                'SELECT p FROM App\Entity\Profile p WHERE p.id IN (:ids)'
+            )->setParameter('ids', $profileIds)->getResult();
+            foreach ($profileList as $p) {
+                $profilesById[$p->getId()] = $p;
+            }
+        }
+        foreach ($members as $sps) {
+            $sps->setProfile($profilesById[$sps->getProfileId()] ?? null);
         }
 
-        // PHP-side TPS filters (registration status, injury, age group, activity)
-        if ($filterStatus !== '' || $filterHasInjury !== '' || $filterAgeGroup !== '' || $filterActivity !== '') {
+        // Sort by last name / first name via transient profile
+        usort($members, static function (SchoolProfileSeason $a, SchoolProfileSeason $b): int {
+            $pA = $a->getProfile();
+            $pB = $b->getProfile();
+            $nameA = ($pA?->getLastName() ?? '') . ($pA?->getFirstName() ?? '');
+            $nameB = ($pB?->getLastName() ?? '') . ($pB?->getFirstName() ?? '');
+            return strcasecmp($nameA, $nameB);
+        });
+
+        // Search filter
+        if ($search !== '') {
+            $searchLower = mb_strtolower($search);
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($tpsMap, $filterStatus, $filterHasInjury, $filterAgeGroup, $filterActivity): bool {
-                    $tps = $tpsMap[$m->getId()] ?? null;
-
-                    if ($filterStatus !== '' && ($tps === null || $tps->getRegistrationStatus()->value !== $filterStatus)) {
+                static function (SchoolProfileSeason $m) use ($searchLower): bool {
+                    $p = $m->getProfile();
+                    if ($p === null) {
                         return false;
                     }
-                    if ($filterHasInjury === 'yes' && ($tps === null || !$tps->getInjuryWarning())) {
-                        return false;
-                    }
-                    if ($filterHasInjury === 'no' && ($tps !== null && $tps->getInjuryWarning())) {
-                        return false;
-                    }
-                    if ($filterAgeGroup !== '' && ($tps === null || $tps->getAgeGroupId() !== $filterAgeGroup)) {
-                        return false;
-                    }
-                    if ($filterActivity !== '' && ($tps === null || !in_array($filterActivity, $tps->getActivityIds() ?? [], true))) {
-                        return false;
-                    }
-
-                    return true;
+                    $name = mb_strtolower($p->getFirstName() . ' ' . $p->getLastName());
+                    return str_contains($name, $searchLower)
+                        || str_contains((string) $p->getPhone(), $searchLower);
                 }
             ));
-            $memberIds = array_map(static fn(SchoolUser $m): string => $m->getId(), $members);
+        }
+
+        if ($filterHasUser === 'yes') {
+            $members = array_values(array_filter(
+                $members,
+                static fn(SchoolProfileSeason $m): bool => $m->getUser() !== null
+            ));
+        } elseif ($filterHasUser === 'no') {
+            $members = array_values(array_filter(
+                $members,
+                static fn(SchoolProfileSeason $m): bool => $m->getUser() === null
+            ));
+        }
+
+        // Build profileId <→ spsId mapping for financial queries
+        $profileToSps = [];
+        $spsToProfile = [];
+        foreach ($members as $sps) {
+            $profileToSps[$sps->getProfileId()] = $sps->getId();
+            $spsToProfile[$sps->getId()]         = $sps->getProfileId();
+        }
+        $memberProfileIds = array_keys($profileToSps);
+
+        // tpsMap = spsId → sps (for template backward-compat)
+        $tpsMap = [];
+        foreach ($members as $sps) {
+            $tpsMap[$sps->getId()] = $sps;
         }
 
         // Financial data, packages, activities
@@ -202,29 +215,32 @@ final class MemberController extends AbstractController
         $usedOnsiteMethods  = [];
         $usedOnlineMethods  = [];
         $allPackages        = [];
-        $activitiesMap      = [];
         $allActivities      = [];
         $allReductions      = [];
         $allIncrements      = [];
 
-        if ($season !== null && count($memberIds) > 0) {
+        if ($season !== null && !empty($memberProfileIds)) {
 
-            // Order aggregates (total/paid/count per member)
+            // Order aggregates keyed by profileId → transform to spsId
             $orderAgg = $this->em->createQuery(
-                'SELECT o.schoolProfileId, SUM(o.totalAmount) as total, SUM(o.paidAmount) as paid, COUNT(o.id) as ordersCount
+                'SELECT o.profileId, SUM(o.totalAmount) as total, SUM(o.paidAmount) as paid, COUNT(o.id) as ordersCount
                  FROM App\Entity\Order o
                  WHERE o.schoolId = :schoolId
                    AND o.seasonId = :seasonId
                    AND o.deletedAt IS NULL
-                   AND o.schoolProfileId IN (:ids)
-                 GROUP BY o.schoolProfileId'
+                   AND o.profileId IN (:ids)
+                 GROUP BY o.profileId'
             )
             ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
-            ->setParameter('ids', $memberIds)
+            ->setParameter('ids', $memberProfileIds)
             ->getArrayResult();
 
             foreach ($orderAgg as $row) {
+                $spsId = $profileToSps[$row['profileId']] ?? null;
+                if ($spsId === null) {
+                    continue;
+                }
                 $total = (int) $row['total'];
                 $paid  = (int) $row['paid'];
                 $left  = $total - $paid;
@@ -241,7 +257,7 @@ final class MemberController extends AbstractController
                     $payStatus = 'partially_paid';
                 }
 
-                $financialMap[$row['schoolProfileId']] = [
+                $financialMap[$spsId] = [
                     'total'       => $total,
                     'paid'        => $paid,
                     'left'        => max(0, $left),
@@ -250,31 +266,29 @@ final class MemberController extends AbstractController
                 ];
             }
 
-            // Order IDs + buyer profileIds for downstream queries
+            // Order IDs for downstream queries
             $orderIdRows = $this->em->createQuery(
-                'SELECT o.id, o.schoolProfileId, o.profileId
+                'SELECT o.id, o.profileId
                  FROM App\Entity\Order o
                  WHERE o.schoolId = :schoolId
                    AND o.seasonId = :seasonId
                    AND o.deletedAt IS NULL
-                   AND o.schoolProfileId IN (:ids)'
+                   AND o.profileId IN (:ids)'
             )
             ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
-            ->setParameter('ids', $memberIds)
+            ->setParameter('ids', $memberProfileIds)
             ->getArrayResult();
 
-            $orderToProfile      = [];
-            $orderIds            = [];
-            $orderBuyerProfileId = [];
+            $orderToProfile = [];
+            $orderIds       = [];
             foreach ($orderIdRows as $row) {
-                $orderToProfile[$row['id']]      = $row['schoolProfileId'];
-                $orderIds[]                      = $row['id'];
-                $orderBuyerProfileId[$row['id']] = $row['profileId'];
+                $orderToProfile[$row['id']] = $row['profileId'];
+                $orderIds[]                 = $row['id'];
             }
 
-            if (count($orderIds) > 0) {
-                // Next pending payment schedule per member
+            if (!empty($orderIds)) {
+                // Next pending schedule per member
                 $schedRows = $this->em->createQuery(
                     'SELECT ps.orderId, MIN(ps.dueAt) as nextDue
                      FROM App\Entity\PaymentSchedule ps
@@ -287,8 +301,9 @@ final class MemberController extends AbstractController
                 ->getArrayResult();
 
                 foreach ($schedRows as $row) {
-                    $tpId = $orderToProfile[$row['orderId']] ?? null;
-                    if ($tpId === null) {
+                    $pid   = $orderToProfile[$row['orderId']] ?? null;
+                    $spsId = $pid ? ($profileToSps[$pid] ?? null) : null;
+                    if ($spsId === null) {
                         continue;
                     }
                     $due = $row['nextDue'];
@@ -300,12 +315,12 @@ final class MemberController extends AbstractController
                     if (!$due instanceof \DateTimeImmutable) {
                         continue;
                     }
-                    if (!isset($nextScheduleMap[$tpId]) || $due < $nextScheduleMap[$tpId]) {
-                        $nextScheduleMap[$tpId] = $due;
+                    if (!isset($nextScheduleMap[$spsId]) || $due < $nextScheduleMap[$spsId]) {
+                        $nextScheduleMap[$spsId] = $due;
                     }
                 }
 
-                // Total nb payment schedules per member
+                // Nb schedules per member
                 $schedCountRows = $this->em->createQuery(
                     'SELECT ps.orderId, COUNT(ps.id) as cnt
                      FROM App\Entity\PaymentSchedule ps
@@ -316,14 +331,15 @@ final class MemberController extends AbstractController
                 ->getArrayResult();
 
                 foreach ($schedCountRows as $row) {
-                    $tpId = $orderToProfile[$row['orderId']] ?? null;
-                    if ($tpId === null) {
+                    $pid   = $orderToProfile[$row['orderId']] ?? null;
+                    $spsId = $pid ? ($profileToSps[$pid] ?? null) : null;
+                    if ($spsId === null) {
                         continue;
                     }
-                    $nbSchedulesMap[$tpId] = ($nbSchedulesMap[$tpId] ?? 0) + (int) $row['cnt'];
+                    $nbSchedulesMap[$spsId] = ($nbSchedulesMap[$spsId] ?? 0) + (int) $row['cnt'];
                 }
 
-                // Last payment date per member
+                // Last payment date
                 $lastPaidRows = $this->em->createQuery(
                     'SELECT py.orderId, MAX(py.paidAt) as lastPaid
                      FROM App\Entity\Payment py
@@ -335,8 +351,9 @@ final class MemberController extends AbstractController
                 ->getArrayResult();
 
                 foreach ($lastPaidRows as $row) {
-                    $tpId = $orderToProfile[$row['orderId']] ?? null;
-                    if ($tpId === null) {
+                    $pid   = $orderToProfile[$row['orderId']] ?? null;
+                    $spsId = $pid ? ($profileToSps[$pid] ?? null) : null;
+                    if ($spsId === null) {
                         continue;
                     }
                     $lastPaid = $row['lastPaid'];
@@ -348,12 +365,12 @@ final class MemberController extends AbstractController
                     if (!$lastPaid instanceof \DateTimeImmutable) {
                         continue;
                     }
-                    if (!isset($lastPaymentDateMap[$tpId]) || $lastPaid > $lastPaymentDateMap[$tpId]) {
-                        $lastPaymentDateMap[$tpId] = $lastPaid;
+                    if (!isset($lastPaymentDateMap[$spsId]) || $lastPaid > $lastPaymentDateMap[$spsId]) {
+                        $lastPaymentDateMap[$spsId] = $lastPaid;
                     }
                 }
 
-                // Payment methods used per member
+                // Payment methods
                 $pmRows = $this->em->createQuery(
                     'SELECT py.orderId, py.method
                      FROM App\Entity\Payment py
@@ -364,33 +381,34 @@ final class MemberController extends AbstractController
                 ->getArrayResult();
 
                 foreach ($pmRows as $row) {
-                    $tpId = $orderToProfile[$row['orderId']] ?? null;
-                    if ($tpId === null) {
+                    $pid   = $orderToProfile[$row['orderId']] ?? null;
+                    $spsId = $pid ? ($profileToSps[$pid] ?? null) : null;
+                    if ($spsId === null) {
                         continue;
                     }
                     $m   = $row['method'];
                     $val = $m instanceof \UnitEnum ? $m->value : (string) $m;
-                    if (!isset($paymentMethodMap[$tpId]) || !in_array($val, $paymentMethodMap[$tpId], true)) {
-                        $paymentMethodMap[$tpId][] = $val;
+                    if (!isset($paymentMethodMap[$spsId]) || !in_array($val, $paymentMethodMap[$spsId], true)) {
+                        $paymentMethodMap[$spsId][] = $val;
                     }
                 }
 
-                // Buyer names — profile on the order when it differs from the member's own profile
+                // External buyer names
                 $memberProfileIdMap = [];
                 foreach ($members as $m) {
-                    if ($m->getProfile() !== null) {
-                        $memberProfileIdMap[$m->getId()] = $m->getProfile()->getId();
-                    }
+                    $memberProfileIdMap[$m->getId()] = $m->getProfileId();
                 }
 
                 $externalBuyerPids = [];
                 $memberBuyerPids   = [];
-                foreach ($orderBuyerProfileId as $ordId => $buyerPid) {
-                    $tpId      = $orderToProfile[$ordId] ?? null;
-                    $memberPid = $memberProfileIdMap[$tpId ?? ''] ?? null;
-                    if ($tpId !== null && $buyerPid !== $memberPid) {
-                        $externalBuyerPids[$buyerPid]      = true;
-                        $memberBuyerPids[$tpId][$buyerPid] = true;
+                foreach ($orderIdRows as $row) {
+                    $ordId    = $row['id'];
+                    $buyerPid = $row['profileId'];
+                    $pid      = $orderToProfile[$ordId] ?? null;
+                    $spsId    = $pid ? ($profileToSps[$pid] ?? null) : null;
+                    if ($spsId !== null && $buyerPid !== $memberProfileIdMap[$spsId]) {
+                        $externalBuyerPids[$buyerPid]       = true;
+                        $memberBuyerPids[$spsId][$buyerPid] = true;
                     }
                 }
 
@@ -408,60 +426,66 @@ final class MemberController extends AbstractController
                         $buyerNames[$row['id']] = trim($row['firstName'] . ' ' . $row['lastName']);
                     }
 
-                    foreach ($memberBuyerPids as $tpId => $pids) {
+                    foreach ($memberBuyerPids as $spsId => $pids) {
                         $names = array_values(array_filter(
                             array_map(static fn(string $pid): ?string => $buyerNames[$pid] ?? null, array_keys($pids))
                         ));
                         if (!empty($names)) {
-                            $buyerMap[$tpId] = implode(', ', $names);
+                            $buyerMap[$spsId] = implode(', ', $names);
                         }
                     }
                 }
             }
 
-            // Active packages count per member
+            // Packages count per member
             $pkgRows = $this->em->createQuery(
-                'SELECT pkg.schoolProfileId, COUNT(pkg.id) as cnt
+                'SELECT pkg.profileId, COUNT(pkg.id) as cnt
                  FROM App\Entity\SchoolProfilePackage pkg
                  WHERE pkg.schoolId = :schoolId
                    AND pkg.seasonId = :seasonId
-                   AND pkg.schoolProfileId IN (:ids)
+                   AND pkg.profileId IN (:ids)
                    AND pkg.deletedAt IS NULL
                    AND pkg.status = :status
-                 GROUP BY pkg.schoolProfileId'
+                 GROUP BY pkg.profileId'
             )
             ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
-            ->setParameter('ids', $memberIds)
+            ->setParameter('ids', $memberProfileIds)
             ->setParameter('status', PackageStatus::Active)
             ->getArrayResult();
 
             foreach ($pkgRows as $row) {
-                $packagesMap[$row['schoolProfileId']] = (int) $row['cnt'];
+                $spsId = $profileToSps[$row['profileId']] ?? null;
+                if ($spsId !== null) {
+                    $packagesMap[$spsId] = (int) $row['cnt'];
+                }
             }
 
             // Package types per member
             $pkgTypeRows = $this->em->createQuery(
-                'SELECT pkg.schoolProfileId, pkg.type
+                'SELECT pkg.profileId, pkg.type
                  FROM App\Entity\SchoolProfilePackage pkg
                  WHERE pkg.schoolId = :schoolId
                    AND pkg.seasonId = :seasonId
-                   AND pkg.schoolProfileId IN (:ids)
+                   AND pkg.profileId IN (:ids)
                    AND pkg.deletedAt IS NULL'
             )
             ->setParameter('schoolId', $school->getId())
             ->setParameter('seasonId', $season->getId())
-            ->setParameter('ids', $memberIds)
+            ->setParameter('ids', $memberProfileIds)
             ->getArrayResult();
 
             $seenPkgTypes = [];
             foreach ($pkgTypeRows as $row) {
-                $pkgTypesMap[$row['schoolProfileId']][] = $row['type'];
-                $seenPkgTypes[$row['type']]            = true;
+                $spsId = $profileToSps[$row['profileId']] ?? null;
+                if ($spsId !== null) {
+                    $pkgTypesMap[$spsId][] = $row['type'];
+                    $seenPkgTypes[$row['type']] = true;
+                }
             }
             $usedPkgTypes = array_keys($seenPkgTypes);
 
-            // Payment methods split by location
+            // Payment methods split
             $seenOnsite = [];
             $seenOnline = [];
             foreach ($paymentMethodMap as $methods) {
@@ -493,9 +517,8 @@ final class MemberController extends AbstractController
         if ($filterPayStatus !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($financialMap, $filterPayStatus): bool {
+                static function (SchoolProfileSeason $m) use ($financialMap, $filterPayStatus): bool {
                     $fin = $financialMap[$m->getId()] ?? null;
-
                     return $fin === null ? $filterPayStatus === 'unpaid' : $fin['status'] === $filterPayStatus;
                 }
             ));
@@ -504,7 +527,7 @@ final class MemberController extends AbstractController
         if ($filterPayLoc !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($paymentMethodMap, $filterPayLoc): bool {
+                static function (SchoolProfileSeason $m) use ($paymentMethodMap, $filterPayLoc): bool {
                     foreach ($paymentMethodMap[$m->getId()] ?? [] as $method) {
                         $isOnline = str_starts_with((string) $method, 'online_');
                         if ($filterPayLoc === 'online' && $isOnline) {
@@ -514,7 +537,6 @@ final class MemberController extends AbstractController
                             return true;
                         }
                     }
-
                     return false;
                 }
             ));
@@ -523,18 +545,15 @@ final class MemberController extends AbstractController
         if ($filterPkgType !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($pkgTypesMap, $filterPkgType): bool {
-                    return in_array($filterPkgType, $pkgTypesMap[$m->getId()] ?? [], true);
-                }
+                static fn(SchoolProfileSeason $m): bool => in_array($filterPkgType, $pkgTypesMap[$m->getId()] ?? [], true)
             ));
         }
 
         if ($filterPastDue === 'yes') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($nextScheduleMap, $now): bool {
+                static function (SchoolProfileSeason $m) use ($nextScheduleMap, $now): bool {
                     $due = $nextScheduleMap[$m->getId()] ?? null;
-
                     return $due instanceof \DateTimeImmutable && $due < $now;
                 }
             ));
@@ -543,56 +562,48 @@ final class MemberController extends AbstractController
         if ($filterOnsiteMethod !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($paymentMethodMap, $filterOnsiteMethod): bool {
-                    return in_array($filterOnsiteMethod, $paymentMethodMap[$m->getId()] ?? [], true);
-                }
+                static fn(SchoolProfileSeason $m): bool => in_array($filterOnsiteMethod, $paymentMethodMap[$m->getId()] ?? [], true)
             ));
         }
 
         if ($filterOnlineMethod !== '') {
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($paymentMethodMap, $filterOnlineMethod): bool {
-                    return in_array($filterOnlineMethod, $paymentMethodMap[$m->getId()] ?? [], true);
-                }
+                static fn(SchoolProfileSeason $m): bool => in_array($filterOnlineMethod, $paymentMethodMap[$m->getId()] ?? [], true)
+            ));
+        }
+
+        if ($filterHasInjury === 'yes') {
+            $members = array_values(array_filter(
+                $members,
+                static fn(SchoolProfileSeason $m): bool => $m->getProfile()?->getInjuryWarning() === true
+            ));
+        } elseif ($filterHasInjury === 'no') {
+            $members = array_values(array_filter(
+                $members,
+                static fn(SchoolProfileSeason $m): bool => ($m->getProfile()?->getInjuryWarning() ?? false) === false
             ));
         }
 
         if ($filterPackageId !== '' && $season !== null) {
-            $pkgMemberIds = array_column(
+            $pkgMemberProfileIds = array_column(
                 $this->em->createQuery(
-                    'SELECT tpp.schoolProfileId FROM App\Entity\SchoolProfilePackage tpp
+                    'SELECT tpp.profileId FROM App\Entity\SchoolProfilePackage tpp
                      WHERE tpp.packageId = :pkgId AND tpp.seasonId = :seasonId AND tpp.deletedAt IS NULL'
                 )
                 ->setParameter('pkgId', $filterPackageId)
                 ->setParameter('seasonId', $season->getId())
                 ->getArrayResult(),
-                'schoolProfileId'
+                'profileId'
             );
             $members = array_values(array_filter(
                 $members,
-                static function (SchoolUser $m) use ($pkgMemberIds): bool {
-                    return in_array($m->getId(), $pkgMemberIds, true);
-                }
+                static fn(SchoolProfileSeason $m): bool => in_array($m->getProfileId(), $pkgMemberProfileIds, true)
             ));
         }
 
-        // Activities, age groups & price modifiers for the season
+        // Activities and price modifiers for the season
         if ($season !== null) {
-            $actList = $this->em->createQuery(
-                'SELECT a FROM App\Entity\Activity a
-                 WHERE a.schoolId = :schoolId AND a.seasonId = :seasonId AND a.deletedAt IS NULL
-                 ORDER BY a.name ASC'
-            )
-            ->setParameter('schoolId', $school->getId())
-            ->setParameter('seasonId', $season->getId())
-            ->getResult();
-
-            foreach ($actList as $act) {
-                $activitiesMap[$act->getId()] = $act->getName();
-            }
-            $allActivities = $actList;
-
             $priceModifiers = $this->em->createQuery(
                 'SELECT pm FROM App\Entity\PriceModifier pm
                  WHERE pm.schoolId = :schoolId
@@ -614,49 +625,47 @@ final class MemberController extends AbstractController
         }
 
         $activeFilterCount = count(array_filter([
-            $search, $filterStatus, $filterHasUser, $filterHasInjury,
-            $filterPayStatus, $filterAgeGroup, $filterActivity, $filterPkgType,
-            $filterPayLoc, $filterPastDue, $filterPackageId,
-            $filterOnsiteMethod, $filterOnlineMethod,
+            $search, $filterHasUser, $filterRegistrationStatus, $filterActivity,
+            $filterPayStatus, $filterPkgType, $filterPayLoc, $filterPastDue,
+            $filterPackageId, $filterOnsiteMethod, $filterOnlineMethod, $filterHasInjury,
         ]));
 
         return $this->render('school/members/list.html.twig', [
-            'school'                => $school,
-            'type'                => $type,
-            'members'             => $members,
-            'season'              => $season,
-            'tpsMap'              => $tpsMap,
-            'financialMap'        => $financialMap,
-            'nextScheduleMap'     => $nextScheduleMap,
-            'nbSchedulesMap'      => $nbSchedulesMap,
-            'lastPaymentDateMap'  => $lastPaymentDateMap,
-            'buyerMap'            => $buyerMap,
-            'packagesMap'         => $packagesMap,
-            'paymentMethodMap'    => $paymentMethodMap,
-            'pkgTypesMap'         => $pkgTypesMap,
-            'usedPkgTypes'        => $usedPkgTypes,
-            'usedOnsiteMethods'   => $usedOnsiteMethods,
-            'usedOnlineMethods'   => $usedOnlineMethods,
-            'allPackages'         => $allPackages,
-            'activitiesMap'       => $activitiesMap,
-            'allActivities'       => $allActivities,
-            'allReductions'       => $allReductions,
-            'allIncrements'       => $allIncrements,
-            'filters'             => [
+            'school'               => $school,
+            'type'                 => $type,
+            'members'              => $members,
+            'season'               => $season,
+            'tpsMap'               => $tpsMap,
+            'financialMap'         => $financialMap,
+            'nextScheduleMap'      => $nextScheduleMap,
+            'nbSchedulesMap'       => $nbSchedulesMap,
+            'lastPaymentDateMap'   => $lastPaymentDateMap,
+            'buyerMap'             => $buyerMap,
+            'packagesMap'          => $packagesMap,
+            'paymentMethodMap'     => $paymentMethodMap,
+            'pkgTypesMap'          => $pkgTypesMap,
+            'usedPkgTypes'         => $usedPkgTypes,
+            'usedOnsiteMethods'    => $usedOnsiteMethods,
+            'usedOnlineMethods'    => $usedOnlineMethods,
+            'allPackages'          => $allPackages,
+            'allActivities'        => $allActivities,
+            'allReductions'        => $allReductions,
+            'allIncrements'        => $allIncrements,
+            'filters'              => [
                 'q'                   => $search,
-                'registration_status' => $filterStatus,
                 'has_user'            => $filterHasUser,
-                'has_injury'          => $filterHasInjury,
-                'payment_status'      => $filterPayStatus,
+                'registration_status' => $filterRegistrationStatus,
                 'activity'            => $filterActivity,
+                'payment_status'      => $filterPayStatus,
                 'package_type'        => $filterPkgType,
                 'payment_location'    => $filterPayLoc,
                 'past_due'            => $filterPastDue,
                 'package_id'          => $filterPackageId,
                 'onsite_method'       => $filterOnsiteMethod,
                 'online_method'       => $filterOnlineMethod,
+                'has_injury'          => $filterHasInjury,
             ],
-            'activeFilterCount'   => $activeFilterCount,
+            'activeFilterCount'    => $activeFilterCount,
         ]);
     }
 
@@ -664,60 +673,50 @@ final class MemberController extends AbstractController
     public function detail(string $id, Request $request): Response
     {
         /** @var User $user */
-        $user = $this->getUser();
+        $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolMember($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::VIEW, $school);
 
-        $member = $this->em->getRepository(SchoolUser::class)->find($id);
+        /** @var SchoolProfileSeason|null $member */
+        $member = $this->em->getRepository(SchoolProfileSeason::class)->find($id);
 
-        if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
+        if ($member === null || $member->getSchoolId() !== $school->getId()) {
             throw $this->createNotFoundException('Member not found.');
         }
 
-        // Fetch TPS for current season
-        $seasonId = $school->getCurrentSeasonId();
-        $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
-        $tps      = null;
-        if ($season !== null) {
-            $tps = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
-                'schoolProfileId' => $member->getId(),
-                'seasonId'      => $season->getId(),
-            ]);
-        }
+        // Attach profile
+        $profile = $this->em->getRepository(Profile::class)->find($member->getProfileId());
+        $member->setProfile($profile);
 
-        $profile = $member->getProfile();
-        $emergencyContact = $tps?->getEmergencyContact();
+        $season = $school->getCurrentSeasonId()
+            ? $this->em->getRepository(Season::class)->find($school->getCurrentSeasonId())
+            : null;
+
         $initialData = [
-            'firstName'          => $profile?->getFirstName(),
-            'lastName'           => $profile?->getLastName(),
-            'dob'                => $profile?->getDob(),
-            'phone'              => $profile?->getPhone(),
-            'addressText'        => $profile?->getAddressText(),
-            'gender'             => $profile?->getGender()?->value,
-            'note'               => $member->getNote(),
-            'registrationStatus' => $tps?->getRegistrationStatus()?->value,
-            'injuryWarning'      => $tps?->getInjuryWarning(),
+            'firstName'   => $profile?->getFirstName(),
+            'lastName'    => $profile?->getLastName(),
+            'dob'         => $profile?->getDob(),
+            'phone'       => $profile?->getPhone(),
+            'addressText' => $profile?->getAddressText(),
+            'gender'      => $profile?->getGender()?->value,
+            'note'        => $member->getNote(),
         ];
 
         $form = $this->createForm(MemberType::class, $initialData);
-        $form->get('email')->setData($member->getUser()?->getEmail());
-        $form->get('emergencyName')->setData($emergencyContact['name'] ?? null);
-        $form->get('emergencyRelationship')->setData($emergencyContact['relationship'] ?? null);
-        $form->get('emergencyEmail')->setData($emergencyContact['email'] ?? null);
-        $form->get('emergencyPhone')->setData($emergencyContact['phone'] ?? null);
-        $form->get('accepted')->setData($tps?->getAccepted() ?? []);
+        $form->get('email')->setData($profile?->getUser()?->getEmail());
+        $form->get('accepted')->setData($member->getAccepted() ?? []);
 
         return $this->render('school/members/detail.html.twig', [
-            'school'   => $school,
-            'member'   => $member,
-            'season'   => $season,
-            'tps'      => $tps,
-            'form'     => $form->createView(),
+            'school' => $school,
+            'member' => $member,
+            'season' => $season,
+            'tps'    => $member,
+            'form'   => $form->createView(),
         ]);
     }
 
@@ -725,84 +724,52 @@ final class MemberController extends AbstractController
     public function edit(string $id, Request $request): Response
     {
         /** @var User $user */
-        $user = $this->getUser();
+        $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolMember($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $member = $this->em->getRepository(SchoolUser::class)->find($id);
+        /** @var SchoolProfileSeason|null $member */
+        $member = $this->em->getRepository(SchoolProfileSeason::class)->find($id);
 
-        if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
+        if ($member === null || $member->getSchoolId() !== $school->getId()) {
             throw $this->createNotFoundException('Member not found.');
         }
 
-        $profile = $member->getProfile();
+        $profile = $this->em->getRepository(Profile::class)->find($member->getProfileId());
+        $member->setProfile($profile);
 
-        // Fetch TPS for current season
-        $seasonId = $school->getCurrentSeasonId();
-        $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
-        $tps      = null;
-        if ($season !== null) {
-            $tps = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
-                'schoolProfileId' => $member->getId(),
-                'seasonId'      => $season->getId(),
-            ]);
-        }
+        $season = $school->getCurrentSeasonId()
+            ? $this->em->getRepository(Season::class)->find($school->getCurrentSeasonId())
+            : null;
 
-        // Build initial data from existing member
-        $emergencyContact = $tps?->getEmergencyContact();
         $initialData = [
-            'firstName'          => $profile?->getFirstName(),
-            'lastName'           => $profile?->getLastName(),
-            'dob'                => $profile?->getDob(),
-            'phone'              => $profile?->getPhone(),
-            'addressText'        => $profile?->getAddressText(),
-            'gender'             => $profile?->getGender()?->value,
-            'note'               => $member->getNote(),
-            'registrationStatus' => $tps?->getRegistrationStatus()?->value,
-            'injuryWarning'      => $tps?->getInjuryWarning(),
+            'firstName'   => $profile?->getFirstName(),
+            'lastName'    => $profile?->getLastName(),
+            'dob'         => $profile?->getDob(),
+            'phone'       => $profile?->getPhone(),
+            'addressText' => $profile?->getAddressText(),
+            'gender'      => $profile?->getGender()?->value,
+            'note'        => $member->getNote(),
         ];
 
         $form = $this->createForm(MemberType::class, $initialData);
-
-        // Pre-fill unmapped fields from existing data
-        $form->get('email')->setData($member->getUser()?->getEmail());
-        $form->get('emergencyName')->setData($emergencyContact['name'] ?? null);
-        $form->get('emergencyRelationship')->setData($emergencyContact['relationship'] ?? null);
-        $form->get('emergencyEmail')->setData($emergencyContact['email'] ?? null);
-        $form->get('emergencyPhone')->setData($emergencyContact['phone'] ?? null);
-        $form->get('accepted')->setData($tps?->getAccepted() ?? []);
+        $form->get('email')->setData($profile?->getUser()?->getEmail());
+        $form->get('accepted')->setData($member->getAccepted() ?? []);
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
 
-            // Update note
             $member->setNote($data['note'] ?: null);
 
-            // Update or create SchoolProfileSeason
-            if ($season !== null) {
-                if ($tps === null) {
-                    $tps = new SchoolProfileSeason();
-                    $tps->setSchoolProfileId($member->getId());
-                    $tps->setSeasonId($season->getId());
-                    $tps->setSchoolId($school->getId());
-                    $this->em->persist($tps);
-                }
-
-                $regStatus = $data['registrationStatus'] ?? null;
-                if ($regStatus) {
-                    $tps->setRegistrationStatus(RegistrationStatus::from($regStatus));
-                }
-
-                $accepted = $form->get('accepted')->getData();
-                $tps->setAccepted($accepted ?: null);
-            }
+            $accepted = $form->get('accepted')->getData();
+            $member->setAccepted($accepted ?: null);
 
             $this->em->flush();
             $this->addFlash('success', 'Fiche mise à jour.');
@@ -811,10 +778,10 @@ final class MemberController extends AbstractController
         }
 
         return $this->render('school/members/detail.html.twig', [
-            'school'   => $school,
+            'school' => $school,
             'member' => $member,
             'season' => $season,
-            'tps'    => $tps,
+            'tps'    => $member,
             'form'   => $form->createView(),
         ]);
     }
@@ -823,10 +790,10 @@ final class MemberController extends AbstractController
     public function delete(string $id, Request $request): Response
     {
         /** @var User $user */
-        $user = $this->getUser();
+        $user   = $this->getUser();
         $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolMember($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -836,28 +803,38 @@ final class MemberController extends AbstractController
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
-        $member = $this->em->getRepository(SchoolUser::class)->find($id);
+        $member = $this->em->getRepository(SchoolProfileSeason::class)->find($id);
 
-        if ($member === null || $member->getSchool()?->getId() !== $school->getId() || $member->getDeletedAt() !== null) {
+        if ($member === null || $member->getSchoolId() !== $school->getId()) {
             throw $this->createNotFoundException('Member not found.');
         }
 
         $type = match ($member->getRole()) {
-            \App\Enum\SchoolRole::Teacher => 'teachers',
-            \App\Enum\SchoolRole::School   => 'admins',
-            default                         => 'students',
+            SchoolRole::Teacher => 'teachers',
+            SchoolRole::School  => 'admins',
+            default             => 'students',
         };
 
-        $memberId = $member->getId();
+        $profileId = $member->getProfileId();
 
-        $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileSeason tps WHERE tps.schoolProfileId = :id')
-            ->setParameter('id', $memberId)->execute();
-        $this->em->createQuery('DELETE FROM App\Entity\SchoolProfilePackage tpp WHERE tpp.schoolProfileId = :id')
-            ->setParameter('id', $memberId)->execute();
-        $this->em->createQuery('DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.schoolProfileId = :id')
-            ->setParameter('id', $memberId)->execute();
-        $this->em->createQuery('DELETE FROM App\Entity\SchoolProfileGalaParticipation tpgp WHERE tpgp.schoolProfileId = :id')
-            ->setParameter('id', $memberId)->execute();
+        $this->em->createQuery(
+            'DELETE FROM App\Entity\SchoolProfilePackage tpp WHERE tpp.profileId = :pid AND tpp.schoolId = :sid'
+        )
+        ->setParameter('pid', $profileId)
+        ->setParameter('sid', $school->getId())
+        ->execute();
+
+        $this->em->createQuery(
+            'DELETE FROM App\Entity\EventOccurenceProfile eop WHERE eop.profileId = :pid'
+        )
+        ->setParameter('pid', $profileId)
+        ->execute();
+
+        $this->em->createQuery(
+            'DELETE FROM App\Entity\SchoolProfileGalaParticipation tpgp WHERE tpgp.profileId = :pid'
+        )
+        ->setParameter('pid', $profileId)
+        ->execute();
 
         $this->em->remove($member);
         $this->em->flush();
@@ -872,17 +849,23 @@ final class MemberController extends AbstractController
     public function create(Request $request, string $type): Response
     {
         /** @var User $user */
-        $user        = $this->getUser();
-        $school      = $this->schoolContext->getCurrentSchool();
-        $schoolUser  = $this->schoolContext->getCurrentSchoolUser($user);
+        $user       = $this->getUser();
+        $school     = $this->schoolContext->getCurrentSchool();
+        $schoolMember = $this->schoolContext->getCurrentSchoolMember($user);
 
-        if ($school === null || $schoolUser === null) {
+        if ($school === null || $schoolMember === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
         $this->denyAccessUnlessGranted(SchoolVoter::UPDATE, $school);
 
-        $error = null;
+        $roleMap = [
+            'students' => SchoolRole::Student,
+            'teachers' => SchoolRole::Teacher,
+            'admins'   => SchoolRole::School,
+        ];
+
+        $error      = null;
         $emailValue = '';
         $noteValue  = '';
 
@@ -890,12 +873,6 @@ final class MemberController extends AbstractController
             if (!$this->isCsrfTokenValid('create_member', (string) $request->request->get('_token'))) {
                 $error = 'Token CSRF invalide.';
             } else {
-                $roleMap = [
-                    'students' => SchoolRole::Student,
-                    'teachers' => SchoolRole::Teacher,
-                    'admins'   => SchoolRole::School,
-                ];
-
                 $memberEmail = trim((string) $request->request->get('email', ''));
                 $noteValue   = trim((string) $request->request->get('note', ''));
                 $emailValue  = $memberEmail;
@@ -903,37 +880,26 @@ final class MemberController extends AbstractController
                 if ($memberEmail === '' || !filter_var($memberEmail, FILTER_VALIDATE_EMAIL)) {
                     $error = 'Veuillez saisir une adresse e-mail valide.';
                 } else {
-                    $season = null;
-                    if ($type === 'students') {
-                        $seasonId = $school->getCurrentSeasonId();
-                        $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
-                        if ($season === null) {
-                            $error = 'Aucune saison active trouvée.';
-                        }
-                    }
+                    // Season required for all member types
+                    $seasonId = $school->getCurrentSeasonId();
+                    $season   = $seasonId ? $this->em->getRepository(Season::class)->find($seasonId) : null;
 
-                    if ($error === null) {
+                    if ($season === null) {
+                        $error = 'Aucune saison active trouvée. Créez d\'abord une saison.';
+                    } else {
                         $userAccount = $this->em->getRepository(User::class)->findOneBy(['email' => $memberEmail]);
 
-                        if ($userAccount !== null) {
-                            $roleLabels = ['students' => 'élève', 'teachers' => 'professeur', 'admins' => 'administrateur'];
-                            /** @var SchoolUser|null $existingMember */
-                            $existingMember = $this->em->createQueryBuilder()
-                                ->select('su')
-                                ->from(SchoolUser::class, 'su')
-                                ->where('su.school = :school')
-                                ->andWhere('su.user = :user')
-                                ->andWhere('su.role = :role')
-                                ->andWhere('su.deletedAt IS NULL')
-                                ->setParameter('school', $school)
-                                ->setParameter('user', $userAccount)
-                                ->setParameter('role', $roleMap[$type])
-                                ->setMaxResults(1)
-                                ->getQuery()
-                                ->getOneOrNullResult();
+                        if ($userAccount !== null && $userAccount->getProfile() !== null) {
+                            $existingMember = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                                'profileId' => $userAccount->getProfile()->getId(),
+                                'schoolId'  => $school->getId(),
+                                'seasonId'  => $season->getId(),
+                                'role'      => $roleMap[$type],
+                            ]);
 
                             if ($existingMember !== null) {
-                                $error = sprintf('Cet e-mail est déjà inscrit comme %s dans cette école.', $roleLabels[$type]);
+                                $roleLabels = ['students' => 'élève', 'teachers' => 'professeur', 'admins' => 'administrateur'];
+                                $error = sprintf('Cet e-mail est déjà inscrit comme %s dans cette école pour cette saison.', $roleLabels[$type]);
                             }
                         }
 

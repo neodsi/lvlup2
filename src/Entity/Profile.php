@@ -50,6 +50,9 @@ class Profile
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $sizeShoe = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $injuryWarning = false;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -202,6 +205,9 @@ class Profile
 
     public function getSizeShoe(): ?string { return $this->sizeShoe; }
     public function setSizeShoe(?string $v): static { $this->sizeShoe = $v; return $this; }
+
+    public function getInjuryWarning(): bool { return $this->injuryWarning; }
+    public function setInjuryWarning(bool $v): static { $this->injuryWarning = $v; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable
     {

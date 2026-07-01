@@ -26,8 +26,6 @@ class Order
     #[ORM\Column(type: 'string', length: 36)]
     private string $profileId;
 
-    #[ORM\Column(type: 'string', length: 36)]
-    private string $schoolProfileId;
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $packageType = null;
@@ -104,17 +102,6 @@ class Order
         return $this;
     }
 
-    public function getSchoolProfileId(): string
-    {
-        return $this->schoolProfileId;
-    }
-
-    public function setSchoolProfileId(string $schoolProfileId): static
-    {
-        $this->schoolProfileId = $schoolProfileId;
-
-        return $this;
-    }
 
     public function getPackageType(): ?string
     {

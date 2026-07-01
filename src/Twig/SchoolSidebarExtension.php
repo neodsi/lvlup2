@@ -30,12 +30,12 @@ class SchoolSidebarExtension extends AbstractExtension
     public function getSidebarData(): array
     {
         if (!$this->security->isGranted('ROLE_SCHOOL')) {
-            return ['seasons' => [], 'currentSeasonId' => null];
+            return ['seasons' => [], 'currentSeasonId' => null, 'schoolId' => null];
         }
 
         $school = $this->schoolContext->getCurrentSchool();
         if ($school === null) {
-            return ['seasons' => [], 'currentSeasonId' => null];
+            return ['seasons' => [], 'currentSeasonId' => null, 'schoolId' => null];
         }
 
         $seasons = $this->em->getRepository(Season::class)->findBy(

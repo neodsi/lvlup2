@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Security\Voter;
 
 use App\Entity\School;
-use App\Entity\SchoolUser;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolUserRepository;
 use App\Security\SchoolRoleHierarchy;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -35,7 +35,7 @@ final class SchoolVoter extends Voter
     ];
 
     public function __construct(
-        private readonly SchoolUserRepository $schoolUserRepository,
+        private readonly EntityManagerInterface $em,
     ) {
     }
 
@@ -56,7 +56,7 @@ final class SchoolVoter extends Voter
         /** @var School $school */
         $school = $subject;
 
-        $schoolRole = $this->resolveSchoolRole($user, $school->getId());
+        $schoolRole = $this->resolveSchoolRole($user, $school);
 
         if ($schoolRole === null) {
             return false;
@@ -71,10 +71,31 @@ final class SchoolVoter extends Voter
         };
     }
 
-    private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
+    private function resolveSchoolRole(User $user, School $school): ?SchoolRole
     {
-        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
+        $profile = $user->getProfile();
+        if ($profile === null) {
+            return null;
+        }
 
-        return $schoolUser?->getRole();
+        // Check school ownership first (valid even without a season)
+        if ($school->getOwnerProfileId() === $profile->getId()) {
+            return SchoolRole::School;
+        }
+
+        // Find role from any SchoolProfileSeason for this school
+        $sps = $this->em->createQueryBuilder()
+            ->select('sps')
+            ->from(SchoolProfileSeason::class, 'sps')
+            ->where('sps.profileId = :profileId')
+            ->andWhere('sps.schoolId = :schoolId')
+            ->orderBy('sps.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('profileId', $profile->getId())
+            ->setParameter('schoolId', $school->getId())
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $sps?->getRole();
     }
 }

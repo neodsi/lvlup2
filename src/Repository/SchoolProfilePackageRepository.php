@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\SchoolUser;
+use App\Entity\Profile;
 use App\Entity\SchoolProfilePackage;
 use App\Entity\Season;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -20,18 +20,13 @@ class SchoolProfilePackageRepository extends ServiceEntityRepository
         parent::__construct($registry, SchoolProfilePackage::class);
     }
 
-    /**
-     * @return SchoolProfilePackage[]
-     */
-    public function findBySchoolProfileAndSeason(SchoolUser $schoolUser, Season $season): array
+    /** @return SchoolProfilePackage[] */
+    public function findByProfileAndSeason(Profile $profile, Season $season): array
     {
-        return $this->createQueryBuilder('tpp')
-            ->where('tpp.schoolProfile = :schoolProfile')
-            ->andWhere('tpp.season = :season')
-            ->andWhere('tpp.deletedAt IS NULL')
-            ->setParameter('schoolProfile', $schoolUser)
-            ->setParameter('season', $season)
-            ->getQuery()
-            ->getResult();
+        return $this->findBy([
+            'profileId' => $profile->getId(),
+            'seasonId'  => $season->getId(),
+            'deletedAt' => null,
+        ]);
     }
 }

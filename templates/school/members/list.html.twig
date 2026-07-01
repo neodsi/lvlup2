@@ -58,10 +58,10 @@
                 {# Statut inscription #}
                 <select name="registration_status" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <option value="" {{ filters.registration_status == '' ? 'selected' }}>Tous statuts</option>
-                    <option value="registered"     {{ filters.registration_status == 'registered'     ? 'selected' }}>Inscrit</option>
-                    <option value="pre_registered" {{ filters.registration_status == 'pre_registered' ? 'selected' }}>Pré-inscrit</option>
-                    <option value="trial_class"    {{ filters.registration_status == 'trial_class'    ? 'selected' }}>Cours d'essai</option>
-                    <option value="not_registered" {{ filters.registration_status == 'not_registered' ? 'selected' }}>Non inscrit</option>
+                    <option value="accepted"  {{ filters.registration_status == 'accepted'  ? 'selected' }}>Accepté</option>
+                    <option value="waiting"   {{ filters.registration_status == 'waiting'   ? 'selected' }}>En attente</option>
+                    <option value="refused"   {{ filters.registration_status == 'refused'   ? 'selected' }}>Refusé</option>
+                    <option value="suspended" {{ filters.registration_status == 'suspended' ? 'selected' }}>Suspendu</option>
                 </select>
 
                 {# Abonnement spécifique #}
@@ -77,34 +77,19 @@
                 {# Type d'abonnement #}
                 <select name="package_type" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <option value="" {{ filters.package_type == '' ? 'selected' }}>Tous types</option>
-                    <option value="a_la_carte"              {{ filters.package_type == 'a_la_carte'              ? 'selected' }}>À la carte</option>
+                    <option value="a_la_carte"                {{ filters.package_type == 'a_la_carte'                ? 'selected' }}>À la carte</option>
                     <option value="subscription_one_semester" {{ filters.package_type == 'subscription_one_semester' ? 'selected' }}>Abonnement semestre</option>
-                    <option value="subscription_one_year"   {{ filters.package_type == 'subscription_one_year'   ? 'selected' }}>Abonnement annuel</option>
-                    <option value="trial_class"             {{ filters.package_type == 'trial_class'             ? 'selected' }}>Cours d'essai</option>
+                    <option value="subscription_one_year"     {{ filters.package_type == 'subscription_one_year'     ? 'selected' }}>Abonnement annuel</option>
+                    <option value="trial_class"               {{ filters.package_type == 'trial_class'               ? 'selected' }}>Cours d'essai</option>
                 </select>
 
-                {# Méthode sur place #}
-                <select name="onsite_method" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" {{ filters.onsite_method == '' ? 'selected' }}>Méthode sur place</option>
-                    <option value="onsite_cash"     {{ filters.onsite_method == 'onsite_cash'     ? 'selected' }}>Espèces</option>
-                    <option value="onsite_check"    {{ filters.onsite_method == 'onsite_check'    ? 'selected' }}>Chèque</option>
-                    <option value="onsite_transfer" {{ filters.onsite_method == 'onsite_transfer' ? 'selected' }}>Virement</option>
-                </select>
-
-                {# Méthode en ligne #}
-                <select name="online_method" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" {{ filters.online_method == '' ? 'selected' }}>Méthode en ligne</option>
-                    <option value="online_stripe_checkout"         {{ filters.online_method == 'online_stripe_checkout'         ? 'selected' }}>CB en ligne</option>
-                    <option value="online_stripe_sepa_debit"       {{ filters.online_method == 'online_stripe_sepa_debit'       ? 'selected' }}>SEPA</option>
-                    <option value="online_stripe_customer_balance" {{ filters.online_method == 'online_stripe_customer_balance' ? 'selected' }}>Solde</option>
-                    <option value="online_stripe_link"             {{ filters.online_method == 'online_stripe_link'             ? 'selected' }}>Lien Stripe</option>
-                </select>
-
-                {# Lieu de paiement #}
-                <select name="payment_location" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" {{ filters.payment_location == '' ? 'selected' }}>Sur place / En ligne</option>
-                    <option value="onsite" {{ filters.payment_location == 'onsite' ? 'selected' }}>Sur place</option>
-                    <option value="online" {{ filters.payment_location == 'online' ? 'selected' }}>En ligne</option>
+                {# Statut paiement #}
+                <select name="payment_status" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <option value="" {{ filters.payment_status == '' ? 'selected' }}>Tous paiements</option>
+                    <option value="paid"           {{ filters.payment_status == 'paid'           ? 'selected' }}>Payé</option>
+                    <option value="partially_paid" {{ filters.payment_status == 'partially_paid' ? 'selected' }}>Partiel</option>
+                    <option value="unpaid"         {{ filters.payment_status == 'unpaid'         ? 'selected' }}>Impayé</option>
+                    <option value="overpaid"       {{ filters.payment_status == 'overpaid'       ? 'selected' }}>Surpayé</option>
                 </select>
 
                 {% endif %}{# end if season #}
@@ -122,26 +107,6 @@
                     <option value="yes" {{ filters.has_injury == 'yes' ? 'selected' }}>Avec avertissement</option>
                     <option value="no"  {{ filters.has_injury == 'no'  ? 'selected' }}>Sans avertissement</option>
                 </select>
-
-                {% if season %}
-
-
-                {# Échéance en retard #}
-                <select name="past_due" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" {{ filters.past_due == '' ? 'selected' }}>Toutes échéances</option>
-                    <option value="yes" {{ filters.past_due == 'yes' ? 'selected' }}>Échéance en retard</option>
-                </select>
-
-                {# Statut paiement #}
-                <select name="payment_status" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" {{ filters.payment_status == '' ? 'selected' }}>Tous paiements</option>
-                    <option value="paid"           {{ filters.payment_status == 'paid'           ? 'selected' }}>Payé</option>
-                    <option value="partially_paid" {{ filters.payment_status == 'partially_paid' ? 'selected' }}>Partiel</option>
-                    <option value="unpaid"         {{ filters.payment_status == 'unpaid'         ? 'selected' }}>Impayé</option>
-                    <option value="overpaid"       {{ filters.payment_status == 'overpaid'       ? 'selected' }}>Surpayé</option>
-                </select>
-
-                {% endif %}{# end if season #}
 
                 {# Compteur + reset #}
                 <span class="text-sm text-gray-400 ml-1">{{ members|length }} membre{{ members|length > 1 ? 's' }}</span>
@@ -180,34 +145,22 @@
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Activités</th>
                             {% endif %}
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Abonnements</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Commandes</th>
                             <th class="px-3 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Total dû</th>
                             <th class="px-3 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Restant</th>
                             <th class="px-3 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Payé</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Mode paiement</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Statut</th>
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Date paiement</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Acheteur</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Nb échéanciers</th>
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Prochaine échéance</th>
                             {% endif %}
-                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Note</th>
-                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Blessure</th>
                             <th class="py-3 pl-3 pr-5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         {% for member in members %}
-                            {% set tps         = tpsMap[member.id] ?? null %}
-                            {% set fin         = financialMap[member.id] ?? null %}
-                            {% set due         = nextScheduleMap[member.id] ?? null %}
-                            {% set pkgs        = packagesMap[member.id] ?? 0 %}
-                            {% set rs          = tps ? tps.registrationStatus.value : null %}
-                            {% set actIds      = tps ? (tps.activityIds ?? []) : [] %}
-                            {% set ordersCount = fin ? fin.ordersCount : 0 %}
-                            {% set lastPaid    = lastPaymentDateMap[member.id] ?? null %}
-                            {% set buyer       = buyerMap[member.id] ?? null %}
-                            {% set nbSchedules = nbSchedulesMap[member.id] ?? 0 %}
+                            {% set fin      = financialMap[member.id] ?? null %}
+                            {% set pkgs     = packagesMap[member.id] ?? 0 %}
+                            {% set rs       = member.status ? member.status.value : null %}
+                            {% set actIds   = [] %}
+                            {% set lastPaid = lastPaymentDateMap[member.id] ?? null %}
 
                             <tr class="hover:bg-gray-50 transition">
 
@@ -253,24 +206,25 @@
 
                                 {% if season %}
 
-
                                 {# Statut inscription #}
                                 <td class="px-3 py-3 whitespace-nowrap">
                                     {% if rs %}
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                                            {% if rs == 'registered' %}bg-green-50 text-green-700
-                                            {% elseif rs == 'pre_registered' %}bg-amber-50 text-amber-700
-                                            {% elseif rs == 'trial_class' %}bg-blue-50 text-blue-700
+                                            {% if rs == 'accepted' %}bg-green-50 text-green-700
+                                            {% elseif rs == 'waiting' %}bg-amber-50 text-amber-700
+                                            {% elseif rs == 'refused' %}bg-red-50 text-red-700
+                                            {% elseif rs == 'suspended' %}bg-gray-100 text-gray-500
                                             {% else %}bg-gray-100 text-gray-400{% endif %}">
-                                            {% if rs == 'registered' %}Inscrit
-                                            {% elseif rs == 'pre_registered' %}Pré-inscrit
-                                            {% elseif rs == 'trial_class' %}Cours d'essai
-                                            {% else %}Non inscrit{% endif %}
+                                            {% if rs == 'accepted' %}Accepté
+                                            {% elseif rs == 'waiting' %}En attente
+                                            {% elseif rs == 'refused' %}Refusé
+                                            {% elseif rs == 'suspended' %}Suspendu
+                                            {% else %}{{ rs }}{% endif %}
                                         </span>
                                     {% else %}<span class="text-gray-300 text-xs">—</span>{% endif %}
                                 </td>
 
-                                {% endif %}{# end if season (for age group + inscription) #}
+                                {% endif %}
 
                                 {# Date d'adhésion #}
                                 <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-500">
@@ -283,21 +237,10 @@
                                 {% if allActivities|length > 0 %}
                                 <td class="px-3 py-3 whitespace-nowrap">
                                     {% if actIds|length > 0 %}
-                                        {% set actNames = [] %}
-                                        {% for aid in actIds %}
-                                            {% if activitiesMap[aid] is defined %}
-                                                {% set actNames = actNames|merge([activitiesMap[aid]]) %}
-                                            {% endif %}
-                                        {% endfor %}
                                         <div class="relative group inline-flex">
                                             <span class="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-0.5 cursor-default">
-                                                {{ actNames|length }}
+                                                {{ actIds|length }}
                                             </span>
-                                            {% if actNames|length > 0 %}
-                                            <div class="pointer-events-none absolute bottom-full left-0 mb-1.5 w-44 bg-gray-800 text-white text-xs rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg">
-                                                {% for n in actNames %}<div>{{ n }}</div>{% endfor %}
-                                            </div>
-                                            {% endif %}
                                         </div>
                                     {% else %}<span class="text-gray-300 text-xs">—</span>{% endif %}
                                 </td>
@@ -310,13 +253,6 @@
                                             {{ pkgs }}
                                         </span>
                                     {% else %}<span class="text-gray-300 text-xs">—</span>{% endif %}
-                                </td>
-
-                                {# Commandes #}
-                                <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
-                                    {% if ordersCount > 0 %}
-                                        <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5">{{ ordersCount }}</span>
-                                    {% else %}<span class="text-gray-300">—</span>{% endif %}
                                 </td>
 
                                 {# Total dû #}
@@ -332,24 +268,6 @@
                                 {# Payé #}
                                 <td class="px-3 py-3 text-right whitespace-nowrap text-green-700">
                                     {% if fin %}{{ (fin.paid / 100)|number_format(2, ',', ' ') }} €{% else %}<span class="text-gray-300">—</span>{% endif %}
-                                </td>
-
-                                {# Mode de paiement #}
-                                <td class="px-3 py-3 whitespace-nowrap">
-                                    {% set methods = paymentMethodMap[member.id] ?? [] %}
-                                    {% if methods|length > 0 %}
-                                        <div class="flex flex-wrap gap-1">
-                                        {% for method in methods %}
-                                            {% if method starts with 'online_' %}
-                                                {% set mLabel = method == 'online_stripe_checkout' ? 'CB en ligne' : (method == 'online_stripe_sepa_debit' ? 'SEPA' : (method == 'online_stripe_customer_balance' ? 'Solde' : 'En ligne')) %}
-                                                <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 text-xs px-1.5 py-0.5">{{ mLabel }}</span>
-                                            {% else %}
-                                                {% set mLabel = method == 'onsite_cash' ? 'Espèces' : (method == 'onsite_check' ? 'Chèque' : (method == 'onsite_transfer' ? 'Virement' : 'Sur place')) %}
-                                                <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5">{{ mLabel }}</span>
-                                            {% endif %}
-                                        {% endfor %}
-                                        </div>
-                                    {% else %}<span class="text-gray-300 text-xs">—</span>{% endif %}
                                 </td>
 
                                 {# Statut paiement #}
@@ -373,49 +291,7 @@
                                     {{ lastPaid ? lastPaid|date('d/m/Y') : '—' }}
                                 </td>
 
-                                {# Acheteur #}
-                                <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
-                                    {{ buyer ?? '—' }}
-                                </td>
-
-                                {# Nb échéanciers #}
-                                <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
-                                    {% if nbSchedules > 0 %}
-                                        <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5">{{ nbSchedules }}</span>
-                                    {% else %}<span class="text-gray-300">—</span>{% endif %}
-                                </td>
-
-                                {# Prochaine échéance #}
-                                <td class="px-3 py-3 whitespace-nowrap text-xs {% if due and due < date() %}text-red-600 font-semibold{% else %}text-gray-600{% endif %}">
-                                    {{ due ? due|date('d/m/Y') : '—' }}
-                                </td>
-
                                 {% endif %}{# end if season #}
-
-                                {# Note #}
-                                <td class="px-3 py-3 text-center whitespace-nowrap">
-                                    {% if member.note %}
-                                        <div class="relative group inline-flex items-center justify-center">
-                                            <svg class="h-4 w-4 text-amber-400 hover:text-amber-600 cursor-default" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                            <div class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52 bg-gray-800 text-white text-xs rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg whitespace-normal text-left">
-                                                {{ member.note }}
-                                            </div>
-                                        </div>
-                                    {% else %}<span class="text-gray-200">—</span>{% endif %}
-                                </td>
-
-                                {# Avertissement blessure #}
-                                <td class="px-3 py-3 text-center whitespace-nowrap">
-                                    {% set injWarn = tps ? tps.injuryWarning : null %}
-                                    {% if injWarn %}
-                                        <div class="relative group inline-flex items-center justify-center">
-                                            <svg class="h-4 w-4 text-red-400 hover:text-red-600 cursor-default" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                            <div class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-52 bg-gray-800 text-white text-xs rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg whitespace-normal text-left">
-                                                {{ injWarn }}
-                                            </div>
-                                        </div>
-                                    {% else %}<span class="text-gray-200">—</span>{% endif %}
-                                </td>
 
                                 {# Actions #}
                                 <td class="py-3 pl-3 pr-5 text-right whitespace-nowrap">

@@ -9,7 +9,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'school_profile_gala_participations')]
-#[ORM\UniqueConstraint(name: 'uq_school_profile_event', columns: ['school_profile_id', 'event_id'])]
+#[ORM\UniqueConstraint(name: 'uq_school_profile_event', columns: ['profile_id', 'event_id'])]
 #[ORM\HasLifecycleCallbacks]
 class SchoolProfileGalaParticipation
 {
@@ -18,7 +18,7 @@ class SchoolProfileGalaParticipation
     private string $id;
 
     #[ORM\Column(type: 'string', length: 36)]
-    private string $schoolProfileId;
+    private string $profileId;
 
     #[ORM\Column(type: 'string', length: 36)]
     private string $eventId;
@@ -59,14 +59,14 @@ class SchoolProfileGalaParticipation
         return $this->id;
     }
 
-    public function getSchoolProfileId(): string
+    public function getProfileId(): string
     {
-        return $this->schoolProfileId;
+        return $this->profileId;
     }
 
-    public function setSchoolProfileId(string $schoolProfileId): static
+    public function setProfileId(string $profileId): static
     {
-        $this->schoolProfileId = $schoolProfileId;
+        $this->profileId = $profileId;
 
         return $this;
     }

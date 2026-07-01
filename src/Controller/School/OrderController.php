@@ -32,11 +32,10 @@ final class OrderController extends AbstractController
     public function list(\Symfony\Component\HttpFoundation\Request $request): Response
     {
         /** @var User $user */
-        $user        = $this->getUser();
+        $user       = $this->getUser();
         $school     = $this->schoolContext->getCurrentSchool();
-        $schoolUser = $this->schoolContext->getCurrentSchoolUser($user);
 
-        if ($school === null || $schoolUser === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolMember($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -65,15 +64,32 @@ final class OrderController extends AbstractController
             $season = null;
         }
 
-        $orders = $this->em->getRepository(Order::class)->findBy([
-            'schoolProfileId' => $schoolUser->getId(),
-            'schoolId'        => $school->getId(),
-        ], ['createdAt' => 'DESC']);
+        $profile = $user->getProfile();
+        $orders  = [];
+
+        if ($profile !== null) {
+            $qb = $this->em->createQueryBuilder()
+                ->select('o')
+                ->from(Order::class, 'o')
+                ->where('o.profileId = :profileId')
+                ->andWhere('o.schoolId = :schoolId')
+                ->andWhere('o.deletedAt IS NULL')
+                ->orderBy('o.createdAt', 'DESC')
+                ->setParameter('profileId', $profile->getId())
+                ->setParameter('schoolId', $school->getId());
+
+            if ($season !== null) {
+                $qb->andWhere('o.seasonId = :seasonId')
+                   ->setParameter('seasonId', $season->getId());
+            }
+
+            $orders = $qb->getQuery()->getResult();
+        }
 
         return $this->render('school/orders/list.html.twig', [
-            'school'   => $school,
-            'orders' => $orders,
-            'season' => $season,
+            'school'  => $school,
+            'orders'  => $orders,
+            'season'  => $season,
         ]);
     }
 
@@ -81,10 +97,10 @@ final class OrderController extends AbstractController
     public function detail(string $id): Response
     {
         /** @var User $user */
-        $user  = $this->getUser();
-        $school  = $this->schoolContext->getCurrentSchool();
+        $user   = $this->getUser();
+        $school = $this->schoolContext->getCurrentSchool();
 
-        if ($school === null || $this->schoolContext->getCurrentSchoolUser($user) === null) {
+        if ($school === null || $this->schoolContext->getCurrentSchoolMember($user) === null) {
             return $this->redirectToRoute('app_create_school');
         }
 
@@ -96,11 +112,11 @@ final class OrderController extends AbstractController
 
         $this->denyAccessUnlessGranted(OrderVoter::VIEW, $order);
 
-        $items = $this->em->getRepository(OrderItem::class)->findBy(['orderId' => $order->getId()]);
+        $items     = $this->em->getRepository(OrderItem::class)->findBy(['orderId' => $order->getId()]);
         $schedules = $this->em->getRepository(PaymentSchedule::class)->findBy(['orderId' => $order->getId()]);
 
         return $this->render('school/orders/detail.html.twig', [
-            'school'      => $school,
+            'school'    => $school,
             'order'     => $order,
             'items'     => $items,
             'schedules' => $schedules,

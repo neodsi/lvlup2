@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Profile;
 use App\Entity\Season;
-use App\Entity\SchoolUser;
 use App\Entity\SchoolProfileSeason;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -20,30 +20,17 @@ class SchoolProfileSeasonRepository extends ServiceEntityRepository
         parent::__construct($registry, SchoolProfileSeason::class);
     }
 
-    public function findOneBySchoolProfileAndSeason(
-        SchoolUser $schoolUser,
-        Season $season
-    ): ?SchoolProfileSeason {
-        return $this->createQueryBuilder('tps')
-            ->where('tps.schoolProfile = :schoolProfile')
-            ->andWhere('tps.season = :season')
-            ->setParameter('schoolProfile', $schoolUser)
-            ->setParameter('season', $season)
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+    public function findOneByProfileAndSeason(Profile $profile, Season $season): ?SchoolProfileSeason
+    {
+        return $this->findOneBy([
+            'profileId' => $profile->getId(),
+            'seasonId'  => $season->getId(),
+        ]);
     }
 
-    /**
-     * @return SchoolProfileSeason[]
-     */
-    public function findBySeasonWithRegistered(Season $season): array
+    /** @return SchoolProfileSeason[] */
+    public function findBySchoolAndSeason(string $schoolId, string $seasonId): array
     {
-        return $this->createQueryBuilder('tps')
-            ->where('tps.season = :season')
-            ->andWhere("tps.registrationStatus != 'not_registered'")
-            ->setParameter('season', $season)
-            ->getQuery()
-            ->getResult();
+        return $this->findBy(['schoolId' => $schoolId, 'seasonId' => $seasonId]);
     }
 }

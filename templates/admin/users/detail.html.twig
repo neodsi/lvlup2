@@ -177,11 +177,13 @@
                                         <a href="{{ path('app_admin_school_detail', {id: school.id}) }}" class="text-sm font-medium text-gray-900 hover:text-indigo-600 transition">
                                             {{ school.name }}
                                         </a>
-                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                                            {% if sp.role.value == 'school' %}bg-amber-50 text-amber-700
-                                            {% elseif sp.role.value == 'teacher' %}bg-blue-50 text-blue-700
-                                            {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                            {{ sp.role.value|capitalize }}
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border
+                                            {% if sp.role.value == 'school' %}bg-blue-50 text-blue-700 border-blue-200
+                                            {% elseif sp.role.value == 'teacher' %}bg-purple-50 text-purple-700 border-purple-200
+                                            {% else %}bg-green-50 text-green-700 border-green-200{% endif %}">
+                                            {% if sp.role.value == 'school' %}Admin
+                                            {% elseif sp.role.value == 'teacher' %}Professeur
+                                            {% else %}Élève{% endif %}
                                         </span>
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
                                             {% if sp.status.value == 'accepted' %}bg-green-50 text-green-700

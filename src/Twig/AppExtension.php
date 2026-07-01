@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Twig;
 
 use App\Entity\Profile;
-use App\Entity\SchoolUser;
+use App\Entity\SchoolProfileSeason;
 use App\Enum\SchoolRole;
 use App\Service\SchoolContextService;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -57,12 +57,9 @@ class AppExtension extends AbstractExtension
         return $formatter->format($date);
     }
 
-    /**
-     * Returns true if the given SchoolUser has role admin or owner.
-     */
-    public function isSchoolAdmin(SchoolUser $schoolUser): bool
+    public function isSchoolAdmin(SchoolProfileSeason $schoolProfileSeason): bool
     {
-        return in_array($schoolUser->getRole(), [SchoolRole::School, SchoolRole::School], true);
+        return $schoolProfileSeason->getRole() === SchoolRole::School;
     }
 
     /**
@@ -117,10 +114,7 @@ class AppExtension extends AbstractExtension
         return $roles;
     }
 
-    /**
-     * Returns the current user's SchoolUser for the current school (reads from session).
-     */
-    public function currentSchoolProfile(): ?SchoolUser
+    public function currentSchoolProfile(): ?SchoolProfileSeason
     {
         $token = $this->tokenStorage->getToken();
         if ($token === null) {

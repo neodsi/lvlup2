@@ -6,7 +6,6 @@ namespace App\Controller\Shop;
 
 use App\Entity\Season;
 use App\Entity\School;
-use App\Entity\SchoolUser;
 use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,11 +39,9 @@ class ShopController extends AbstractController
         string $routeName,
         string $template,
     ): Response {
-        // 1. Load school by currentSlug, fall back to previousSlugs for old URLs.
         $school = $this->em->getRepository(School::class)->findOneBy(['currentSlug' => $schoolSlug]);
 
         if ($school === null) {
-            // Search previousSlugs (JSON column): find any school that contains the slug.
             $school = $this->em->createQueryBuilder()
                 ->select('t')
                 ->from(School::class, 't')
@@ -55,7 +52,6 @@ class ShopController extends AbstractController
                 ->getOneOrNullResult();
 
             if ($school !== null) {
-                // Permanent redirect to the current canonical slug.
                 return $this->redirectToRoute(
                     $routeName,
                     ['schoolSlug' => $school->getCurrentSlug()],
@@ -66,10 +62,8 @@ class ShopController extends AbstractController
             throw $this->createNotFoundException('School not found.');
         }
 
-        // 2. Resolve the season to display.
         $season = $this->resolveSeason($school, $request->query->get('seasonId'));
 
-        // 3. Load events and packages for the season.
         $events   = [];
         $packages = [];
 
@@ -78,51 +72,31 @@ class ShopController extends AbstractController
             $packages = $season->getPackages()->filter(fn ($p) => $p->getDeletedAt() === null)->toArray();
         }
 
-        // 4. If user is logged in: load their SchoolProfile and registration info.
         /** @var User|null $user */
-        $user        = $this->getUser();
-        $schoolProfile = null;
+        $user                = $this->getUser();
         $schoolProfileSeason = null;
 
         if ($user !== null && $season !== null) {
-            // Load the SchoolUser that belongs to this user for this school.
-            $schoolProfile = $this->em->createQueryBuilder()
-                ->select('tp')
-                ->from(SchoolUser::class, 'tp')
-                ->where('tp.user = :user')
-                ->andWhere('tp.school = :school')
-                ->andWhere('tp.deletedAt IS NULL')
-                ->setParameter('user', $user)
-                ->setParameter('school', $school)
-                ->setMaxResults(1)
-                ->getQuery()
-                ->getOneOrNullResult();
-
-            if ($schoolProfile !== null) {
-                $schoolProfileSeason = $this->em->getRepository(SchoolProfileSeason::class)
-                    ->findOneBy([
-                        'schoolProfileId' => $schoolProfile->getId(),
-                        'seasonId'      => $season->getId(),
-                    ]);
+            $profile = $user->getProfile();
+            if ($profile !== null) {
+                $schoolProfileSeason = $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                    'profileId' => $profile->getId(),
+                    'schoolId'  => $school->getId(),
+                    'seasonId'  => $season->getId(),
+                ]);
             }
         }
 
         return $this->render($template, [
-            'school'               => $school,
-            'season'             => $season,
-            'events'             => $events,
-            'packages'           => $packages,
-            'schoolProfile'        => $schoolProfile,
-            'schoolProfileSeason'  => $schoolProfileSeason,
+            'school'              => $school,
+            'season'              => $season,
+            'events'              => $events,
+            'packages'            => $packages,
+            'schoolProfile'       => $schoolProfileSeason,
+            'schoolProfileSeason' => $schoolProfileSeason,
         ]);
     }
 
-    /**
-     * Resolves the season to display:
-     * 1. If ?seasonId is provided, use it.
-     * 2. Otherwise use the school's currentSeasonId.
-     * 3. If that season is past, fall back to the next open (future) season.
-     */
     private function resolveSeason(School $school, ?string $seasonId): ?Season
     {
         if ($seasonId !== null) {
@@ -132,13 +106,11 @@ class ShopController extends AbstractController
         $currentSeasonId = $school->getCurrentSeasonId();
 
         if ($currentSeasonId !== null) {
-            /** @var Season|null $season */
             $season = $this->em->getRepository(Season::class)->find($currentSeasonId);
 
             if ($season !== null) {
                 $now = new \DateTimeImmutable();
 
-                // If the current season has ended, try to find the next open season.
                 if ($season->getEndAt() < $now) {
                     $nextSeason = $this->em->createQueryBuilder()
                         ->select('s')
@@ -160,7 +132,6 @@ class ShopController extends AbstractController
             }
         }
 
-        // No current season configured: return the most recent non-deleted season for the school.
         return $this->em->createQueryBuilder()
             ->select('s')
             ->from(Season::class, 's')

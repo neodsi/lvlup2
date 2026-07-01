@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Entity\School;
 use App\Entity\SchoolProfilePackage;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolUserRepository;
 use App\Service\Member\MemberService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,7 +20,6 @@ class FastCountApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly MemberService $memberService,
     ) {
     }
@@ -96,18 +96,43 @@ class FastCountApiController extends AbstractController
             return new JsonResponse(['success' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
+        $role = $this->resolveSchoolRole($user, $schoolId);
 
-        if ($schoolUser === null) {
+        if ($role === null) {
             return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
         }
 
-        $allowed = [SchoolRole::Teacher, SchoolRole::School, SchoolRole::School];
-
-        if (!\in_array($schoolUser->getRole(), $allowed, true)) {
+        if (!\in_array($role, [SchoolRole::Teacher, SchoolRole::School], true)) {
             return new JsonResponse(['success' => false, 'error' => 'teacher role or higher required.'], 403);
         }
 
         return null;
+    }
+
+    private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
+    {
+        $profile = $user->getProfile();
+        if ($profile === null) {
+            return null;
+        }
+
+        $school = $this->em->getRepository(School::class)->find($schoolId);
+        if ($school !== null && $school->getOwnerProfileId() !== null && $school->getOwnerProfileId() === $profile->getId()) {
+            return SchoolRole::School;
+        }
+
+        $sps = $this->em->createQueryBuilder()
+            ->select('sps')
+            ->from(SchoolProfileSeason::class, 'sps')
+            ->where('sps.profileId = :profileId')
+            ->andWhere('sps.schoolId = :schoolId')
+            ->orderBy('sps.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('profileId', $profile->getId())
+            ->setParameter('schoolId', $schoolId)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $sps?->getRole();
     }
 }

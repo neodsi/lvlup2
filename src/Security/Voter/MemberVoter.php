@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Security\Voter;
 
 use App\Entity\School;
-use App\Entity\SchoolUser;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolUserRepository;
 use App\Security\SchoolRoleHierarchy;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -22,7 +22,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  *   members:export_csv       – admin+
  *   school_profiles:export_csv – admin+
  *
- * Subject: School (school-scoped actions) or SchoolUser (member-scoped actions).
+ * Subject: School (school-scoped actions).
  */
 final class MemberVoter extends Voter
 {
@@ -43,17 +43,14 @@ final class MemberVoter extends Voter
     ];
 
     public function __construct(
-        private readonly SchoolUserRepository $schoolUserRepository,
+        private readonly EntityManagerInterface $em,
     ) {
     }
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, self::SUPPORTED_ATTRIBUTES, true)) {
-            return false;
-        }
-
-        return $subject instanceof School || $subject instanceof SchoolUser;
+        return in_array($attribute, self::SUPPORTED_ATTRIBUTES, true)
+            && $subject instanceof School;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -64,37 +61,48 @@ final class MemberVoter extends Voter
             return false;
         }
 
-        $schoolId = match (true) {
-            $subject instanceof School        => $subject->getId(),
-            $subject instanceof SchoolUser => $subject->getSchool()?->getId(),
-            default                         => null,
-        };
-
-        if ($schoolId === null) {
-            return false;
-        }
-
-        $schoolRole = $this->resolveSchoolRole($user, $schoolId);
+        /** @var School $subject */
+        $schoolRole = $this->resolveSchoolRole($user, $subject->getId());
 
         if ($schoolRole === null) {
             return false;
         }
 
         return match ($attribute) {
-            self::VIEW                    => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Teacher),
-            self::CREATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
-            self::UPDATE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
-            self::DELETE                  => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
-            self::EXPORT_CSV              => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::VIEW                       => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::Teacher),
+            self::CREATE                     => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::UPDATE                     => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::DELETE                     => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
+            self::EXPORT_CSV                 => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
             self::SCHOOL_PROFILES_EXPORT_CSV => SchoolRoleHierarchy::isGranted($schoolRole, SchoolRole::School),
-            default                       => false,
+            default                          => false,
         };
     }
 
     private function resolveSchoolRole(User $user, string $schoolId): ?SchoolRole
     {
-        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $schoolId);
+        $profile = $user->getProfile();
+        if ($profile === null) {
+            return null;
+        }
 
-        return $schoolUser?->getRole();
+        $school = $this->em->getRepository(School::class)->find($schoolId);
+        if ($school !== null && $school->getOwnerProfileId() !== null && $school->getOwnerProfileId() === $profile->getId()) {
+            return SchoolRole::School;
+        }
+
+        $sps = $this->em->createQueryBuilder()
+            ->select('sps')
+            ->from(SchoolProfileSeason::class, 'sps')
+            ->where('sps.profileId = :profileId')
+            ->andWhere('sps.schoolId = :schoolId')
+            ->orderBy('sps.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->setParameter('profileId', $profile->getId())
+            ->setParameter('schoolId', $schoolId)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $sps?->getRole();
     }
 }

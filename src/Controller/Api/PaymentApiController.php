@@ -8,9 +8,9 @@ use App\Entity\Payment;
 use App\Entity\PaymentSchedule;
 use App\Entity\Profile;
 use App\Entity\School;
+use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\SchoolRole;
-use App\Repository\SchoolUserRepository;
 use App\Service\Payment\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,7 +22,6 @@ class PaymentApiController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly SchoolUserRepository $schoolUserRepository,
         private readonly StripeService $stripeService,
     ) {
     }
@@ -94,19 +93,21 @@ class PaymentApiController extends AbstractController
         }
 
         // Verify user is admin of the school that owns the payment
-        $schoolUser = $this->schoolUserRepository->findOneByUserAndSchool($user, $payment->getSchoolId());
+        $school = $this->em->getRepository(School::class)->find($payment->getSchoolId());
+        $profile = $user->getProfile();
 
-        if ($schoolUser === null) {
-            return new JsonResponse(['success' => false, 'error' => 'Forbidden.'], 403);
-        }
-
-        $isAdmin = \in_array($schoolUser->getRole(), [SchoolRole::School, SchoolRole::School], true);
+        $isAdmin = $profile !== null && $school !== null && (
+            ($school->getOwnerProfileId() !== null && $school->getOwnerProfileId() === $profile->getId()) ||
+            $this->em->getRepository(SchoolProfileSeason::class)->findOneBy([
+                'profileId' => $profile->getId(),
+                'schoolId'  => $payment->getSchoolId(),
+                'role'      => SchoolRole::School,
+            ]) !== null
+        );
 
         if (!$isAdmin) {
-            return new JsonResponse(['success' => false, 'error' => 'admin role required.'], 403);
+            return new JsonResponse(['success' => false, 'error' => 'Forbidden or admin role required.'], 403);
         }
-
-        $school = $this->em->getRepository(School::class)->find($payment->getSchoolId());
 
         if ($school === null) {
             return new JsonResponse(['success' => false, 'error' => 'School not found.'], 404);
