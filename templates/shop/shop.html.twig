@@ -70,7 +70,7 @@
         <section class="shop__registration-status">
             <h2 class="shop__section-title">Mon inscription</h2>
             {% if schoolProfileSeason %}
-                {% set status = schoolProfileSeason.registrationStatus.value %}
+                {% set status = schoolProfileSeason.registrationStatus ? schoolProfileSeason.registrationStatus.value : null %}
                 <div class="shop__status shop__status--{{ status }}">
                     {% if status == 'registered' %}
                         Inscrit(e) pour cette saison.
@@ -88,7 +88,7 @@
                 </p>
             {% endif %}
 
-            {% if not schoolProfileSeason or schoolProfileSeason.registrationStatus.value == 'not_registered' or schoolProfileSeason.registrationStatus.value == 'withdrawn' %}
+            {% if not schoolProfileSeason or not schoolProfileSeason.registrationStatus or schoolProfileSeason.registrationStatus.value == 'not_registered' or schoolProfileSeason.registrationStatus.value == 'withdrawn' %}
             <a href="{{ path('app_login') }}" class="shop__cta-btn shop__cta-btn--primary">
                 S'inscrire
             </a>

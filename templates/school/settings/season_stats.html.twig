@@ -28,7 +28,7 @@
         {% set packageTypeCounts = {} %}
 
         {% for reg in registrations %}
-            {% if reg.registrationStatus.value != 'not_registered' %}
+            {% if reg.registrationStatus and reg.registrationStatus.value != 'not_registered' %}
                 {% set registeredCount = registeredCount + 1 %}
             {% endif %}
         {% endfor %}
@@ -94,7 +94,7 @@
             <div class="px-6 py-5 space-y-4">
                 {% set statusGroups = {} %}
                 {% for reg in registrations %}
-                    {% set s = reg.registrationStatus.value %}
+                    {% set s = reg.registrationStatus ? reg.registrationStatus.value : 'none' %}
                     {% if statusGroups[s] is defined %}
                         {% set statusGroups = statusGroups|merge({(s): statusGroups[s] + 1}) %}
                     {% else %}

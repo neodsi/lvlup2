@@ -51,21 +51,26 @@ class MemberService
             $role = $data['role'] ?? SchoolRole::Student;
             $role = $role instanceof SchoolRole ? $role : SchoolRole::from($role);
 
-            $status = $data['status'] ?? SchoolProfileStatus::Accepted;
-            $status = $status instanceof SchoolProfileStatus ? $status : SchoolProfileStatus::from($status);
+            $isStudent = $role === SchoolRole::Student;
+            if (array_key_exists('status', $data)) {
+                $statusRaw = $data['status'];
+                $status = $statusRaw instanceof SchoolProfileStatus ? $statusRaw : ($statusRaw ? SchoolProfileStatus::from($statusRaw) : null);
+            } else {
+                $status = $isStudent ? null : SchoolProfileStatus::Accepted;
+            }
 
             $sps = new SchoolProfileSeason();
             $sps->setProfileId($profile->getId());
             $sps->setSeasonId($season->getId());
             $sps->setSchoolId($school->getId());
             $sps->setRole($role);
-            $sps->setStatus($status);
+            $sps->setRegistrationStatus($status);
 
             if (isset($data['note'])) {
                 $sps->setNote($data['note'] ?: null);
             }
-            if (isset($data['accepted'])) {
-                $sps->setAccepted($data['accepted'] ?: null);
+            if (isset($data['consentAccepted'])) {
+                $sps->setConsentAccepted($data['consentAccepted'] ?: null);
             }
 
             $this->em->persist($sps);
@@ -116,7 +121,7 @@ class MemberService
                 $profile?->getPhone() ?? '',
                 $dob ?? '',
                 $tps->getRole()->value,
-                $tps->getStatus()->value,
+                $tps->getRegistrationStatus()?->value ?? '',
                 $tps->getNote() ?? '',
             ]);
         }

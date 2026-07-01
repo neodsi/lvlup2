@@ -5,6 +5,8 @@ namespace App\Form\App;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -80,6 +82,36 @@ class ProfileEditType extends AbstractType
                 'label'      => 'Pointure',
                 'label_attr' => ['class' => $labelClass],
                 'attr'       => ['class' => $inputClass, 'placeholder' => 'ex: 42, 43…'],
+                'required'   => false,
+            ])
+            ->add('emergencyName', TextType::class, [
+                'label'      => 'Nom du contact',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass],
+                'required'   => false,
+            ])
+            ->add('emergencyRelationship', TextType::class, [
+                'label'      => 'Relation',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass, 'placeholder' => 'ex: parent, conjoint…'],
+                'required'   => false,
+            ])
+            ->add('emergencyPhone', TextType::class, [
+                'label'      => 'Téléphone',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass, 'type' => 'tel'],
+                'required'   => false,
+            ])
+            ->add('emergencyEmail', EmailType::class, [
+                'label'      => 'E-mail',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass],
+                'required'   => false,
+            ])
+            ->add('injuryWarning', TextareaType::class, [
+                'label'      => 'Avertissement médical / blessure',
+                'label_attr' => ['class' => $labelClass],
+                'attr'       => ['class' => $inputClass, 'rows' => 2, 'maxlength' => 200, 'placeholder' => 'Allergie, blessure en cours, traitement…'],
                 'required'   => false,
             ])
         ;

@@ -50,8 +50,20 @@ class Profile
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $sizeShoe = null;
 
-    #[ORM\Column(type: 'boolean', options: ['default' => false])]
-    private bool $injuryWarning = false;
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $injuryWarning = null;
+
+    #[ORM\Column(type: 'string', length: 150, nullable: true)]
+    private ?string $emergencyName = null;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private ?string $emergencyRelationship = null;
+
+    #[ORM\Column(type: 'string', length: 180, nullable: true)]
+    private ?string $emergencyEmail = null;
+
+    #[ORM\Column(type: 'string', length: 30, nullable: true)]
+    private ?string $emergencyPhone = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
@@ -206,8 +218,20 @@ class Profile
     public function getSizeShoe(): ?string { return $this->sizeShoe; }
     public function setSizeShoe(?string $v): static { $this->sizeShoe = $v; return $this; }
 
-    public function getInjuryWarning(): bool { return $this->injuryWarning; }
-    public function setInjuryWarning(bool $v): static { $this->injuryWarning = $v; return $this; }
+    public function getInjuryWarning(): ?string { return $this->injuryWarning; }
+    public function setInjuryWarning(?string $v): static { $this->injuryWarning = $v ?: null; return $this; }
+
+    public function getEmergencyName(): ?string { return $this->emergencyName; }
+    public function setEmergencyName(?string $v): static { $this->emergencyName = $v ?: null; return $this; }
+
+    public function getEmergencyRelationship(): ?string { return $this->emergencyRelationship; }
+    public function setEmergencyRelationship(?string $v): static { $this->emergencyRelationship = $v ?: null; return $this; }
+
+    public function getEmergencyEmail(): ?string { return $this->emergencyEmail; }
+    public function setEmergencyEmail(?string $v): static { $this->emergencyEmail = $v ?: null; return $this; }
+
+    public function getEmergencyPhone(): ?string { return $this->emergencyPhone; }
+    public function setEmergencyPhone(?string $v): static { $this->emergencyPhone = $v ?: null; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable
     {

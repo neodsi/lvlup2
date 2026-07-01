@@ -146,6 +146,40 @@
                     {% do form.sizeShoe.setRendered() %}
                 {% endif %}
 
+                {% if is_granted('ROLE_STUDENT') %}
+                <div class="px-6 py-5">
+                    <h2 class="text-sm font-semibold text-gray-700 mb-4">Contact d'urgence</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            {{ form_label(form.emergencyName) }}
+                            {{ form_widget(form.emergencyName) }}
+                        </div>
+                        <div>
+                            {{ form_label(form.emergencyRelationship) }}
+                            {{ form_widget(form.emergencyRelationship) }}
+                        </div>
+                        <div>
+                            {{ form_label(form.emergencyPhone) }}
+                            {{ form_widget(form.emergencyPhone) }}
+                        </div>
+                        <div>
+                            {{ form_label(form.emergencyEmail) }}
+                            {{ form_widget(form.emergencyEmail) }}
+                        </div>
+                        <div class="sm:col-span-2">
+                            {{ form_label(form.injuryWarning) }}
+                            {{ form_widget(form.injuryWarning) }}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                    {% do form.emergencyName.setRendered() %}
+                    {% do form.emergencyRelationship.setRendered() %}
+                    {% do form.emergencyPhone.setRendered() %}
+                    {% do form.emergencyEmail.setRendered() %}
+                    {% do form.injuryWarning.setRendered() %}
+                {% endif %}
+
                 <div class="px-6 py-4 flex items-center justify-end">
                     <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
                         Enregistrer

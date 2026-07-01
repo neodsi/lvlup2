@@ -10,7 +10,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\NotBlank;
 
 class MemberType extends AbstractType
 {
@@ -22,15 +21,13 @@ class MemberType extends AbstractType
         $builder
             ->add('firstName', TextType::class, [
                 'label' => 'Prénom',
-                'required' => true,
-                'constraints' => [new NotBlank()],
+                'required' => false,
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])
             ->add('lastName', TextType::class, [
                 'label' => 'Nom',
-                'required' => true,
-                'constraints' => [new NotBlank()],
+                'required' => false,
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])
@@ -51,9 +48,8 @@ class MemberType extends AbstractType
             ])
             ->add('email', EmailType::class, [
                 'label' => 'E-mail',
-                'required' => true,
+                'required' => false,
                 'mapped' => false,
-                'constraints' => [new NotBlank(message: 'L\'e-mail est obligatoire.')],
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
             ])
@@ -84,11 +80,12 @@ class MemberType extends AbstractType
             ->add('registrationStatus', ChoiceType::class, [
                 'label' => "Statut d'inscription",
                 'required' => false,
+                'placeholder' => '— Aucun statut —',
                 'choices' => [
-                    'Non inscrit' => 'not_registered',
-                    "Cours d'essai" => 'trial_class',
-                    'Pré-inscrit' => 'pre_registered',
-                    'Inscrit' => 'registered',
+                    'En attente' => 'waiting',
+                    'Accepté'    => 'accepted',
+                    'Refusé'     => 'refused',
+                    'Suspendu'   => 'suspended',
                 ],
                 'attr' => ['class' => $inputClass],
                 'label_attr' => ['class' => $labelClass],
@@ -127,7 +124,7 @@ class MemberType extends AbstractType
                 'attr' => ['class' => $inputClass, 'type' => 'tel'],
                 'label_attr' => ['class' => $labelClass],
             ])
-            ->add('accepted', ChoiceType::class, [
+            ->add('consentAccepted', ChoiceType::class, [
                 'label' => 'Consentements signés',
                 'required' => false,
                 'mapped' => false,

@@ -31,8 +31,8 @@ class SchoolProfileSeason
     #[ORM\Column(type: 'string', length: 50, enumType: SchoolRole::class)]
     private SchoolRole $role;
 
-    #[ORM\Column(type: 'string', length: 50, enumType: SchoolProfileStatus::class, options: ['default' => 'waiting'])]
-    private SchoolProfileStatus $status = SchoolProfileStatus::Waiting;
+    #[ORM\Column(name: 'registration_status', type: 'string', length: 50, enumType: SchoolProfileStatus::class, nullable: true)]
+    private ?SchoolProfileStatus $registrationStatus = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $stripeCustomerId = null;
@@ -40,8 +40,8 @@ class SchoolProfileSeason
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $note = null;
 
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $accepted = null;
+    #[ORM\Column(name: 'consent_accepted', type: 'json', nullable: true)]
+    private ?array $consentAccepted = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
@@ -79,8 +79,8 @@ class SchoolProfileSeason
     public function getRole(): SchoolRole { return $this->role; }
     public function setRole(SchoolRole $role): static { $this->role = $role; return $this; }
 
-    public function getStatus(): SchoolProfileStatus { return $this->status; }
-    public function setStatus(SchoolProfileStatus $status): static { $this->status = $status; return $this; }
+    public function getRegistrationStatus(): ?SchoolProfileStatus { return $this->registrationStatus; }
+    public function setRegistrationStatus(?SchoolProfileStatus $status): static { $this->registrationStatus = $status; return $this; }
 
     public function getStripeCustomerId(): ?string { return $this->stripeCustomerId; }
     public function setStripeCustomerId(?string $stripeCustomerId): static { $this->stripeCustomerId = $stripeCustomerId; return $this; }
@@ -88,8 +88,8 @@ class SchoolProfileSeason
     public function getNote(): ?string { return $this->note; }
     public function setNote(?string $note): static { $this->note = $note; return $this; }
 
-    public function getAccepted(): ?array { return $this->accepted; }
-    public function setAccepted(?array $accepted): static { $this->accepted = $accepted; return $this; }
+    public function getConsentAccepted(): ?array { return $this->consentAccepted; }
+    public function setConsentAccepted(?array $v): static { $this->consentAccepted = $v; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function setCreatedAt(\DateTimeImmutable $createdAt): static { $this->createdAt = $createdAt; return $this; }

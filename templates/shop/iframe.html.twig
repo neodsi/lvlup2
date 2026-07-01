@@ -71,7 +71,7 @@
 
         {# ── CTA ── #}
         <section class="shop__cta">
-            {% if app.user and schoolProfileSeason and schoolProfileSeason.registrationStatus.value == 'registered' %}
+            {% if app.user and schoolProfileSeason and schoolProfileSeason.registrationStatus and schoolProfileSeason.registrationStatus.value == 'registered' %}
                 <p class="shop__status shop__status--registered">Deja inscrit(e).</p>
             {% else %}
                 <a

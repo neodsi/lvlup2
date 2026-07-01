@@ -15,6 +15,7 @@ use App\Entity\SchoolProfileSeason;
 use App\Entity\User;
 use App\Enum\PackageStatus;
 use App\Enum\ScheduleStatus;
+use App\Enum\SchoolProfileStatus;
 use App\Enum\SchoolRole;
 use App\Form\School\MemberType;
 use App\Security\Voter\SchoolVoter;
@@ -124,7 +125,7 @@ final class MemberController extends AbstractController
         if ($filterRegistrationStatus !== '') {
             $statusEnum = \App\Enum\SchoolProfileStatus::tryFrom($filterRegistrationStatus);
             if ($statusEnum !== null) {
-                $qb->andWhere('tps.status = :status')
+                $qb->andWhere('tps.registrationStatus = :status')
                    ->setParameter('status', $statusEnum);
             }
         }
@@ -576,12 +577,12 @@ final class MemberController extends AbstractController
         if ($filterHasInjury === 'yes') {
             $members = array_values(array_filter(
                 $members,
-                static fn(SchoolProfileSeason $m): bool => $m->getProfile()?->getInjuryWarning() === true
+                static fn(SchoolProfileSeason $m): bool => (bool) ($m->getProfile()?->getInjuryWarning())
             ));
         } elseif ($filterHasInjury === 'no') {
             $members = array_values(array_filter(
                 $members,
-                static fn(SchoolProfileSeason $m): bool => ($m->getProfile()?->getInjuryWarning() ?? false) === false
+                static fn(SchoolProfileSeason $m): bool => !(bool) ($m->getProfile()?->getInjuryWarning())
             ));
         }
 
@@ -698,18 +699,24 @@ final class MemberController extends AbstractController
             : null;
 
         $initialData = [
-            'firstName'   => $profile?->getFirstName(),
-            'lastName'    => $profile?->getLastName(),
-            'dob'         => $profile?->getDob(),
-            'phone'       => $profile?->getPhone(),
-            'addressText' => $profile?->getAddressText(),
-            'gender'      => $profile?->getGender()?->value,
-            'note'        => $member->getNote(),
+            'firstName'            => $profile?->getFirstName(),
+            'lastName'             => $profile?->getLastName(),
+            'dob'                  => $profile?->getDob(),
+            'phone'                => $profile?->getPhone(),
+            'addressText'          => $profile?->getAddressText(),
+            'gender'               => $profile?->getGender()?->value,
+            'note'                 => $member->getNote(),
+            'registrationStatus'   => $member->getRegistrationStatus()?->value,
+            'injuryWarning'        => $profile?->getInjuryWarning(),
+            'emergencyName'        => $profile?->getEmergencyName(),
+            'emergencyRelationship'=> $profile?->getEmergencyRelationship(),
+            'emergencyEmail'       => $profile?->getEmergencyEmail(),
+            'emergencyPhone'       => $profile?->getEmergencyPhone(),
         ];
 
         $form = $this->createForm(MemberType::class, $initialData);
         $form->get('email')->setData($profile?->getUser()?->getEmail());
-        $form->get('accepted')->setData($member->getAccepted() ?? []);
+        $form->get('consentAccepted')->setData($member->getConsentAccepted() ?? []);
 
         return $this->render('school/members/detail.html.twig', [
             'school' => $school,
@@ -748,18 +755,24 @@ final class MemberController extends AbstractController
             : null;
 
         $initialData = [
-            'firstName'   => $profile?->getFirstName(),
-            'lastName'    => $profile?->getLastName(),
-            'dob'         => $profile?->getDob(),
-            'phone'       => $profile?->getPhone(),
-            'addressText' => $profile?->getAddressText(),
-            'gender'      => $profile?->getGender()?->value,
-            'note'        => $member->getNote(),
+            'firstName'            => $profile?->getFirstName(),
+            'lastName'             => $profile?->getLastName(),
+            'dob'                  => $profile?->getDob(),
+            'phone'                => $profile?->getPhone(),
+            'addressText'          => $profile?->getAddressText(),
+            'gender'               => $profile?->getGender()?->value,
+            'note'                 => $member->getNote(),
+            'registrationStatus'   => $member->getRegistrationStatus()?->value,
+            'injuryWarning'        => $profile?->getInjuryWarning(),
+            'emergencyName'        => $profile?->getEmergencyName(),
+            'emergencyRelationship'=> $profile?->getEmergencyRelationship(),
+            'emergencyEmail'       => $profile?->getEmergencyEmail(),
+            'emergencyPhone'       => $profile?->getEmergencyPhone(),
         ];
 
         $form = $this->createForm(MemberType::class, $initialData);
         $form->get('email')->setData($profile?->getUser()?->getEmail());
-        $form->get('accepted')->setData($member->getAccepted() ?? []);
+        $form->get('consentAccepted')->setData($member->getConsentAccepted() ?? []);
 
         $form->handleRequest($request);
 
@@ -768,8 +781,19 @@ final class MemberController extends AbstractController
 
             $member->setNote($data['note'] ?: null);
 
-            $accepted = $form->get('accepted')->getData();
-            $member->setAccepted($accepted ?: null);
+            $statusValue = $data['registrationStatus'] ?? null;
+            $member->setRegistrationStatus($statusValue ? SchoolProfileStatus::from($statusValue) : null);
+
+            $consentAccepted = $form->get('consentAccepted')->getData();
+            $member->setConsentAccepted($consentAccepted ?: null);
+
+            if ($profile !== null) {
+                $profile->setInjuryWarning($data['injuryWarning'] ?? null);
+                $profile->setEmergencyName($data['emergencyName'] ?? null);
+                $profile->setEmergencyRelationship($data['emergencyRelationship'] ?? null);
+                $profile->setEmergencyEmail($data['emergencyEmail'] ?? null);
+                $profile->setEmergencyPhone($data['emergencyPhone'] ?? null);
+            }
 
             $this->em->flush();
             $this->addFlash('success', 'Fiche mise à jour.');

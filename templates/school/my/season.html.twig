@@ -33,7 +33,7 @@
                     <h2 class="text-base font-semibold text-gray-900">Statut d'inscription</h2>
                 </div>
                 <div class="px-6 py-5">
-                    {% set regStatus = registration.registrationStatus.value %}
+                    {% set regStatus = registration.registrationStatus ? registration.registrationStatus.value : null %}
                     <div class="flex items-center gap-4">
                         <div class="w-14 h-14 rounded-full flex items-center justify-center
                             {% if regStatus == 'registered' %}bg-green-50

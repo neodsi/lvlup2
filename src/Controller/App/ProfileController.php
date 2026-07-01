@@ -58,14 +58,19 @@ class ProfileController extends AbstractController
         }
 
         $initialData = [
-            'firstName'  => $primaryProfile->getFirstName(),
-            'lastName'   => $primaryProfile->getLastName(),
-            'phone'      => $primaryProfile->getPhone() ?? '',
-            'dob'        => $primaryProfile->getDob(),
-            'gender'     => $primaryProfile->getGender()?->value ?? '',
-            'sizeTop'    => $primaryProfile->getSizeTop() ?? '',
-            'sizeBottom' => $primaryProfile->getSizeBottom() ?? '',
-            'sizeShoe'   => $primaryProfile->getSizeShoe() ?? '',
+            'firstName'            => $primaryProfile->getFirstName(),
+            'lastName'             => $primaryProfile->getLastName(),
+            'phone'                => $primaryProfile->getPhone() ?? '',
+            'dob'                  => $primaryProfile->getDob(),
+            'gender'               => $primaryProfile->getGender()?->value ?? '',
+            'sizeTop'              => $primaryProfile->getSizeTop() ?? '',
+            'sizeBottom'           => $primaryProfile->getSizeBottom() ?? '',
+            'sizeShoe'             => $primaryProfile->getSizeShoe() ?? '',
+            'emergencyName'        => $primaryProfile->getEmergencyName() ?? '',
+            'emergencyRelationship'=> $primaryProfile->getEmergencyRelationship() ?? '',
+            'emergencyPhone'       => $primaryProfile->getEmergencyPhone() ?? '',
+            'emergencyEmail'       => $primaryProfile->getEmergencyEmail() ?? '',
+            'injuryWarning'        => $primaryProfile->getInjuryWarning() ?? '',
         ];
 
         $form = $this->createForm(ProfileEditType::class, $initialData);
@@ -95,6 +100,12 @@ class ProfileController extends AbstractController
 
             $phone = $data['phone'] ?? '';
             $primaryProfile->setPhone($phone !== '' ? $phone : null);
+
+            $primaryProfile->setEmergencyName($data['emergencyName'] !== '' ? $data['emergencyName'] : null);
+            $primaryProfile->setEmergencyRelationship($data['emergencyRelationship'] !== '' ? $data['emergencyRelationship'] : null);
+            $primaryProfile->setEmergencyPhone($data['emergencyPhone'] !== '' ? $data['emergencyPhone'] : null);
+            $primaryProfile->setEmergencyEmail($data['emergencyEmail'] !== '' ? $data['emergencyEmail'] : null);
+            $primaryProfile->setInjuryWarning($data['injuryWarning'] !== '' ? $data['injuryWarning'] : null);
 
             $this->em->flush();
             $this->addFlash('success', 'Profil mis à jour avec succès.');
