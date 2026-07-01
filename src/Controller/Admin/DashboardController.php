@@ -457,14 +457,65 @@ class DashboardController extends AbstractController
         $schoolProfiles = [];
 
         if ($profile !== null) {
-            $schoolProfiles = $this->em->createQueryBuilder()
+            $spsList = $this->em->createQueryBuilder()
                 ->select('tps')
                 ->from(SchoolProfileSeason::class, 'tps')
                 ->where('tps.profileId = :profileId')
-                ->orderBy('tps.createdAt', 'DESC')
+                ->orderBy('tps.createdAt', 'ASC')
                 ->setParameter('profileId', $profile->getId())
                 ->getQuery()
                 ->getResult();
+
+            $ownedSchools = $this->em->createQuery(
+                'SELECT s FROM App\Entity\School s WHERE s.ownerProfileId = :profileId'
+            )->setParameter('profileId', $profile->getId())->getResult();
+
+            $ownedSchoolIds = array_flip(array_map(fn($s) => $s->getId(), $ownedSchools));
+
+            $spsSchoolIds = array_unique(array_map(fn(SchoolProfileSeason $s) => $s->getSchoolId(), $spsList));
+            $allSchoolIds = array_unique(array_merge($spsSchoolIds, array_keys($ownedSchoolIds)));
+
+            $schoolsById = [];
+            if (!empty($allSchoolIds)) {
+                foreach ($this->em->createQuery(
+                    'SELECT s FROM App\Entity\School s WHERE s.id IN (:ids)'
+                )->setParameter('ids', $allSchoolIds)->getResult() as $s) {
+                    $schoolsById[$s->getId()] = $s;
+                }
+            }
+
+            // Group by school — one entry per school with all roles merged
+            $grouped = [];
+            foreach ($spsList as $sps) {
+                $sid = $sps->getSchoolId();
+                if (!isset($grouped[$sid])) {
+                    $grouped[$sid] = [
+                        'school'    => $schoolsById[$sid] ?? null,
+                        'roles'     => [],
+                        'isOwner'   => isset($ownedSchoolIds[$sid]),
+                        'createdAt' => $sps->getCreatedAt(),
+                    ];
+                }
+                $rv = $sps->getRole() ? $sps->getRole()->value : null;
+                if ($rv && !in_array($rv, $grouped[$sid]['roles'], true)) {
+                    $grouped[$sid]['roles'][] = $rv;
+                }
+            }
+
+            // Owned schools not yet in grouped (no SPS at all)
+            foreach ($ownedSchools as $ownedSchool) {
+                $sid = $ownedSchool->getId();
+                if (!isset($grouped[$sid])) {
+                    $grouped[$sid] = [
+                        'school'    => $ownedSchool,
+                        'roles'     => [],
+                        'isOwner'   => true,
+                        'createdAt' => null,
+                    ];
+                }
+            }
+
+            $schoolProfiles = array_values($grouped);
         }
 
         return $this->render('admin/users/detail.html.twig', [

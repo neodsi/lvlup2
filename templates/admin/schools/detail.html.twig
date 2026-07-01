@@ -1,4 +1,5 @@
 {% extends 'layout/admin.html.twig' %}
+{% from '_macros/badges.html.twig' import role_badge %}
 
 {% block title %}{{ school.name }} — Administration{% endblock %}
 
@@ -95,19 +96,10 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0 flex-wrap">
-                        {% if m.isOwner %}
-                            <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200">Owner</span>
-                        {% endif %}
+                        {% if m.isOwner %}{{ role_badge('owner') }}{% endif %}
                         {% for role in m.roles %}
                             {% if not (m.isOwner and role == 'school') %}
-                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border
-                                    {% if role == 'school' %}bg-blue-50 text-blue-700 border-blue-200
-                                    {% elseif role == 'teacher' %}bg-purple-50 text-purple-700 border-purple-200
-                                    {% else %}bg-green-50 text-green-700 border-green-200{% endif %}">
-                                    {% if role == 'school' %}Admin
-                                    {% elseif role == 'teacher' %}Professeur
-                                    {% else %}Élève{% endif %}
-                                </span>
+                                {{ role_badge(role) }}
                             {% endif %}
                         {% endfor %}
                         {% if m.seasonName %}

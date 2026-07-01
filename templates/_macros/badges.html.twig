@@ -1,0 +1,38 @@
+{#
+  Macro badges de rôle membership.
+  Usage : {% from '_macros/badges.html.twig' import role_badge, role_count_badge %}
+  role : 'owner' | 'school' | 'teacher' | 'student' (ou toute autre valeur → élève)
+#}
+
+{%- macro role_badge(role) %}
+{%- if role == 'owner' or role == 'school' %}
+<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
+    {{- role == 'owner' ? 'Owner' : 'Admin' -}}
+</span>
+{%- elseif role == 'teacher' %}
+<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border bg-purple-50 text-purple-700 border-purple-200">
+    Professeur
+</span>
+{%- else %}
+<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border bg-yellow-50 text-yellow-700 border-yellow-200">
+    Élève
+</span>
+{%- endif %}
+{%- endmacro %}
+
+{# Badge de comptage dans la liste des écoles. count doit être > 0. #}
+{%- macro role_count_badge(role, count) %}
+{%- if role == 'school' %}
+<span class="inline-flex items-center gap-1 rounded-full border bg-blue-50 text-blue-700 border-blue-200 px-2 py-0.5 text-xs font-medium">
+    {{- count }} admin{{ count > 1 ? 's' -}}
+</span>
+{%- elseif role == 'teacher' %}
+<span class="inline-flex items-center gap-1 rounded-full border bg-purple-50 text-purple-700 border-purple-200 px-2 py-0.5 text-xs font-medium">
+    {{- count }} prof{{ count > 1 ? 's' -}}
+</span>
+{%- else %}
+<span class="inline-flex items-center gap-1 rounded-full border bg-yellow-50 text-yellow-700 border-yellow-200 px-2 py-0.5 text-xs font-medium">
+    {{- count }} élève{{ count > 1 ? 's' -}}
+</span>
+{%- endif %}
+{%- endmacro %}

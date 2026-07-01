@@ -3,6 +3,7 @@
 {% block title %}Membres — {{ school.name }}{% endblock %}
 
 {% set _typeLabel %}{% if type == 'students' %}Élèves{% elseif type == 'teachers' %}Professeurs{% elseif type == 'admins' %}Admins{% else %}Membres{% endif %}{% endset %}
+{% set _isStudents = (type == 'students') %}
 
 {% block breadcrumb %}
 <a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
@@ -36,16 +37,29 @@
 
             <div class="flex flex-wrap gap-2 items-center">
 
-                {# Recherche #}
+                {# Recherche — toujours présente #}
                 <div class="relative">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
                     <input type="search" name="q" value="{{ filters.q }}" placeholder="Rechercher…" id="filter-search"
                            class="block w-56 rounded-lg border border-gray-300 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                 </div>
 
+                {# Statut inscription — toujours présent si saison #}
+                {% if season %}
+                <select name="registration_status" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <option value="" {{ filters.registration_status == '' ? 'selected' }}>Tous statuts</option>
+                    <option value="accepted"  {{ filters.registration_status == 'accepted'  ? 'selected' }}>Accepté</option>
+                    <option value="waiting"   {{ filters.registration_status == 'waiting'   ? 'selected' }}>En attente</option>
+                    <option value="refused"   {{ filters.registration_status == 'refused'   ? 'selected' }}>Refusé</option>
+                    <option value="suspended" {{ filters.registration_status == 'suspended' ? 'selected' }}>Suspendu</option>
+                </select>
+                {% endif %}
+
+                {% if _isStudents %}
+
+                {# Filtres spécifiques élèves #}
                 {% if season %}
 
-                {# Cours / activité #}
                 {% if allActivities|length > 0 %}
                 <select name="activity" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <option value="">Toutes activités</option>
@@ -55,16 +69,6 @@
                 </select>
                 {% endif %}
 
-                {# Statut inscription #}
-                <select name="registration_status" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" {{ filters.registration_status == '' ? 'selected' }}>Tous statuts</option>
-                    <option value="accepted"  {{ filters.registration_status == 'accepted'  ? 'selected' }}>Accepté</option>
-                    <option value="waiting"   {{ filters.registration_status == 'waiting'   ? 'selected' }}>En attente</option>
-                    <option value="refused"   {{ filters.registration_status == 'refused'   ? 'selected' }}>Refusé</option>
-                    <option value="suspended" {{ filters.registration_status == 'suspended' ? 'selected' }}>Suspendu</option>
-                </select>
-
-                {# Abonnement spécifique #}
                 {% if allPackages|length > 0 %}
                 <select name="package_id" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <option value="" {{ filters.package_id == '' ? 'selected' }}>Tous abonnements</option>
@@ -74,7 +78,6 @@
                 </select>
                 {% endif %}
 
-                {# Type d'abonnement #}
                 <select name="package_type" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <option value="" {{ filters.package_type == '' ? 'selected' }}>Tous types</option>
                     <option value="a_la_carte"                {{ filters.package_type == 'a_la_carte'                ? 'selected' }}>À la carte</option>
@@ -83,7 +86,6 @@
                     <option value="trial_class"               {{ filters.package_type == 'trial_class'               ? 'selected' }}>Cours d'essai</option>
                 </select>
 
-                {# Statut paiement #}
                 <select name="payment_status" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <option value="" {{ filters.payment_status == '' ? 'selected' }}>Tous paiements</option>
                     <option value="paid"           {{ filters.payment_status == 'paid'           ? 'selected' }}>Payé</option>
@@ -94,18 +96,20 @@
 
                 {% endif %}{# end if season #}
 
-                {# Compte #}
-                <select name="has_user" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                    <option value="" {{ filters.has_user == '' ? 'selected' }}>Tous comptes</option>
-                    <option value="yes" {{ filters.has_user == 'yes' ? 'selected' }}>Compte créé</option>
-                    <option value="no"  {{ filters.has_user == 'no'  ? 'selected' }}>Sans compte</option>
-                </select>
-
                 {# Blessure #}
                 <select name="has_injury" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
                     <option value="" {{ filters.has_injury == '' ? 'selected' }}>Toutes blessures</option>
                     <option value="yes" {{ filters.has_injury == 'yes' ? 'selected' }}>Avec avertissement</option>
                     <option value="no"  {{ filters.has_injury == 'no'  ? 'selected' }}>Sans avertissement</option>
+                </select>
+
+                {% endif %}{# end if _isStudents #}
+
+                {# Compte — toujours présent #}
+                <select name="has_user" class="rounded-lg border border-gray-300 bg-gray-50 py-2 pl-3 pr-8 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <option value="" {{ filters.has_user == '' ? 'selected' }}>Tous comptes</option>
+                    <option value="yes" {{ filters.has_user == 'yes' ? 'selected' }}>Compte créé</option>
+                    <option value="no"  {{ filters.has_user == 'no'  ? 'selected' }}>Sans compte</option>
                 </select>
 
                 {# Compteur + reset #}
@@ -139,8 +143,8 @@
                             {% if season %}
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Inscription</th>
                             {% endif %}
-                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Adhésion</th>
-                            {% if season %}
+                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Ajouté le</th>
+                            {% if _isStudents and season %}
                             {% if allActivities|length > 0 %}
                             <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Activités</th>
                             {% endif %}
@@ -159,7 +163,6 @@
                             {% set fin      = financialMap[member.id] ?? null %}
                             {% set pkgs     = packagesMap[member.id] ?? 0 %}
                             {% set rs       = member.status ? member.status.value : null %}
-                            {% set actIds   = [] %}
                             {% set lastPaid = lastPaymentDateMap[member.id] ?? null %}
 
                             <tr class="hover:bg-gray-50 transition">
@@ -176,7 +179,7 @@
                                         {% endif %}
                                         <div>
                                             <p class="font-medium text-gray-900">{{ member.profile.firstName }} {{ member.profile.lastName }}</p>
-                                            {% if member.profile.dob %}
+                                            {% if _isStudents and member.profile.dob %}
                                                 <p class="text-xs text-gray-400">{{ member.profile.dob|date('d/m/Y') }}</p>
                                             {% endif %}
                                         </div>
@@ -205,16 +208,15 @@
                                 </td>
 
                                 {% if season %}
-
                                 {# Statut inscription #}
                                 <td class="px-3 py-3 whitespace-nowrap">
                                     {% if rs %}
-                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                                            {% if rs == 'accepted' %}bg-green-50 text-green-700
-                                            {% elseif rs == 'waiting' %}bg-amber-50 text-amber-700
-                                            {% elseif rs == 'refused' %}bg-red-50 text-red-700
-                                            {% elseif rs == 'suspended' %}bg-gray-100 text-gray-500
-                                            {% else %}bg-gray-100 text-gray-400{% endif %}">
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border
+                                            {% if rs == 'accepted' %}bg-green-50 text-green-700 border-green-200
+                                            {% elseif rs == 'waiting' %}bg-amber-50 text-amber-700 border-amber-200
+                                            {% elseif rs == 'refused' %}bg-red-50 text-red-700 border-red-200
+                                            {% elseif rs == 'suspended' %}bg-gray-100 text-gray-500 border-gray-200
+                                            {% else %}bg-gray-100 text-gray-400 border-gray-200{% endif %}">
                                             {% if rs == 'accepted' %}Accepté
                                             {% elseif rs == 'waiting' %}En attente
                                             {% elseif rs == 'refused' %}Refusé
@@ -223,35 +225,26 @@
                                         </span>
                                     {% else %}<span class="text-gray-300 text-xs">—</span>{% endif %}
                                 </td>
-
                                 {% endif %}
 
-                                {# Date d'adhésion #}
+                                {# Date d'ajout #}
                                 <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-500">
                                     {{ member.createdAt|date('d/m/Y') }}
                                 </td>
 
-                                {% if season %}
+                                {% if _isStudents and season %}
 
                                 {# Activités #}
                                 {% if allActivities|length > 0 %}
                                 <td class="px-3 py-3 whitespace-nowrap">
-                                    {% if actIds|length > 0 %}
-                                        <div class="relative group inline-flex">
-                                            <span class="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-0.5 cursor-default">
-                                                {{ actIds|length }}
-                                            </span>
-                                        </div>
-                                    {% else %}<span class="text-gray-300 text-xs">—</span>{% endif %}
+                                    <span class="text-gray-300 text-xs">—</span>
                                 </td>
                                 {% endif %}
 
                                 {# Abonnements #}
                                 <td class="px-3 py-3 whitespace-nowrap">
                                     {% if pkgs > 0 %}
-                                        <span class="inline-flex items-center rounded-full bg-purple-50 text-purple-700 text-xs font-medium px-2 py-0.5">
-                                            {{ pkgs }}
-                                        </span>
+                                        <span class="inline-flex items-center rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs font-medium px-2 py-0.5">{{ pkgs }}</span>
                                     {% else %}<span class="text-gray-300 text-xs">—</span>{% endif %}
                                 </td>
 
@@ -273,11 +266,11 @@
                                 {# Statut paiement #}
                                 <td class="px-3 py-3 whitespace-nowrap">
                                     {% if fin and fin.status %}
-                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                                            {% if fin.status == 'paid' %}bg-green-50 text-green-700
-                                            {% elseif fin.status == 'partially_paid' %}bg-amber-50 text-amber-700
-                                            {% elseif fin.status == 'unpaid' %}bg-red-50 text-red-700
-                                            {% else %}bg-blue-50 text-blue-700{% endif %}">
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border
+                                            {% if fin.status == 'paid' %}bg-green-50 text-green-700 border-green-200
+                                            {% elseif fin.status == 'partially_paid' %}bg-amber-50 text-amber-700 border-amber-200
+                                            {% elseif fin.status == 'unpaid' %}bg-red-50 text-red-700 border-red-200
+                                            {% else %}bg-blue-50 text-blue-700 border-blue-200{% endif %}">
                                             {% if fin.status == 'paid' %}Payé
                                             {% elseif fin.status == 'partially_paid' %}Partiel
                                             {% elseif fin.status == 'unpaid' %}Impayé
@@ -291,7 +284,7 @@
                                     {{ lastPaid ? lastPaid|date('d/m/Y') : '—' }}
                                 </td>
 
-                                {% endif %}{# end if season #}
+                                {% endif %}{# end if _isStudents and season #}
 
                                 {# Actions #}
                                 <td class="py-3 pl-3 pr-5 text-right whitespace-nowrap">
