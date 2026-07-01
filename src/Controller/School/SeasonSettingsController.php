@@ -757,8 +757,8 @@ final class SeasonSettingsController extends AbstractController
     // Payment schedulers
     // -------------------------------------------------------------------------
 
-    #[Route('/payment-schedulers', name: 'school_season_payment_schedulers', methods: ['GET', 'POST'])]
-    public function paymentSchedulers(string $id, Request $request): Response
+    #[Route('/payment-schedulers/create', name: 'school_season_payment_scheduler_create', methods: ['GET', 'POST'])]
+    public function paymentSchedulerCreate(string $id, Request $request): Response
     {
         [$school, $season] = $this->loadSeasonForAdmin($id);
 
@@ -773,6 +773,18 @@ final class SeasonSettingsController extends AbstractController
 
             return $this->redirectToRoute('school_season_payment_schedulers', ['id' => $id]);
         }
+
+        return $this->render('school/settings/season/payment_scheduler_form.html.twig', [
+            'school'  => $school,
+            'season'  => $season,
+            'tpl'     => null,
+        ]);
+    }
+
+    #[Route('/payment-schedulers', name: 'school_season_payment_schedulers', methods: ['GET'])]
+    public function paymentSchedulers(string $id): Response
+    {
+        [$school, $season] = $this->loadSeasonForAdmin($id);
 
         $templates = $this->em->getRepository(PaymentScheduleTemplate::class)->findBy(
             ['seasonId' => $season->getId(), 'deletedAt' => null],
@@ -797,7 +809,7 @@ final class SeasonSettingsController extends AbstractController
         ]);
     }
 
-    #[Route('/payment-schedulers/{templateId}/edit', name: 'school_season_payment_scheduler_edit', methods: ['POST'])]
+    #[Route('/payment-schedulers/{templateId}/edit', name: 'school_season_payment_scheduler_edit', methods: ['GET', 'POST'])]
     public function paymentSchedulerEdit(string $id, string $templateId, Request $request): Response
     {
         [$school, $season] = $this->loadSeasonForAdmin($id);
@@ -807,11 +819,24 @@ final class SeasonSettingsController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $this->applyPaymentSchedulerFromRequest($tpl, $request, $school->getId(), $season->getId());
-        $this->em->flush();
-        $this->addFlash('success', 'Échéancier mis à jour.');
+        if ($request->isMethod('POST')) {
+            $this->applyPaymentSchedulerFromRequest($tpl, $request, $school->getId(), $season->getId());
+            $this->em->flush();
+            $this->addFlash('success', 'Échéancier mis à jour.');
 
-        return $this->redirectToRoute('school_season_payment_schedulers', ['id' => $id]);
+            return $this->redirectToRoute('school_season_payment_schedulers', ['id' => $id]);
+        }
+
+        $feeModifier = $tpl->getPriceModifierId()
+            ? $this->em->getRepository(PriceModifier::class)->find($tpl->getPriceModifierId())
+            : null;
+
+        return $this->render('school/settings/season/payment_scheduler_form.html.twig', [
+            'school'      => $school,
+            'season'      => $season,
+            'tpl'         => $tpl,
+            'feeModifier' => $feeModifier,
+        ]);
     }
 
     #[Route('/payment-schedulers/{templateId}/delete', name: 'school_season_payment_scheduler_delete', methods: ['POST'])]

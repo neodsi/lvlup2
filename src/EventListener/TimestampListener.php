@@ -18,11 +18,11 @@ class TimestampListener
         $entity = $args->getObject();
         $now = new \DateTimeImmutable();
 
-        if (property_exists($entity, 'createdAt')) {
+        if (property_exists($entity, 'createdAt') && method_exists($entity, 'setCreatedAt')) {
             $entity->setCreatedAt($now);
         }
 
-        if (property_exists($entity, 'updatedAt')) {
+        if (property_exists($entity, 'updatedAt') && method_exists($entity, 'setUpdatedAt')) {
             $entity->setUpdatedAt($now);
         }
     }
@@ -31,7 +31,7 @@ class TimestampListener
     {
         $entity = $args->getObject();
 
-        if (property_exists($entity, 'updatedAt')) {
+        if (property_exists($entity, 'updatedAt') && method_exists($entity, 'setUpdatedAt')) {
             $entity->setUpdatedAt(new \DateTimeImmutable());
         }
     }

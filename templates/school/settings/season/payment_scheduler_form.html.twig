@@ -1,0 +1,275 @@
+{% extends 'layout/school.html.twig' %}
+
+{% set isEdit = tpl is not null %}
+
+{% block title %}{{ isEdit ? 'Modifier ' ~ tpl.name : 'Nouvel échéancier' }} — {{ season.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ path('school_home') }}" class="hover:text-gray-700 transition">{{ school.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_settings_season', {id: season.id}) }}" class="hover:text-gray-700 transition">Config {{ season.name }}</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<a href="{{ path('school_season_payment_schedulers', {id: season.id}) }}" class="hover:text-gray-700 transition">Échéanciers</a>
+<svg class="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+<span class="text-gray-700 font-medium">{{ isEdit ? tpl.name : 'Nouvel échéancier' }}</span>
+{% endblock %}
+
+{% set initType        = isEdit ? tpl.type.value : 'recurring' %}
+{% set initFixedDates  = isEdit and tpl.fixedDates ? tpl.fixedDates|json_encode : '[]' %}
+{% set initFeeEnabled  = isEdit and feeModifier is defined and feeModifier ? 'true' : 'false' %}
+{% set initFeeType     = isEdit and feeModifier is defined and feeModifier ? feeModifier.valueType.value : 'percentage' %}
+
+{% block school_content %}
+<div class="py-8">
+
+<h1 class="text-2xl font-bold text-gray-900 mb-6">{{ isEdit ? 'Modifier l\'échéancier' : 'Nouvel échéancier' }}</h1>
+
+<form method="POST"
+      action="{{ isEdit ? path('school_season_payment_scheduler_edit', {id: season.id, templateId: tpl.id}) : path('school_season_payment_scheduler_create', {id: season.id}) }}"
+      class="space-y-6 max-w-2xl"
+      x-data="schedulerForm('{{ initType }}', {{ initFixedDates }}, {{ initFeeEnabled }}, '{{ initFeeType }}')">
+    <input type="hidden" name="_token" value="{{ csrf_token(isEdit ? 'scheduler_edit_' ~ tpl.id : 'scheduler_create') }}">
+
+    {# Informations #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Informations</h2>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom <span class="text-red-500">*</span></label>
+                <input type="text" id="name" name="name" required
+                       value="{{ isEdit ? tpl.name : '' }}"
+                       placeholder="Ex : 3 fois sans frais, Paiement mensuel…"
+                       class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Visibilité</label>
+                <div class="flex gap-3">
+                    <label class="flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition"
+                           :class="visibility === 'public' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'">
+                        <input type="radio" name="visibility" value="public" x-model="visibility" class="sr-only">
+                        <span class="w-3 h-3 rounded-full border-2 flex-shrink-0 transition"
+                              :class="visibility === 'public' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300'"></span>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">Public</p>
+                            <p class="text-xs text-gray-500">Proposé aux familles</p>
+                        </div>
+                    </label>
+                    <label class="flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition"
+                           :class="visibility === 'private' ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:bg-gray-50'">
+                        <input type="radio" name="visibility" value="private" x-model="visibility" class="sr-only">
+                        <span class="w-3 h-3 rounded-full border-2 flex-shrink-0 transition"
+                              :class="visibility === 'private' ? 'border-gray-500 bg-gray-500' : 'border-gray-300'"></span>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">Privé</p>
+                            <p class="text-xs text-gray-500">Appliqué manuellement</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="w-48">
+                <label for="minAmount" class="block text-sm font-medium text-gray-700 mb-1">Montant minimum <span class="text-gray-400 font-normal">(optionnel)</span></label>
+                <div class="relative">
+                    <input type="number" id="minAmount" name="minAmount" min="0" step="0.01"
+                           value="{{ isEdit and tpl.minAmount ? (tpl.minAmount / 100)|number_format(2, '.', '') : '' }}"
+                           placeholder="Ex : 50"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <span class="px-2 absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">€</span>
+                </div>
+                <p class="mt-1 text-xs text-gray-400">Proposé uniquement si le montant dépasse ce seuil</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Type d'échéancier</label>
+                <div class="flex gap-3">
+                    <label class="flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition"
+                           :class="type === 'recurring' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'">
+                        <input type="radio" name="type" value="recurring" x-model="type" class="sr-only">
+                        <span class="w-3 h-3 rounded-full border-2 flex-shrink-0 transition"
+                              :class="type === 'recurring' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300'"></span>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">Récurrent</p>
+                            <p class="text-xs text-gray-500">Intervalles réguliers</p>
+                        </div>
+                    </label>
+                    <label class="flex-1 flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition"
+                           :class="type === 'fixed_dates' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'">
+                        <input type="radio" name="type" value="fixed_dates" x-model="type" class="sr-only">
+                        <span class="w-3 h-3 rounded-full border-2 flex-shrink-0 transition"
+                              :class="type === 'fixed_dates' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300'"></span>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">Dates fixes</p>
+                            <p class="text-xs text-gray-500">Dates prédéfinies</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Récurrent #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200" x-show="type === 'recurring'">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Configuration récurrente</h2>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="nbPayments" class="block text-sm font-medium text-gray-700 mb-1">Nombre de paiements <span class="text-red-500">*</span></label>
+                    <input type="number" id="nbPayments" name="nbPayments" min="1" max="36"
+                           value="{{ isEdit ? (tpl.nbPayments ?? 2) : 2 }}"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+                <div>
+                    <label for="intervalDuration" class="block text-sm font-medium text-gray-700 mb-1">Intervalle (mois)</label>
+                    <input type="number" id="intervalDuration" name="intervalDuration" min="1"
+                           value="{{ isEdit and tpl.intervalDuration ? tpl.intervalDuration : '' }}"
+                           placeholder="Ex : 1"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="dayOfMonth" class="block text-sm font-medium text-gray-700 mb-1">Jour du mois</label>
+                    <input type="number" id="dayOfMonth" name="dayOfMonth" min="1" max="31"
+                           value="{{ isEdit and tpl.dayOfMonth ? tpl.dayOfMonth : '' }}"
+                           placeholder="Ex : 5"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                    <p class="mt-1 text-xs text-gray-400">Déclenche le paiement le Nième jour</p>
+                </div>
+                <div>
+                    <label for="startsAt" class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                    <input type="date" id="startsAt" name="startsAt"
+                           value="{{ isEdit and tpl.startsAt ? tpl.startsAt|date('Y-m-d') : '' }}"
+                           class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Dates fixes #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200" x-show="type === 'fixed_dates'">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Dates de prélèvement</h2>
+        </div>
+        <div class="px-6 py-5 space-y-3">
+            <div class="flex gap-2">
+                <input type="date" x-model="newDate"
+                       class="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                <button type="button" @click="addDate()" :disabled="!newDate"
+                        class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2.5 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Ajouter
+                </button>
+            </div>
+
+            <div class="space-y-1.5" x-show="fixedDates.length > 0">
+                <template x-for="(date, i) in fixedDates" :key="date">
+                    <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <span class="text-sm text-gray-700 font-mono" x-text="formatDate(date)"></span>
+                        <button type="button" @click="removeDate(i)" class="ml-2 text-red-400 hover:text-red-600 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                        <input type="hidden" name="fixedDates[]" :value="date">
+                    </div>
+                </template>
+            </div>
+            <p class="text-sm text-gray-400" x-show="fixedDates.length === 0">Aucune date ajoutée.</p>
+
+            <label class="flex items-center gap-2.5 cursor-pointer pt-1">
+                <input type="checkbox" name="fixedFirstDateIsAtAttribution" value="1"
+                       {{ isEdit and tpl.isFixedFirstDateIsAtAttribution ? 'checked' : '' }}
+                       class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Première date à l'attribution du forfait</p>
+                    <p class="text-xs text-gray-400">Le premier prélèvement se fait immédiatement lors de la validation</p>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    {# Frais d'utilisation #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">Frais d'utilisation</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Frais automatiques appliqués lors du choix de cet échéancier.</p>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="feeEnabled" value="1" x-model="feeEnabled"
+                       class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm font-medium text-gray-700">Activer les frais d'utilisation</span>
+            </label>
+
+            <div x-show="feeEnabled" class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type de frais</label>
+                    <select name="feeValueType" x-model="feeValueType"
+                            class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        <option value="percentage">Pourcentage (%)</option>
+                        <option value="fixed">Montant fixe (€)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Montant <span x-text="feeValueType === 'percentage' ? '(%)' : '(€)'" class="text-gray-400"></span>
+                    </label>
+                    <div class="relative">
+                        <input type="number" name="feeValue" min="0" step="0.01"
+                               value="{{ isEdit and feeModifier is defined and feeModifier ? (feeModifier.value / 100)|number_format(2, '.', '') : '' }}"
+                               :placeholder="feeValueType === 'percentage' ? 'Ex : 3' : 'Ex : 10'"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        <span class="px-2 absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"
+                              x-text="feeValueType === 'percentage' ? '%' : '€'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
+            {{ isEdit ? 'Enregistrer les modifications' : 'Créer l\'échéancier' }}
+        </button>
+        <a href="{{ path('school_season_payment_schedulers', {id: season.id}) }}"
+           class="text-sm text-gray-500 hover:text-gray-700 transition">Annuler</a>
+    </div>
+</form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ parent() }}
+<script>
+function schedulerForm(initType, initFixedDates, initFeeEnabled, initFeeValueType) {
+    return {
+        type: initType,
+        visibility: '{{ isEdit ? tpl.visibility : 'public' }}',
+        feeEnabled: initFeeEnabled,
+        feeValueType: initFeeValueType || 'percentage',
+        newDate: '',
+        fixedDates: Array.isArray(initFixedDates) ? initFixedDates.slice().sort() : [],
+        addDate() {
+            if (!this.newDate || this.fixedDates.includes(this.newDate)) return;
+            this.fixedDates.push(this.newDate);
+            this.fixedDates.sort();
+            this.newDate = '';
+        },
+        removeDate(i) {
+            this.fixedDates.splice(i, 1);
+        },
+        formatDate(s) {
+            if (!s) return '';
+            const [y, m, d] = s.split('-');
+            return d + '/' + m + '/' + y;
+        },
+    };
+}
+</script>
+{% endblock %}

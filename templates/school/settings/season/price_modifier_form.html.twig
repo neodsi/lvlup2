@@ -151,8 +151,8 @@
                         <input type="number" name="value" required step="0.01" min="0"
                                value="{{ isEdit ? (modifier.value / 100)|number_format(2, '.', '') : '' }}"
                                :placeholder="valueType === 'percentage' ? 'Ex : 10' : 'Ex : 15'"
-                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 pr-10 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none"
+                               class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-5 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        <span class="px-2 absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none"
                               x-text="valueType === 'percentage' ? '%' : '€'"></span>
                     </div>
                     <p class="mt-1 text-xs text-gray-400" x-show="valueType === 'percentage'">Ex : 10 = 10%</p>
